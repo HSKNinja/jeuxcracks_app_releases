@@ -75,6 +75,6 @@ export interface DjangoUser {
   email: string;
   pseudo?: string;
   name?: string;
-  temporary_groups?: string[];
+  temporary_group_name?: string[];
   // Ajoutez d'autres champs selon votre modèle Django
 } 

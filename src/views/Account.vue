@@ -48,7 +48,7 @@
             <span v-else class="text-xs px-2 py-1 rounded-md bg-white/5 border border-white/10 text-zinc-400 font-normal tracking-wide uppercase">Member</span>
             
             <!-- Temporary Groups -->
-            <span v-for="group in user?.temporary_groups" :key="group" class="text-xs px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold tracking-wide uppercase">
+            <span v-for="group in user?.temporary_group_name" :key="group" class="text-xs px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold tracking-wide uppercase">
               {{ group }}
             </span>
           </h1>
