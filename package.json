@@ -73,7 +73,7 @@
       {
         "provider": "github",
         "owner": "Wasmata",
-        "repo": "jeuxcracks_app"
+        "repo": "jeuxcracks_app_releases"
       }
     ],
     "files": [
@@ -81,6 +81,7 @@
       "dist"
     ],
     "win": {
+      "icon": "assets/logo.ico",
       "requestedExecutionLevel": "requireAdministrator",
       "target": "nsis"
     },

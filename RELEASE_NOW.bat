@@ -38,6 +38,6 @@ echo GitHub va maintenant :
 echo  1. Construire l'installateur (Windows)
 echo  2. Publier la release automatiquement
 echo.
-echo Lien pour suivre : https://github.com/Wasmata/jeuxcracks_app/releases
+echo Lien pour suivre : https://github.com/Wasmata/jeuxcracks_app_releases/releases
 echo ----------------------------------------
 pause
