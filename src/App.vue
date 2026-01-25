@@ -244,6 +244,17 @@ if (window.electronAPI) {
   });
 
   // Auto-Update Events
+  window.electronAPI.on('checking-for-update', () => {
+    updateStatus.value = 'checking';
+  });
+
+  window.electronAPI.on('update-not-available', () => {
+    // Si aucune maj n'est dispo, on attend 2 sec pour que l'user voie "Recherche..." puis on ferme
+    setTimeout(() => {
+        updateStatus.value = null;
+    }, 2000);
+  });
+
   window.electronAPI.on('update-available', () => {
     updateStatus.value = 'available';
     // Mock downloading state after a short delay for UX

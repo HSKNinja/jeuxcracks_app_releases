@@ -76,6 +76,7 @@ const title = computed(() => {
 
 const message = computed(() => {
     switch(props.status) {
+        case 'checking': return 'Recherche de mise à jour en cours...';
         case 'available': return 'Une nouvelle version est disponible. Le téléchargement va commencer.';
         case 'downloading': return 'La mise à jour est en cours de téléchargement en arrière-plan.';
         case 'ready': return 'Pour appliquer la mise à jour, l\'application doit redémarrer.';

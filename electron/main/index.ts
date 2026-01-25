@@ -154,6 +154,13 @@ app.whenReady().then(async () => {
   autoUpdater.checkForUpdatesAndNotify();
 
   // Notifie le renderer si une mise à jour est dispo/téléchargée
+  // Notifie le renderer si une mise à jour est dispo/téléchargée
+  autoUpdater.on('checking-for-update', () => {
+    win?.webContents.send('checking-for-update');
+  });
+  autoUpdater.on('update-not-available', () => {
+    win?.webContents.send('update-not-available');
+  });
   autoUpdater.on('update-available', () => {
     win?.webContents.send('update-available');
   });
