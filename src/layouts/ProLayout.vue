@@ -33,5 +33,5 @@ import ProHeader from '../components/navigation/ProHeader.vue';
 import { ModalsContainer } from 'vue-final-modal';
 
 const route = useRoute();
-const isAuthPage = computed(() => route.path === '/login');
+const isAuthPage = computed(() => ['/login', '/register'].includes(route.path));
 </script>

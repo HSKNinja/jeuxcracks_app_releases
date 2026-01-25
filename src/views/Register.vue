@@ -24,6 +24,9 @@
 
          <!-- Header -->
          <div class="text-center space-y-2 relative z-10">
+             <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-black font-bold text-2xl mx-auto shadow-lg mb-4">
+                 J
+             </div>
              <h1 class="text-2xl font-bold text-white tracking-tight">Créer un compte</h1>
              <p class="text-zinc-500 text-sm">Rejoignez la communauté JeuxCracks.</p>
          </div>
@@ -55,8 +58,8 @@
                  {{ error }}
              </div>
 
-             <button type="submit" :disabled="loading || passwordMismatch" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-500 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2">
-                 <span v-if="loading" class="w-4 h-4 border-2 border-zinc-400 border-t-white rounded-full animate-spin"></span>
+             <button type="submit" :disabled="loading || passwordMismatch" class="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2">
+                 <span v-if="loading" class="w-4 h-4 border-2 border-zinc-400 border-t-zinc-800 rounded-full animate-spin"></span>
                  <span>{{ loading ? 'Inscription en cours...' : 'S\'inscrire' }}</span>
              </button>
          </form>
