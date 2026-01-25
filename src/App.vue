@@ -255,6 +255,14 @@ if (window.electronAPI) {
     }, 2000);
   });
 
+  window.electronAPI.on('update-error', (msg) => {
+    console.error('Update check failed:', msg);
+    // On affiche l'erreur brièvement ou on masque le loader
+    setTimeout(() => {
+        updateStatus.value = null;
+    }, 2000);
+  });
+
   window.electronAPI.on('update-available', () => {
     updateStatus.value = 'available';
     // Mock downloading state after a short delay for UX
@@ -290,6 +298,11 @@ function confirmLogout() {
 }
 
 onMounted(async () => {
+  // Trigger update check with delay to ensure UI is ready
+  setTimeout(() => {
+     window.electronAPI?.send('check-for-update');
+  }, 1000);
+
   await initializeLibrary();
   
   if (!store.isAuthenticated && router.currentRoute.value.path !== '/login') {

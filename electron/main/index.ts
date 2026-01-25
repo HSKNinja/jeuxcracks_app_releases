@@ -150,8 +150,10 @@ app.whenReady().then(async () => {
   // Configuration des logs pour electron-updater
   autoUpdater.logger = log;
 
-  // Vérifie les mises à jour à chaque lancement
-  autoUpdater.checkForUpdatesAndNotify();
+  // Check via IPC
+  ipcMain.on('check-for-update', () => {
+    autoUpdater.checkForUpdatesAndNotify();
+  });
 
   // Notifie le renderer si une mise à jour est dispo/téléchargée
   // Notifie le renderer si une mise à jour est dispo/téléchargée
@@ -166,6 +168,10 @@ app.whenReady().then(async () => {
   });
   autoUpdater.on('update-downloaded', () => {
     win?.webContents.send('update-downloaded');
+  });
+  autoUpdater.on('error', (err) => {
+    console.error('Update Error:', err);
+    win?.webContents.send('update-error', err.message);
   });
 });
 
