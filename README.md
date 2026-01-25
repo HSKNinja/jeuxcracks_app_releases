@@ -14,12 +14,4 @@ C'est ici que vous trouverez toutes les versions de l'application.
 
 ---
 
-## ✨ Fonctionnalités
-
-*   **Mises à jour automatiques** : Le launcher se met à jour tout seul.
-*   **Téléchargements P2P** : Ultra rapide et décentralisé.
-*   **Interface Premium** : Une expérience fluide et moderne.
-
----
-
 *Ceci est un dépôt de distribution. Le code source est privé.*
