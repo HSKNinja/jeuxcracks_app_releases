@@ -8,6 +8,7 @@ import Library from "../views/Library.vue";
 import Settings from "../views/Settings.vue";
 import Downloads from "../views/Downloads.vue";
 import Login from "../views/Login.vue";
+import Register from "../views/Register.vue";
 import Account from "../views/Account.vue";
 import Premium from "../views/Premium.vue";
 import DMCA from "../views/DMCA.vue";
@@ -65,6 +66,12 @@ const routes = [
         path: "/login",
         name: "Login",
         component: Login,
+        meta: { requiresGuest: true }
+    },
+    {
+        path: "/register",
+        name: "Register",
+        component: Register,
         meta: { requiresGuest: true }
     },
     {

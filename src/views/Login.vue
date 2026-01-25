@@ -55,7 +55,7 @@
 
          <!-- Footer -->
          <div class="text-center text-xs text-zinc-600 relative z-10">
-             Pas encore de compte ? <a href="https://jeuxcracks.fr/register" target="_blank" class="text-indigo-400 hover:text-indigo-300 font-semibold">Créer un compte</a>
+             Pas encore de compte ? <router-link to="/register" class="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer">Créer un compte</router-link>
          </div>
 
     </div>

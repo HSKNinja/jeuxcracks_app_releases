@@ -93,7 +93,8 @@
       "deleteAppDataOnUninstall": false,
       "installerHeaderIcon": "assets/logo.ico",
       "installerIcon": "assets/logo.ico",
-      "uninstallerIcon": "assets/logo.ico"
+      "uninstallerIcon": "assets/logo.ico",
+      "artifactName": "JeuxCracks-Setup.${ext}"
     },
     "extraFiles": [
       "downloads/*"
