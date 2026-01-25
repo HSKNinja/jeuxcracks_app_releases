@@ -1,0 +1,132 @@
+##0 Log 2025-07-12 22:19:43
+BugReporting: started monitoring log messages. Outputting to file Log1.txt
+
+##1 Log 2025-07-12 22:19:43
+Moon Hunters version 2.0.3491
+
+##2 Log 2025-07-12 22:19:43
+Running game mode: Release
+
+##3 Warning 2025-07-12 22:19:43
+DontDestroyOnLoad only work for root GameObjects or components on root GameObjects.
+
+##4 Log 2025-07-12 22:19:43
+Graveyard
+
+##5 Log 2025-07-12 22:19:43
+Clearing player data
+
+#5 Log 2025-07-12 22:19:43
+Clearing player data
+
+##6 Log 2025-07-12 22:19:43
+Adding player in slot 0
+
+##7 Log 2025-07-12 22:19:43
+Player count: 1
+
+##8 Log 2025-07-12 22:19:43
+Awake of GraveyardManager31
+
+##9 Log 2025-07-12 22:19:43
+Awake is called?!?!
+
+##10 Log 2025-07-12 22:19:43
+Current resolution is 1920x1080
+
+##11 Log 2025-07-12 22:19:43
+Checking 0: 1024x768
+
+##12 Log 2025-07-12 22:19:43
+Checking 1: 1280x720
+
+##13 Log 2025-07-12 22:19:43
+Checking 2: 1280x800
+
+##14 Log 2025-07-12 22:19:43
+Checking 3: 1280x1024
+
+##15 Log 2025-07-12 22:19:43
+Checking 4: 1366x768
+
+##16 Log 2025-07-12 22:19:43
+Checking 5: 1440x900
+
+##17 Log 2025-07-12 22:19:43
+Checking 6: 1536x864
+
+##18 Log 2025-07-12 22:19:43
+Checking 7: 1600x900
+
+##19 Log 2025-07-12 22:19:43
+Checking 8: 1680x1050
+
+##20 Log 2025-07-12 22:19:43
+Checking 9: 1920x1080
+
+##21 Log 2025-07-12 22:19:43
+Chose 9
+
+##22 Log 2025-07-12 22:19:43
+Loading language: 0
+
+##23 Log 2025-07-12 22:19:43
+Setting language index to 0
+
+##24 Log 2025-07-12 22:19:43
+Number of Players: 0
+
+##25 Log 2025-07-12 22:19:43
+DreamVillageTrigger enabled
+
+#5 Log 2025-07-12 22:19:43
+Clearing player data
+
+##26 Log 2025-07-12 22:19:43
+InitializeControllers -1
+
+##27 Log 2025-07-12 22:19:43
+Camp scene is CampMountain
+
+##28 Log 2025-07-12 22:19:44
+InitMusicGraveyardInfo (MapInfo)
+
+##29 Log 2025-07-12 22:19:44
+Playing exploration music
+
+##30 Log 2025-07-12 22:19:44
+Loaded a static scene!
+
+##31 Log 2025-07-12 22:19:44
+Game Manager: setting level is loading to false
+
+##32 Log 2025-07-12 22:19:44
+Path: C:\Users\dafi4\AppData\Roaming/MoonHunters/SaveData/metaSaveData.bin
+
+##33 Log 2025-07-12 22:19:44
+Creating new meta data
+
+##34 Error 2025-07-12 22:19:44
+Metadata file does not exist.
+
+##35 Log 2025-07-12 22:19:44
+Trying to write to C:\Users\dafi4\AppData\Roaming/MoonHunters/SaveData/metaSaveData.bin
+
+##36 Warning 2025-07-12 22:19:44
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+
+#36 Warning 2025-07-12 22:19:44
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+
+##37 Warning 2025-07-12 22:19:44
+The referenced script on this Behaviour (Game Object 'Item') is missing!
+
+#37 Warning 2025-07-12 22:19:44
+The referenced script on this Behaviour (Game Object 'Item') is missing!
+
+#37 Warning 2025-07-12 22:19:44
+The referenced script on this Behaviour (Game Object 'Item') is missing!
+
+#37 Warning 2025-07-12 22:19:44
+The referenced script on this Behaviour (Game Object 'Item') is missing!
+

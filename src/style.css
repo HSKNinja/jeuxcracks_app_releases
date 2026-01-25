@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --bg-app: #050505; /* Black */
+    --bg-card: #18181b; /* Zinc 900 */
+    --border-subtle: #27272a; /* Zinc 800 */
+    --accent: #6366f1; /* Indigo 500 */
+    --text-primary: #f4f4f5; /* Zinc 100 */
+    --text-secondary: #a1a1aa; /* Zinc 400 */
+}
+
+body, html {
+  @apply h-full bg-gradient-to-br from-[#050505] to-[#151515] text-zinc-100 font-sans antialiased overflow-hidden;
+  font-family: 'Outfit', sans-serif;
+  color: var(--text-primary);
+}
+
+#app {
+  @apply h-full w-full;
+  background: var(--bg-app);
+}
+
+/* Modern Card Utility */
+.card {
+    @apply bg-zinc-900 border border-zinc-800 rounded-xl transition-all duration-200;
+}
+.card:hover {
+    @apply border-zinc-700 bg-zinc-800/50;
+}
+
+/* Typography Utilities */
+.h1 {
+    @apply text-3xl font-bold tracking-tight text-white mb-2;
+}
+.h2 {
+    @apply text-xl font-semibold tracking-tight text-white mb-4;
+}
+.subtext {
+    @apply text-sm text-zinc-400;
+}
+
+/* Button Utilities */
+.btn-primary {
+    @apply px-4 py-2 bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-colors shadow-sm;
+}
+.btn-ghost {
+    @apply px-4 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors;
+}
+.btn-icon {
+    @apply p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors;
+}
+
+/* Custom Scrollbar (Minimal) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-zinc-800 rounded-full hover:bg-zinc-700;
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

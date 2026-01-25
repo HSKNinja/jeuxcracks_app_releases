@@ -1,0 +1,62 @@
+GUIDE DE MISE EN PLACE - SYSTÈME DE MISE À JOUR AUTOMATIQUE (STYLE STEAM/DISCORD)
+
+Pour que le système de mise à jour que je viens d'installer fonctionne, tu dois suivre ces étapes précises. C'est le système standard utilisé par la plupart des applications Electron.
+
+---
+
+ÉTAPE 1 : PRÉPARER TON GITHUB
+1. Crée un dépôt sur GitHub (ex: "mon-launcher").
+2. Pousse tout ton code dessus.
+3. IMPORTANT : Si ton dépôt est PRIVÉ, tu devras générer un token d'accès (GH_TOKEN) pour que l'updater puisse télécharger les fichiers. Si c'est PUBLIC, c'est automatique.
+
+---
+
+ÉTAPE 2 : CONFIGURER LE PROJET
+1. Ouvre le fichier `package.json`.
+2. Cherche la section "repository" ou ajoute-la si elle n'existe pas :
+   "repository": {
+     "type": "git",
+     "url": "https://github.com/TON_NOM/TON_REPO.git"
+   }
+3. Vérifie que la section "publish" dans "build" ressemble à ça :
+   "publish": [
+     {
+       "provider": "github",
+       "owner": "TON_NOM",
+       "repo": "TON_REPO"
+     }
+   ]
+
+---
+
+ÉTAPE 3 : CRÉER UNE NOUVELLE VERSION
+Quand tu veux sortir une mise à jour pour tes utilisateurs :
+
+1. Change la version dans `package.json` (ex: passe de "1.0.0" à "1.0.1").
+2. Lance la commande de build dans ton terminal :
+   `npm run build` (ou `yarn build`)
+
+Cette commande va créer un installateur `.exe` et un fichier `latest.yml` dans le dossier `release` (ou `dist`).
+
+---
+
+ÉTAPE 4 : PUBLIER LA MISE À JOUR
+1. Vas sur ton dépôt GitHub > Section "Releases".
+2. Clique sur "Draft a new release".
+3. Dans le "Tag version", mets exactement le même numéro que dans ton package.json (ex: v1.0.1).
+4. Titre ta release (ex: "Mise à jour 1.0.1").
+5. SUPER IMPORTANT : Glisse et dépose les fichiers générés dans le dossier `release` :
+   - L'installateur (ex: `JeuxCracks Setup 1.0.1.exe`)
+   - Le fichier `latest.yml` (C'est lui qui dit à l'app qu'il y a une maj !)
+6. Clique sur "Publish release".
+
+---
+
+ÉTAPE 5 : TESTER
+1. Installe la version 1.0.0 sur ton PC.
+2. Publie la version 1.0.1 sur GitHub comme expliqué ci-dessus.
+3. Ouvre ton application (v1.0.0).
+4. Attends quelques secondes... La notification "Mise à jour disponible" devrait apparaître en bas à droite.
+5. Une fois téléchargée, clique sur "Redémarrer" : l'app va se fermer, s'installer toute seule et se rouvrir en v1.0.1 !
+
+C'est tout ! Tes utilisateurs n'auront rien à faire à part cliquer sur "Redémarrer".
