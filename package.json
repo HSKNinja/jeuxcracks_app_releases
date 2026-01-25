@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Le launcher officiel JeuxCracks.fr",
   "author": "JeuxCracks",
-  "private": true,
   "main": "dist-electron/main/index.js",
   "keywords": [
     "launcher",
@@ -15,6 +14,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && electron-builder",
+    "publish": "vite build && electron-builder --publish always",
     "dist": "yarn build",
     "start": "electron ."
   },
@@ -73,8 +73,7 @@
       {
         "provider": "github",
         "owner": "Wasmata",
-        "repo": "jeuxcracks_app",
-        "private": true
+        "repo": "jeuxcracks_app"
       }
     ],
     "files": [
@@ -82,28 +81,17 @@
       "dist"
     ],
     "win": {
-      "icon": "assets/logo.ico",
       "requestedExecutionLevel": "requireAdministrator",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "artifactName": "${productName}_${version}.${ext}",
-      "legalTrademarks": "JeuxCracks",
-      "publisherName": "JeuxCracks"
+      "target": "nsis"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "deleteAppDataOnUninstall": false,
+      "installerHeaderIcon": "assets/logo.ico",
       "installerIcon": "assets/logo.ico",
-      "uninstallerIcon": "assets/logo.ico",
-      "installerHeaderIcon": "assets/logo.ico"
+      "uninstallerIcon": "assets/logo.ico"
     },
     "extraFiles": [
       "downloads/*"

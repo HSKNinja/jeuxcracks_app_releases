@@ -34,7 +34,7 @@ Quand tu veux sortir une mise à jour pour tes utilisateurs :
 
 1. Change la version dans `package.json` (ex: passe de "1.0.0" à "1.0.1").
 2. Lance la commande de build dans ton terminal :
-   `npm run build` (ou `yarn build`)
+   `npm run publish`
 
 Cette commande va créer un installateur `.exe` et un fichier `latest.yml` dans le dossier `release` (ou `dist`).
 
