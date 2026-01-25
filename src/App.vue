@@ -255,7 +255,7 @@ if (window.electronAPI) {
     }, 2000);
   });
 
-  window.electronAPI.on('update-error', (msg) => {
+  window.electronAPI.on('update-error', (_e, msg) => {
     console.error('Update check failed:', msg);
     // On affiche l'erreur brièvement ou on masque le loader
     setTimeout(() => {

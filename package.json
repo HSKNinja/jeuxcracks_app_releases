@@ -73,7 +73,8 @@
       {
         "provider": "github",
         "owner": "Wasmata",
-        "repo": "jeuxcracks_app_releases"
+        "repo": "jeuxcracks_app_releases",
+        "releaseType": "release"
       }
     ],
     "files": [
