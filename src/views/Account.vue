@@ -11,14 +11,14 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         <!-- LARGE CARD: Profile Info (Span 2 cols) -->
-        <div class="md:col-span-2 relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-8 flex flex-col justify-between group">
+        <div class="md:col-span-2 relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-8 flex flex-col justify-between group transition-all duration-500" :class="{ 'meryoul-card': isMeryoul }">
              <!-- Ambient Background -->
              <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16"></div>
              
              <div class="relative z-10 flex flex-col md:flex-row gap-6 items-center md:items-start">
                  <!-- Avatar -->
                  <div class="relative group/avatar cursor-pointer" @click="triggerFileInput">
-                     <div class="w-24 h-24 rounded-full p-1 bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/10">
+                     <div class="w-24 h-24 rounded-full p-1 bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/10 transition-transform duration-500" :class="{ 'animate-spin-slow-reverse ring-4 ring-offset-2 ring-offset-black ring-red-500': isMeryoul }">
                         <div class="w-full h-full rounded-full bg-black overflow-hidden relative">
                             <img v-if="user?.profile_picture" :src="resolveAvatar(user.profile_picture)" class="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110" />
                             <div v-else class="w-full h-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">
@@ -42,7 +42,7 @@
                  <!-- Info -->
                  <div class="text-center md:text-left space-y-2 flex-1">
                      <div class="flex items-center justify-center md:justify-start gap-3 flex-wrap">
-                        <h2 class="text-3xl font-bold text-white">{{ user?.pseudo }}</h2>
+                        <h2 class="text-3xl font-bold text-white transition-all" :class="{ 'glitch-text text-4xl': isMeryoul }" :data-text="user?.pseudo">{{ user?.pseudo }}</h2>
                         <!-- Rôles -->
                         <div class="flex items-center gap-2 flex-wrap">
                             <span v-if="user?.is_staff || user?.is_superuser" class="px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold tracking-wide">STAFF</span>
@@ -50,7 +50,9 @@
                             
                             <!-- Temporary Groups Badges -->
                             <template v-if="user?.temporary_group_name">
-                                <span v-for="group in (Array.isArray(user.temporary_group_name) ? user.temporary_group_name : [user.temporary_group_name])" :key="group" class="px-2.5 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold tracking-wide uppercase shadow-sm">
+                                <span v-for="group in (Array.isArray(user.temporary_group_name) ? user.temporary_group_name : [user.temporary_group_name])" :key="group" 
+                                      class="px-2.5 py-1 rounded-md text-xs font-bold tracking-wide uppercase shadow-sm transition-all duration-300"
+                                      :class="group.toLowerCase().includes('meryoul') ? 'bg-gradient-to-r from-red-600 via-amber-500 to-purple-600 text-white animate-pulse border-none shadow-[0_0_20px_rgba(255,0,0,0.6)] scale-110 mx-2' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400'">
                                   {{ group }}
                                 </span>
                             </template>
@@ -327,6 +329,14 @@ const isEditing = ref(false);
 const isSuggestionOpen = ref(false);
 const fileInput = ref<HTMLInputElement|null>(null);
 
+const isMeryoul = computed(() => {
+    const groups = user.value?.temporary_group_name;
+    if (!groups) return false;
+    // Check case insensitive
+    if (Array.isArray(groups)) return groups.some(g => g.toLowerCase() === 'meryoul');
+    return groups.toLowerCase() === 'meryoul';
+});
+
 const editForm = ref({ pseudo: '' });
 const suggestionForm = ref({ title: '', content: '' });
 
@@ -391,4 +401,56 @@ const chooseInstallFolder = async () => {
 <style scoped>
 .animate-fade-in-up { animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* PGM MODE - MERYOUL */
+.meryoul-card {
+    border-color: transparent !important;
+    box-shadow: 
+        0 0 20px rgba(255, 0, 0, 0.4), 
+        0 0 40px rgba(255, 0, 200, 0.3),
+        0 0 80px rgba(124, 58, 237, 0.2);
+    background: linear-gradient(135deg, #050505 0%, #0a0a0a 100%);
+    position: relative;
+    z-index: 1;
+}
+
+.meryoul-card::before {
+    content: '';
+    position: absolute;
+    inset: 0px;
+    z-index: -1;
+    border-radius: 1.5rem; /* Match card */
+    padding: 2px; /* Border width */
+    background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+    background-size: 400%;
+    animation: rgb-border 3s linear infinite;
+    -webkit-mask: 
+       linear-gradient(#fff 0 0) content-box, 
+       linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+@keyframes rgb-border { 
+    0% { background-position: 0 0; } 
+    100% { background-position: 400% 0; } 
+}
+
+.animate-spin-slow-reverse {
+    animation: spin-reverse 6s linear infinite;
+}
+@keyframes spin-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+
+/* Glitch Effect */
+.glitch-text {
+    position: relative;
+    text-shadow: 2px 2px 0px #ff0080, -2px -2px 0px #00ff00;
+    animation: glitch-anim 2s infinite linear alternate-reverse;
+}
+@keyframes glitch-anim {
+  0% { text-shadow: 2px 2px 0px #ff0080, -2px -2px 0px #00ff00; transform: skew(0deg); }
+  20% { text-shadow: -2px 2px 0px #ff0080, 2px -2px 0px #00ff00; transform: skew(-1deg); }
+  40% { text-shadow: 2px -2px 0px #ff0080, -2px 2px 0px #00ff00; transform: skew(1deg); }
+  100% { text-shadow: 2px 2px 0px #ff0080, -2px -2px 0px #00ff00; transform: skew(0deg); }
+}
 </style>
