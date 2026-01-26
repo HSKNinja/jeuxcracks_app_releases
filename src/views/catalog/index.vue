@@ -363,13 +363,18 @@ const pauseVideo = (e: Event) => {
 };
 
 
+import { useNotification } from '@kyvg/vue3-notification';
+const { notify } = useNotification();
+
+// ... existing code ...
+
 // Fetch Logic
 const fetchGames = async () => {
     loading.value = true;
     games.value = [];
     
     try {
-        let url = `/Cracks/api/liste_jeux/?app=true&format=json&page=${pagination.value.page}&limit=24`; // Reduced limit for better perf
+        let url = `/Cracks/api/liste_jeux/?app=true&format=json&page=${pagination.value.page}&limit=24`; 
         
         // Search
         if (searchQuery.value.trim()) {
@@ -414,8 +419,9 @@ const fetchGames = async () => {
                 };
             }
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error fetching games:", error);
+        notify({ type: 'error', title: 'Erreur', text: "Impossible de charger le catalogue." });
     } finally {
         loading.value = false;
     }

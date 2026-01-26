@@ -78,10 +78,12 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMainStore } from '../store';
 import { JeuxCracksAPI } from '../services/api';
+import { useNotification } from '@kyvg/vue3-notification';
 import { MinusIcon, XMarkIcon, Square2StackIcon } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
 const store = useMainStore();
+const { notify } = useNotification();
 
 const form = ref({ 
     pseudo: '', 
@@ -128,8 +130,10 @@ const handleRegister = async () => {
 
     } catch (e: any) {
         console.error('Register error:', e);
+        let msg = 'Une erreur est survenue lors de l\'inscription.';
+
         if (e.detail) {
-             error.value = typeof e.detail === 'object' ? JSON.stringify(e.detail) : e.detail;
+             msg = typeof e.detail === 'object' ? JSON.stringify(e.detail) : e.detail;
         } else if (e.data) {
              // Handle Validation Errors like { email: ["Mandatory"], ... }
              const errors = [];
@@ -140,10 +144,13 @@ const handleRegister = async () => {
                      errors.push(`${key}: ${val}`);
                  }
              }
-             error.value = errors.join('\n');
-        } else {
-             error.value = e.message || 'Erreur inconnue lors de l\'inscription';
+             msg = errors.length > 0 ? errors.join('\n') : JSON.stringify(e.data);
+        } else if (e.message) {
+             msg = e.message;
         }
+
+        notify({ type: 'error', title: 'Erreur d\'inscription', text: msg });
+        error.value = msg;
     } finally {
         loading.value = false;
     }

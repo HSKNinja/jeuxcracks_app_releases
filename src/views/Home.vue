@@ -150,6 +150,8 @@ import {
     EyeIcon,
     ArrowLongRightIcon
 } from '@heroicons/vue/24/solid';
+import { useNotification } from '@kyvg/vue3-notification';
+const { notify } = useNotification();
 
 const router = useRouter();
 
@@ -247,6 +249,7 @@ onMounted(async () => {
 
   } catch (e) {
     console.error(e);
+    notify({ type: 'error', title: 'Erreur', text: 'Impossible de charger les jeux à la une.' });
   } finally {
     loading.value = false;
   }

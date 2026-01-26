@@ -45,10 +45,6 @@
                 <HeartIcon class="w-5 h-5" />
                 <span>Favoris</span>
             </router-link>
-             <router-link to="/account" class="nav-item">
-                <UserCircleIcon class="w-5 h-5" />
-                <span>Mon Compte</span>
-            </router-link>
         </div>
       </div>
 
@@ -56,15 +52,17 @@
 
     <!-- Bottom User -->
     <div class="p-4 border-t border-zinc-800">
-        <div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer group">
-           <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400 group-hover:bg-zinc-700 group-hover:text-white transition-colors">
-              U
+        <router-link to="/account" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer group">
+           <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400 group-hover:bg-zinc-700 group-hover:text-white transition-colors overflow-hidden">
+              <img v-if="store.user?.profile_picture" :src="resolveAvatar(store.user.profile_picture)" class="w-full h-full object-cover" />
+              <span v-else>U</span>
            </div>
            <div class="flex-1 min-w-0">
-               <div class="text-sm font-medium text-zinc-200">Utilisateur</div>
-               <div class="text-xs text-zinc-500">Gratuit</div>
+               <div class="text-sm font-medium text-zinc-200 truncate">{{ store.user?.pseudo || 'Utilisateur' }}</div>
+               <div class="text-xs text-zinc-500">Mon Compte</div>
            </div>
-        </div>
+           <UserCircleIcon class="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
+        </router-link>
     </div>
 
   </aside>
@@ -72,9 +70,18 @@
 
 <script setup lang="ts">
 import { HomeIcon, RectangleStackIcon, FolderIcon, ArrowDownTrayIcon, UserCircleIcon, HeartIcon } from '@heroicons/vue/24/outline';
+import { API_CONFIG } from '../../config/api';
 import { useDownloadStore } from '../../store/download';
+import { useMainStore } from '../../store';
 
 const downloadStore = useDownloadStore();
+const store = useMainStore();
+
+const resolveAvatar = (path: string | undefined | null) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    return `${API_CONFIG.BASE_URL}${path}`;
+};
 </script>
 
 <style scoped>

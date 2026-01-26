@@ -52,7 +52,7 @@
                                          {{ formatSpeed(dl.data?.downloadSpeed) }}
                                      </span>
                                      <span class="w-1 h-1 rounded-full bg-zinc-700"></span>
-                                     <span>{{ formatSize(dl.data?.downloaded) }} / {{ formatSize(dl.data?.element?.size) }}</span> <!-- Assuming size avail -->
+                                     <span>{{ formatSize(dl.data?.downloaded) }} / {{ formatTotalSize(dl) }}</span> <!-- Assuming size avail -->
                                  </div>
                              </div>
                              
@@ -180,22 +180,54 @@ const finishedInstalls = computed(() => {
     return installStore.installs.filter(i => i.finished).slice(-5).reverse();
 });
 
+import { useNotification } from '@kyvg/vue3-notification';
+const { notify } = useNotification();
+
 // ACTIONS (IPC)
 const togglePause = (dl: any) => {
-    // Optimistic UI update via store or waiting for store to update?
-    // Usually sending event will trigger feedback.
-    if ((window as any).electronAPI) {
+    if (!(window as any).electronAPI) return;
+
+    if (dl.downloadType === 'torrent') {
+         if (dl.paused) {
+             // Resume
+             if (dl.data?.infoHash) {
+                 // We need path and game data to resume properly, which might be missing in 'dl' object if not stored fully
+                 // But assuming dl object has necessary info or Main process handles resume by hash if available
+                 // Game.vue sends: resume-torrent(hash, path+title, gameData).
+                 // Simplification: Try sending just hash if Main supports it, otherwise warn.
+                 // Ideally we stored path in store.
+                 const path = dl.path ? `${dl.path}/${dl.title}` : null;
+                 if (path) {
+                    (window as any).electronAPI.send('resume-torrent', dl.data.infoHash, path, null); // game data null? Main process might need it.
+                 } else {
+                     notify({ type: 'error', title: 'Erreur', text: 'Informations manquantes pour reprendre.' });
+                 }
+             }
+         } else {
+             // Pause
+             if (dl.data?.infoHash) {
+                 (window as any).electronAPI.send('pause-torrent', dl.data.infoHash);
+             }
+         }
+    } else {
+        // Direct download
         (window as any).electronAPI.send('pause-download', dl.gameID);
-        // Also toggle locally for instant feedback if store doesn't auto-update immediately
-        downloadStore.togglePause(dl.title); 
     }
+    
+    downloadStore.togglePause(dl.title); 
 };
 
 const cancelDownload = (dl: any) => {
     if (confirm(`Annuler le téléchargement de ${dl.title} ?`)) {
         if ((window as any).electronAPI) {
-            (window as any).electronAPI.send('cancel-download', dl.gameID);
+            if (dl.downloadType === 'torrent' && dl.data?.infoHash) {
+                 const path = dl.path ? `${dl.path}/${dl.title}` : '';
+                 (window as any).electronAPI.send('stop-torrent', dl.data.infoHash, path);
+            } else {
+                 (window as any).electronAPI.send('cancel-download', dl.gameID);
+            }
             downloadStore.removeDownloadByTitle(dl.title);
+            notify({ type: 'info', title: 'Téléchargement', text: 'Téléchargement annulé.' });
         }
     }
 };
@@ -230,6 +262,11 @@ const formatTime = (ms: number) => {
     const h = Math.floor(m / 60);
     if (h > 0) return `${h}h ${m % 60}m`;
     return `${m}m ${s}s`;
+};
+const formatTotalSize = (dl: any) => {
+    if (dl.data?.element?.size) return formatSize(dl.data.element.size);
+    if (dl.game?.size) return typeof dl.game.size === 'number' ? formatSize(dl.game.size) : dl.game.size;
+    return '--';
 };
 </script>
 

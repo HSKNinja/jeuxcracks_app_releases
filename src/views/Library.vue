@@ -185,18 +185,28 @@ watch(() => store.library, (newLib) => {
     enrichLibrary();
 }, { immediate: true, deep: true });
 
+import { useNotification } from '@kyvg/vue3-notification';
+const { notify } = useNotification();
+
 const scanGames = async () => {
     scanning.value = true;
-    await store.forceLibrarySync(); 
-    scanning.value = false;
+    try {
+        await store.forceLibrarySync(); 
+        notify({ type: 'success', title: 'Scan terminé', text: 'Bibliothèque mise à jour.' });
+    } catch (e) {
+        console.error("Scan error", e);
+        notify({ type: 'error', title: 'Erreur', text: 'Impossible de scanner la bibliothèque.' });
+    } finally {
+        scanning.value = false;
+    }
 };
-
-
 
 const launchGame = (game: any) => {
     console.log('Launch', game);
     if ((window as any).electronAPI) {
-         (window as any).electronAPI.launchGame(game.id);
+         (window as any).electronAPI.send('launch-game', game.id);
+    } else {
+        notify({ type: 'error', title: 'Erreur', text: 'Fonctionnalité non disponible ici.' });
     }
 };
 
@@ -218,6 +228,8 @@ const openLocation = (game: any) => {
         const path = game.path || game.installPath; // Adjust based on actual data structure
         if (path) {
              (window as any).electronAPI.send('open-game-emplacement', path);
+        } else {
+             notify({ type: 'error', title: 'Erreur', text: 'Chemin introuvable.' });
         }
     }
     closeMenu();
@@ -230,6 +242,7 @@ const uninstallGame = async (game: any) => {
              // Remove locally optimistically
               enrichedGames.value = enrichedGames.value.filter(g => g.id !== game.id);
               store.library = store.library.filter(g => g.id !== game.id);
+              notify({ type: 'success', title: 'Désinstallation', text: 'Jeu supprimé de la bibliothèque.' });
         }
     }
     closeMenu();

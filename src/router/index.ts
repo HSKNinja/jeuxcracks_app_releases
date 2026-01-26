@@ -115,6 +115,12 @@ router.beforeEach((to, from, next) => {
         return
     }
 
+    // Refresh user data periodically or on navigation to critical pages
+    if (isAuthenticated) {
+        // We catch errors to avoid blocking navigation if API fails
+        store.fetchUser().catch(e => console.error('Bg user fetch error', e))
+    }
+
     next()
 })
 

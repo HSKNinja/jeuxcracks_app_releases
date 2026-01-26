@@ -123,9 +123,11 @@ const loadFavorites = async () => {
     loading.value = false;
 };
 
-const removeFavorite = (id: string) => {
-    store.removeFavorite(id);
+const removeFavorite = async (id: string) => {
+    // Local optimistic update
     favoritesData.value = favoritesData.value.filter(g => g.id !== id);
+    // Persist
+    await store.toggleFavorite(id);
 };
 
 const goToGame = (id: string) => router.push(`/catalogue/${id}`);

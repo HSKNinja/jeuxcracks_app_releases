@@ -15,13 +15,30 @@ const vfm = createVfm()
 console.log("main.ts chargé");
 console.log("router chargé");
 
-createApp(App)
-  .use(router)
+import { notify } from '@kyvg/vue3-notification'
+
+const app = createApp(App)
+
+app.config.errorHandler = (err: any, instance, info) => {
+  console.error("❌ Global Error Catch:", err);
+  
+  // Prevent infinite loops if notification system breaks
+  try {
+      notify({
+          type: 'error',
+          title: 'Erreur Application',
+          text: `Une erreur inattendue est survenue: ${err.message || 'Inconnu'}`,
+          duration: 10000,
+      });
+  } catch (e) {
+      console.error("Failed to notify:", e);
+  }
+};
+
+app.use(router)
   .use(pinia)
   .use(vfm)
   .use(Notifications)
-  // .use(Vuex)
-  // .use(store)
   .mount('#app')
   .$nextTick(() => {
     postMessage({ payload: 'removeLoading' }, '*')

@@ -100,9 +100,9 @@
 
                             <button 
                                 @click="toggleFavorite()"
-                                class="p-5 rounded-xl border border-white/20 hover:bg-white/10 transition-all group"
+                                class="p-5 rounded-xl border border-white/20 hover:bg-white/10 transition-all group/favbtn"
                             >
-                                <HeartIcon :class="['w-6 h-6 transition-colors', isFavorite ? 'text-red-500 fill-red-500' : 'text-zinc-300 group-hover:text-red-500']" />
+                                <HeartIcon :class="['w-6 h-6 transition-colors', isFavorite ? 'text-red-500 fill-red-500' : 'text-zinc-300 group-hover/favbtn:text-red-500']" />
                             </button>
                         </div>
                         
@@ -186,7 +186,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="p-4 rounded-xl bg-zinc-900/50 border border-white/5 flex flex-col items-center justify-center gap-2 text-center group hover:border-indigo-500/30 transition-colors">
                         <span class="text-[10px] font-bold uppercase text-zinc-600">Stockage</span>
-                        <span class="text-zinc-300 font-bold">SSD Recommandé</span>
+                        <span class="text-zinc-300 font-bold">{{ typeof game?.size === 'number' ? prettyBites(game?.size || 0) : game?.size || 'N/A' }}</span>
                     </div>
                     <div class="p-4 rounded-xl bg-zinc-900/50 border border-white/5 flex flex-col items-center justify-center gap-2 text-center group hover:border-indigo-500/30 transition-colors">
                         <span class="text-[10px] font-bold uppercase text-zinc-600">Mémoire</span>
@@ -363,10 +363,8 @@ function confirmInstall() {
 // ... existing logic ...
 async function checkFavoriteStatus() {
   if (!game.value?.id) return;
-  try {
-    const favorites = await JeuxCracksAPI.getUserFavorites();
-    isFavorite.value = favorites.favorite_game_ids.includes(Number(game.value.id));
-  } catch (error) { console.error(error); }
+  // Use store source of truth
+  isFavorite.value = store.favorites.some(fid => String(fid) === String(game.value.id));
 }
 
 async function toggleFavorite() {
@@ -377,11 +375,14 @@ async function toggleFavorite() {
   }
   isLoadingFavorite.value = true;
   try {
-    await JeuxCracksAPI.toggleFavorite(Number(game.value.id));
-    isFavorite.value = !isFavorite.value;
-    notify({ type: 'success', title: 'Favoris', text: isFavorite.value ? 'Ajouté aux favoris' : 'Retiré des favoris' });
+    const success = await store.toggleFavorite(game.value.id);
+    if (success) {
+         isFavorite.value = !isFavorite.value;
+         notify({ type: 'success', title: 'Favoris', text: isFavorite.value ? 'Ajouté aux favoris' : 'Retiré des favoris' });
+    }
   } catch (error) {
     console.error(error);
+    notify({ type: 'error', title: 'Erreur', text: 'Action impossible' });
   } finally {
     isLoadingFavorite.value = false;
   }
@@ -486,43 +487,65 @@ async function updateInstallationStatus() {
 }
 
 async function fetchData(id: string | string[]) {
-  const response: any = await useFetch(`/Cracks/api/game/?format=json&id=${id}`);
-  if (response.code) {
-    error.value = response.message;
-  } else {
-    // Map response correctly based on API structure
-    const data = response.games && response.games.length > 0 ? response.games[0] : response.informations ? response : response;
-    
-    // Safety check for critical fields
-    game.value = {
-        id: data.id,
-        title: data.informations?.title || data.title || '',
-        header: data.urls?.header_image || data.header || '',
-        video: data.urls?.trailer || data.video || '',
-        description: data.descriptions?.full_description || data.description || '',
-        descriptionShort: data.descriptions?.short_description || '',
-        views: data.views || 0,
-        isOnline: data.status?.is_online || false,
-        source: data.source || '',
-        steam_id: data.steam_id || '',
-        download: {
-            torrent: data.urls?.torrent || null,
-            direct: data.urls?.direct || null
-        },
-        informations: {
-            developer: data.informations?.developer || 'N/A',
-            publisher: data.informations?.publisher || 'N/A',
-            release: data.status?.release_date || 'N/A'
-        },
-        categories: data.categories || []
-    };
-    
-    // Requirements Parsing
-    if (data.requirements?.minimum) configurationSystemMinimal.value = parseHTML(data.requirements.minimum);
-    if (data.requirements?.recommended) configurationSystemRecommended.value = parseHTML(data.requirements.recommended);
-    
-    await updateInstallationStatus();
-    loading.value = false;
+  try {
+      const response: any = await useFetch(`/Cracks/api/game/?format=json&id=${id}`);
+      if (response.code) {
+        error.value = response.message;
+        notify({ type: 'error', title: 'Erreur', text: response.message });
+      } else {
+        // Map response correctly based on API structure
+        const data = response.games && response.games.length > 0 ? response.games[0] : response.informations ? response : response;
+        
+        if (!data || !data.id) throw new Error('Données de jeu invalides');
+
+        // Requirements Parsing
+        if (data.requirements?.minimum) configurationSystemMinimal.value = parseHTML(data.requirements.minimum);
+        if (data.requirements?.recommended) configurationSystemRecommended.value = parseHTML(data.requirements.recommended);
+        
+        // Smart Size Extraction
+        let detectedSize = data.size || data.informations?.size || 0;
+        if (!detectedSize && data.requirements) {
+            const extract = (text: string) => {
+                if (!text) return null;
+                // Matches "Storage: 5 GB" or "Espace disque : 50 Go" etc
+                const match = text.match(/(?:Storage|Disque|Espace|Space|Hard Drive)[^0-9]*(\d+(?:[.,]\d+)?\s*(?:GB|MB|TB|Go|Mo|To))/i);
+                return match ? match[1] : null; // Returns string like "5 GB"
+            };
+            detectedSize = extract(configurationSystemMinimal.value) || extract(configurationSystemRecommended.value) || 0;
+        }
+
+        // Safety check for critical fields
+        game.value = {
+            id: data.id,
+            title: data.informations?.title || data.title || '',
+            header: data.urls?.header_image || data.header || '',
+            video: data.urls?.trailer || data.video || '',
+            description: data.descriptions?.full_description || data.description || '',
+            descriptionShort: data.descriptions?.short_description || '',
+            views: data.views || 0,
+            isOnline: data.status?.is_online || false,
+            source: data.source || '',
+            steam_id: data.steam_id || '',
+            download: {
+                torrent: data.urls?.torrent || null,
+                direct: data.urls?.direct || null
+            },
+            informations: {
+                developer: data.informations?.developer || 'N/A',
+                publisher: data.informations?.publisher || 'N/A',
+                release: data.status?.release_date || 'N/A'
+            },
+            categories: data.categories || [],
+            size: detectedSize
+        };
+        
+        await updateInstallationStatus();
+      }
+  } catch (err: any) {
+      console.error("Fetch Data Error:", err);
+      // ...
+  } finally {
+      loading.value = false;
   }
 }
 

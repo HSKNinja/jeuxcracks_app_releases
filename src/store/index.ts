@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia';
 import { useFetch } from '../utils/useFetch';
 
+declare global {
+  interface Window {
+    electronAPI?: {
+      invoke: (channel: string, ...args: any[]) => Promise<any>;
+    };
+  }
+}
+
 export const useMainStore = defineStore('main', {
   state: () => ({
     user: null as User | null,
@@ -10,7 +18,7 @@ export const useMainStore = defineStore('main', {
     _isSyncing: false,
   }),
   persist: {
-    paths: ['user', 'tokens', 'favorites'], // Ne pas persister la bibliothèque
+    paths: ['user', 'tokens', 'favorites'],
   },
   getters: {
     getTokens: (state) => state.tokens,
@@ -30,6 +38,7 @@ export const useMainStore = defineStore('main', {
     logout() {
       this.user = null;
       this.tokens = null;
+      this.favorites = [];
     },
     async verifyToken() {
       if (!this.tokens) return false;
@@ -37,23 +46,32 @@ export const useMainStore = defineStore('main', {
         await useFetch('/auth/api/token/verify/', 'POST', { token: this.tokens.access });
         return true;
       } catch (e) {
+        // Token invalide, mais peut-être refreshable ailleurs
         return false;
       }
     },
     async fetchUser() {
       if (!this.tokens) return;
       try {
+        // Force fresh fetch
         const user = await useFetch('/auth/api/user/me');
         this.user = user;
+        return user;
       } catch (e) {
         console.error('Failed to fetch user', e);
+        // If fetch fails (401), useFetch will trigger logout
       }
     },
     async updateProfile(data: any) {
       try {
         const updatedUser = await useFetch('/auth/api/user/me/change', 'PUT', data);
-        this.user = updatedUser;
-        return true;
+        if (updatedUser) {
+            this.user = updatedUser;
+            // Double check by re-fetching
+            await this.fetchUser();
+            return true;
+        }
+        return false;
       } catch (error) {
         console.error('Update profile failed', error);
         return false;
@@ -116,13 +134,30 @@ export const useMainStore = defineStore('main', {
             return false;
         }
     },
-    addFavorite(gameID: string) {
-      if (!this.favorites.find((fav) => fav === gameID)) {
-        this.favorites.push(gameID);
+    async toggleFavorite(gameID: string | number) {
+      if (!this.isAuthenticated) return false;
+      try {
+        await useFetch(`/Cracks/api/toggle_favorite/${gameID}/`, 'POST');
+        // Update local state intelligently to avoid full refetch delay
+        const id = Number(gameID);
+        const index = this.favorites.indexOf(id as never); // Handle string/number mismatch
+        
+        // If strict match fails, try string conversion check
+        const indexStr = this.favorites.findIndex(f => String(f) === String(id));
+        
+        if (indexStr !== -1) {
+            this.favorites.splice(indexStr, 1);
+        } else {
+            this.favorites.push(id as never);
+        }
+        
+        // Background sync to be sure
+        this.fetchFavorites(); 
+        return true;
+      } catch (e) {
+        console.error('Failed to toggle favorite', e);
+        return false;
       }
-    },
-    removeFavorite(gameID: string) {
-      this.favorites = this.favorites.filter((favorite) => favorite !== gameID);
     },
     addLibrary(game: GameInstalled) {
       if (!this.library.find((lib) => lib.id === game.id)) {

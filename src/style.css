@@ -64,12 +64,64 @@ body, html {
   @apply bg-zinc-800 rounded-full hover:bg-zinc-700;
 }
 
-/* Transitions */
+/* Organic Transitions */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.fade-enter-from,
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(15px) scale(0.98);
+}
 .fade-leave-to {
   opacity: 0;
+  transform: translateY(-5px) scale(0.99); /* Subtle exit */
 }
+
+/* Animations "Organiques" */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.02); opacity: 0.9; }
+}
+.animate-breathe {
+    animation: breathe 4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 3s infinite linear;
+}
+
+/* Global Interactive Polish */
+.hover-lift {
+    @apply transition-transform duration-300 ease-out;
+}
+.hover-lift:hover {
+    @apply -translate-y-1;
+}
+
+.btn-primary:active, .btn-ghost:active, .btn-icon:active, button:active {
+    @apply transform scale-95 transition-transform duration-150;
+}
+
+/* Enhanced Card */
+.card {
+    @apply bg-zinc-900/80 border border-zinc-800/60 rounded-xl transition-all duration-300 backdrop-blur-sm;
+}
+.card:hover {
+    @apply border-indigo-500/30 bg-zinc-800/80 -translate-y-1 shadow-lg shadow-indigo-500/5;
+}
+

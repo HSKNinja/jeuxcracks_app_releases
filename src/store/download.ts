@@ -26,6 +26,7 @@ interface Game {
   };
   monetization?: any;
   source?: any[];
+  size?: string | number;
 }
 
 interface Download {

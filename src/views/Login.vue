@@ -66,6 +66,8 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMainStore } from '../store';
+import { useNotification } from '@kyvg/vue3-notification';
+const { notify } = useNotification();
 import { useFetch } from '../utils/useFetch';
 import { API_CONFIG } from '../config/api';
 import { MinusIcon, XMarkIcon, Square2StackIcon } from '@heroicons/vue/24/outline';
@@ -118,19 +120,23 @@ const handleLogin = async () => {
 
     } catch (e: any) {
         console.error('Login error:', e);
+        let msg = 'Une erreur est survenue lors de la connexion.';
+        
         // Prioritize detailed messages from the server
         if (e.detail) {
-             error.value = e.detail;
+             msg = e.detail;
         } else if (e.data && e.data.detail) {
-             error.value = e.data.detail;
+             msg = e.data.detail;
         } else if (e.data && e.data.message) {
-             error.value = e.data.message;
+             msg = e.data.message;
+        } else if (e.message && e.message.includes('401')) {
+             msg = 'Identifiants incorrects.';
         } else if (e.message && e.message.includes('HTTP')) {
-             // Fallback to generic HTTP error if no specific detail
-             error.value = `Erreur de connexion (${e.message})`;
-        } else {
-             error.value = e.message || JSON.stringify(e);
+             msg = `Erreur de connexion (${e.message})`;
         }
+        
+        notify({ type: 'error', title: 'Erreur de connexion', text: msg });
+        error.value = msg; // Keep inline for accessibility/visibility
     } finally {
         loading.value = false;
     }
