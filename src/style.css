@@ -19,96 +19,360 @@
 
 /* --- THEME SHOP ANIMATIONS --- */
 
-/* 1. NEON PULSE FRAME */
-.frame-neon-blue {
-    border: 3px solid #6366f1;
-    border-radius: 50%;
-    box-shadow: 0 0 10px #6366f1, 0 0 20px #6366f1, inset 0 0 10px #6366f1;
-    animation: pulse-neon 2s infinite;
-}
-@keyframes pulse-neon {
-    0%, 100% { box-shadow: 0 0 10px #6366f1, 0 0 20px #6366f1, inset 0 0 10px #6366f1; opacity: 1; }
-    50% { box-shadow: 0 0 20px #6366f1, 0 0 40px #6366f1, inset 0 0 20px #6366f1; opacity: 0.8; }
-}
+/* --- V2 PREMIUM FRAMES --- */
 
-/* 2. GOLD HALO FRAME */
-.frame-gold-halo {
-    border: 2px solid #ffd700;
-    border-radius: 50%;
-    box-shadow: 0 0 15px #ffd700, 0 0 30px #ffaa00;
-    animation: rotate-gold 8s linear infinite;
-    position: relative;
-}
-.frame-gold-halo::before {
-    content: '';
+/* 1. NEON FLUX */
+.frame-neon-blue {
     position: absolute;
     inset: -5px;
     border-radius: 50%;
-    border-top: 2px solid #fff;
-    border-right: 2px solid transparent;
-    animation: spin 3s linear infinite;
+    box-shadow: 
+        0 0 10px #6366f1, 
+        inset 0 0 10px #6366f1,
+        0 0 20px #6366f1;
+    border: 2px solid rgba(99, 102, 241, 0.5);
+    animation: neon-breathe 3s ease-in-out infinite alternate;
+}
+@keyframes neon-breathe {
+    0% { box-shadow: 0 0 10px #6366f1, inset 0 0 5px #6366f1; opacity: 0.8; }
+    100% { box-shadow: 0 0 25px #6366f1, 0 0 50px #6366f1, inset 0 0 15px #6366f1; opacity: 1; border-color: #fff; }
 }
 
+/* 2. GOLDEN DIVINITY */
+.frame-gold-halo {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #ffd700, #fff, #ffd700, #b8860b, #ffd700);
+    padding: 3px; /* Border width */
+    -webkit-mask: 
+       linear-gradient(#fff 0 0) content-box, 
+       linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: spin 6s linear infinite;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+}
 
-/* 3. RGB SPIN FRAME */
+/* 3. RGB OVERDRIVE */
 .frame-rgb-spin {
     position: absolute;
-    inset: -3px;
+    inset: -4px;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, red, orange, yellow, green, blue, purple, red);
-    animation: spin 4s linear infinite;
-    mask: radial-gradient(transparent 60%, black 61%);
-    -webkit-mask: radial-gradient(transparent 60%, black 61%);
+    background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+    background-size: 400%;
+    animation: rgb-border 3s linear infinite;
+    z-index: 10;
+     -webkit-mask: 
+       linear-gradient(#fff 0 0) content-box, 
+       linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 3px;
+    filter: drop-shadow(0 0 10px rgba(124, 58, 237, 0.5));
 }
 
-/* 4. GLITCH FRAME */
+/* 4. GLITCH SYSTEM */
 .frame-glitch {
-    border: 2px solid white;
+    position: absolute;
+    inset: -4px;
     border-radius: 50%;
-    box-shadow: -2px -2px 0 #0ff, 2px 2px 0 #f0f;
-    animation: glitch-border 1s infinite steps(2);
+    border: 2px solid transparent;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+    animation: glitch-spin 4s infinite linear;
 }
-@keyframes glitch-border {
-    0% { box-shadow: -2px -2px 0 #0ff, 2px 2px 0 #f0f; transform: translate(0,0); }
-    25% { box-shadow: 2px 2px 0 #0ff, -2px -2px 0 #f0f; transform: translate(-1px, 1px); }
-    50% { box-shadow: -2px 2px 0 #0ff, 2px -2px 0 #f0f; transform: translate(1px, -1px); }
-    75% { box-shadow: 2px -2px 0 #0ff, -2px 2px 0 #f0f; transform: translate(0,0); }
+.frame-glitch::before, .frame-glitch::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 2px solid #0ff;
+    opacity: 0.8;
+    clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%);
+    animation: glitch-clip 2s infinite linear alternate-reverse;
+}
+.frame-glitch::after {
+    border-color: #f0f;
+    clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+    animation-duration: 1.5s;
+    animation-direction: alternate;
+}
+@keyframes glitch-clip {
+    0% { clip-path: polygon(0 0, 100% 0, 100% 10%, 0 10%); transform: translate(-2px, 0); }
+    50% { clip-path: polygon(0 40%, 100% 40%, 100% 50%, 0 50%); transform: translate(2px, 0); }
+    100% { clip-path: polygon(0 80%, 100% 80%, 100% 90%, 0 90%); transform: translate(-1px, 1px); }
 }
 
-/* 5. FIRE AURA FRAME */
+/* 5. HELLFIRE */
 .frame-fire-aura {
+    position: absolute;
+    inset: -5px;
     border-radius: 50%;
-    box-shadow: 0 -5px 10px #ffcc00, 0 -10px 20px #ff6600, 0 -15px 30px #ff0000;
-    animation: fire-flicker 0.5s infinite alternate;
+    background: radial-gradient(circle at 50% 120%, #ffff00, #ff0000 60%, transparent 80%);
+    filter: blur(5px);
+    opacity: 0.8;
+    mix-blend-mode: screen;
+    animation: fire-pulse 1s infinite alternate;
 }
-@keyframes fire-flicker {
-    0% { box-shadow: 0 -5px 10px #ffcc00, 0 -10px 20px #ff6600, 0 -15px 30px #ff0000; }
-    100% { box-shadow: 0 -7px 12px #ffcc00, 0 -12px 25px #ff6600, 0 -18px 35px #ff0000; }
+@keyframes fire-pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.05); opacity: 1; }
 }
 
-/* 6. CYBER TECH FRAME */
+/* 6. CYBER TECH */
 .frame-cyber {
+    position: absolute;
+    inset: -8px;
     border-radius: 50%;
-    border: 2px dashed #00ffd5;
-    box-shadow: 0 0 10px #00ffd5;
-    animation: spin-slow 10s linear infinite;
+    border: 1px solid rgba(0, 255, 213, 0.3);
+    box-shadow: 0 0 15px rgba(0, 255, 213, 0.2);
+}
+.frame-cyber::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border-top: 2px solid #00ffd5;
+    border-bottom: 2px solid #00ffd5;
+    animation: spin 4s linear infinite;
+}
+.frame-cyber::after {
+    content: '';
+    position: absolute;
+    inset: 4px; /* Inner ring */
+    border-radius: 50%;
+    border-left: 2px solid #00ffd5;
+    border-right: 2px solid #00ffd5;
+    animation: spin-reverse 6s linear infinite;
 }
 
-/* 7. VOID FRAME */
+/* 7. VOID EATER */
 .frame-void {
+    position: absolute;
+    inset: -10px;
     border-radius: 50%;
-    box-shadow: 0 0 50px black, inset 0 0 20px black;
-    background: black;
-    border: 1px solid #333;
+    background: #000;
+    z-index: -1;
+    box-shadow: 0 0 20px #000, 0 0 40px #4b0082;
+    animation: void-pulse 4s ease-in-out infinite;
+}
+@keyframes void-pulse {
+    0%, 100% { transform: scale(0.95); box-shadow: 0 0 20px #000, 0 0 40px #4b0082; }
+    50% { transform: scale(1.05); box-shadow: 0 0 40px #000, 0 0 80px #4b0082; }
 }
 
-/* 8. TOXIC FRAME */
+/* 8. TOXIC WASTE */
 .frame-toxic {
+    position: absolute;
+    inset: -5px;
     border-radius: 50%;
-    border: 3px solid #39ff14;
-    box-shadow: 0 0 15px #39ff14;
+    border: 2px dashed #39ff14;
+    box-shadow: 0 0 10px #39ff14, inset 0 0 10px #39ff14;
+    animation: spin 10s linear infinite;
+}
+.frame-toxic::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 80%, #39ff14 100%);
+    animation: spin 3s linear infinite;
+    opacity: 0.5;
+    filter: blur(4px);
+}
+
+/* --- NEW FRAMES V2.1 --- */
+
+/* 9. THUNDER GOD */
+.frame-thunder {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2px solid #5eb0ff;
+    box-shadow: 0 0 15px #0080ff;
+    animation: thunder-flash 3s infinite;
+}
+.frame-thunder::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: #fff;
+    border-bottom-color: #fff;
+    filter: drop-shadow(0 0 10px #00eaff);
+    animation: spin-crazy 2s linear infinite;
+}
+@keyframes thunder-flash {
+    0%, 90%, 100% { opacity: 1; box-shadow: 0 0 15px #0080ff; }
+    92% { opacity: 0.5; box-shadow: 0 0 50px #fff; }
+    94% { opacity: 1; box-shadow: 0 0 15px #0080ff; }
+    96% { opacity: 0.5; box-shadow: 0 0 50px #fff; }
+}
+@keyframes spin-crazy {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+/* 10. FROZEN HEART */
+.frame-ice {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2px solid #a8e6cf;
+    box-shadow: 0 0 10px #a8e6cf, inset 0 0 20px #2b4f60;
+    overflow: hidden;
+}
+.frame-ice::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(transparent, rgba(255, 255, 255, 0.4), transparent);
+    transform: rotate(45deg);
+    animation: ice-sheen 3s infinite;
+}
+@keyframes ice-sheen {
+    0% { transform: rotate(45deg) translateY(-100%); }
+    100% { transform: rotate(45deg) translateY(100%); }
+}
+
+/* --- CSS BANNERS --- */
+
+/* 1. MATRIX */
+.banner-matrix {
+    background-color: black;
+    background-image: linear-gradient(0deg, transparent 24%, rgba(32, 255, 77, .3) 25%, rgba(32, 255, 77, .3) 26%, transparent 27%, transparent 74%, rgba(32, 255, 77, .3) 75%, rgba(32, 255, 77, .3) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(32, 255, 77, .3) 25%, rgba(32, 255, 77, .3) 26%, transparent 27%, transparent 74%, rgba(32, 255, 77, .3) 75%, rgba(32, 255, 77, .3) 76%, transparent 77%, transparent);
+    background-size: 30px 30px;
+    animation: matrix-scroll 20s linear infinite;
+}
+@keyframes matrix-scroll {
+    from { background-position: 0 0; }
+    to { background-position: 0 1000px; }
+}
+
+/* 2. AURORA */
+.banner-aurora {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
     position: relative;
     overflow: hidden;
+}
+.banner-aurora::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(56, 239, 125, 0.2) 0%, transparent 60%), radial-gradient(circle, rgba(56, 189, 239, 0.2) 0%, transparent 60%);
+    animation: aurora-wave 10s infinite linear;
+    filter: blur(30px);
+}
+@keyframes aurora-wave {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 3. STARS */
+.banner-stars {
+    background: #000;
+    background-image: 
+        radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+        radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+        radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+    background-size: 550px 550px, 350px 350px, 250px 250px;
+    background-position: 0 0, 40px 60px, 130px 270px;
+    animation: stars-move 60s linear infinite;
+}
+@keyframes stars-move {
+    from { background-position: 0 0, 40px 60px, 130px 270px; }
+    to { background-position: 550px 550px, 390px 410px, 680px 820px; }
+}
+
+/* 4. LAVA */
+.banner-lava {
+    background: linear-gradient(45deg, #ff3300, #ff6600, #ff9900, #ff3300);
+    background-size: 400% 400%;
+    animation: lava-flow 10s ease infinite;
+}
+/* --- NEW EFFECTS V2.5 --- */
+
+/* GOLD TEXT */
+.text-effect-gold {
+    background: linear-gradient(to bottom, #cfc09f 22%, #634f2c 24%, #cfc09f 26%, #cfc09f 27%, #ffecb3 40%, #3a2c0f 78%); 
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: #fff;
+    font-weight: 800;
+    text-transform: uppercase;
+    text-shadow: 0px 0px 0px rgba(255, 255, 255, 0); 
+    position: relative;
+    animation: gold-shine 4s infinite linear;
+    background-size: 200%;
+}
+@keyframes gold-shine {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+}
+
+/* BLOOD TEXT */
+.text-effect-blood {
+    color: #8a0303;
+    text-shadow: 2px 2px 0px #220000;
+    font-family: 'Courier New', monospace; /* Creepy vibe */
+    letter-spacing: 2px;
+    animation: blood-pulse 2s infinite ease-in-out;
+}
+@keyframes blood-pulse {
+    0%, 100% { text-shadow: 2px 2px 0px #220000; }
+    50% { text-shadow: 2px 2px 4px #ff0000; color: #ff0000; }
+}
+
+/* LIGHTNING TEXT */
+.text-effect-lightning {
+    color: #fff;
+    text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff;
+    animation: lightning-flicker 2s infinite;
+}
+
+@keyframes lightning-flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
+    }
+    20%, 24%, 55% {
+        text-shadow: 0 0 20px #0ff, 0 0 40px #0ff;
+        color: #e0ffff;
+    }
+}
+
+/* --- NEW FRAMES V2.5 --- */
+
+/* PORTAL */
+.frame-portal {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #ff6600, #0000ff, #ff6600);
+    animation: spin 3s linear infinite;
+    filter: blur(2px);
+    opacity: 0.8;
+}
+
+/* ENERGY */
+.frame-energy {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, inset 0 0 10px #00ffff;
+    animation: energy-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes energy-pulse {
+    0% { box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, inset 0 0 10px #00ffff; }
+    100% { box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff, inset 0 0 20px #00ffff; }
 }
 
 /* --- TEXT EFFECTS --- */

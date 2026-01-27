@@ -214,6 +214,114 @@ export const SHOP_ITEMS: ShopItem[] = [
         price: 0
     },
 
+    // --- ANIMATED BANNERS (CSS & GIF) ---
+    {
+        id: 'banner_anim_matrix',
+        type: 'banner',
+        name: 'Matrix Code',
+        rarity: 'legendary',
+        isCssOnly: true,
+        cssClass: 'banner-matrix',
+        price: 0
+    },
+    {
+        id: 'banner_anim_aurora',
+        type: 'banner',
+        name: 'Aurora Borealis',
+        rarity: 'epic',
+        isCssOnly: true,
+        cssClass: 'banner-aurora',
+        price: 0
+    },
+    {
+        id: 'banner_anim_stars',
+        type: 'banner',
+        name: 'Hyperespace',
+        rarity: 'epic',
+        isCssOnly: true,
+        cssClass: 'banner-stars',
+        price: 0
+    },
+    {
+        id: 'banner_anim_lava',
+        type: 'banner',
+        name: 'Magma Flow',
+        rarity: 'rare',
+        isCssOnly: true,
+        cssClass: 'banner-lava',
+        price: 0
+    },
+    
+    // --- NEW EFFECTS ---
+    {
+        id: 'effect_gold',
+        type: 'pseudo_effect',
+        name: 'Or Massif',
+        description: 'Bling bling.',
+        rarity: 'legendary',
+        isCssOnly: true,
+        cssClass: 'text-effect-gold',
+        price: 0
+    },
+    {
+        id: 'effect_blood',
+        type: 'pseudo_effect',
+        name: 'Blood Moon',
+        description: 'Sanglant.',
+        rarity: 'rare',
+        isCssOnly: true,
+        cssClass: 'text-effect-blood',
+        price: 0
+    },
+    {
+        id: 'effect_lightning',
+        type: 'pseudo_effect',
+        name: 'Haute Tension',
+        description: 'Électrique.',
+        rarity: 'epic',
+        isCssOnly: true,
+        cssClass: 'text-effect-lightning',
+        price: 0
+    },
+
+    // --- NEW FRAMES ---
+    {
+        id: 'frame_portal',
+        type: 'avatar_frame',
+        name: 'Portail Dimensionnel',
+        rarity: 'mythic',
+        isCssOnly: true,
+        cssClass: 'frame-portal',
+        price: 0
+    },
+    {
+        id: 'frame_energy',
+        type: 'avatar_frame',
+        name: 'Energie Pure',
+        rarity: 'epic',
+        isCssOnly: true,
+        cssClass: 'frame-energy',
+        price: 0
+    },
+    {
+        id: 'frame_thunder',
+        type: 'avatar_frame',
+        name: 'Zeus Lightning',
+        rarity: 'legendary',
+        isCssOnly: true,
+        cssClass: 'frame-thunder',
+        price: 0
+    },
+    {
+        id: 'frame_ice',
+        type: 'avatar_frame',
+        name: 'Frozen Heart',
+        rarity: 'epic',
+        isCssOnly: true,
+        cssClass: 'frame-ice',
+        price: 0
+    },
+
     // --- MERYOUL EXCLUSIVES ---
     {
         id: 'frame_meryoul_spin',
@@ -237,6 +345,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     },
 
     // --- GLOBAL THEMES ---
+    {
+        id: 'theme_vaporwave',
+        type: 'global_theme',
+        name: 'Vaporwave',
+        rarity: 'rare',
+        isCssOnly: true,
+        cssClass: 'bg-gradient-to-br from-pink-500/20 via-purple-900/40 to-cyan-900/40',
+        price: 0
+    },
+    {
+        id: 'theme_sunset',
+        type: 'global_theme',
+        name: 'Sunset Drive',
+        rarity: 'common',
+        isCssOnly: true,
+        cssClass: 'bg-gradient-to-br from-orange-500/20 via-red-900/40 to-purple-900/40',
+        price: 0
+    },
     {
         id: 'theme_default',
         type: 'global_theme',

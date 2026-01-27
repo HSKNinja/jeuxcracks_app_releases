@@ -14,9 +14,13 @@
         <div class="md:col-span-2 relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-8 flex flex-col justify-between group transition-all duration-500" :class="{ 'meryoul-card': isMeryoul }">
              <!-- EQUIPPED BANNER -->
              <div v-if="themeStore.getEquippedBanner" class="absolute inset-0 z-0">
-                 <img :src="themeStore.getEquippedBanner.image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-60" />
-                 <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/50 to-transparent"></div>
-                 <div class="absolute inset-0 bg-black/20"></div>
+                 <!-- CSS Banner -->
+                 <div v-if="themeStore.getEquippedBanner.isCssOnly" class="absolute inset-0 opacity-60 group-hover:scale-105 transition-transform duration-700" :class="themeStore.getEquippedBanner.cssClass"></div>
+                 <!-- Image Banner -->
+                 <img v-else :src="themeStore.getEquippedBanner.image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-60" />
+                 
+                 <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/50 to-transparent pointer-events-none"></div>
+                 <div class="absolute inset-0 bg-black/20 pointer-events-none"></div>
              </div>
 
              <!-- Ambient Background -->
@@ -36,8 +40,12 @@
              <div class="relative z-10 flex flex-col md:flex-row gap-6 items-center md:items-start">
                  <!-- Avatar -->
                  <div class="relative group/avatar cursor-pointer" @click="triggerFileInput">
-                     <div class="w-24 h-24 rounded-full p-1 bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/10 transition-transform duration-500" :class="{ 'animate-spin-slow-reverse ring-4 ring-offset-2 ring-offset-black ring-red-500': isMeryoul }">
-                        <div class="w-full h-full rounded-full bg-black overflow-hidden relative">
+                     <!-- MAIN CONTAINER -->
+                     <div class="relative w-24 h-24 rounded-full flex items-center justify-center transition-transform duration-500" 
+                          :class="isMeryoul ? 'animate-spin-slow-reverse ring-4 ring-offset-2 ring-offset-black ring-red-500' : ''">
+                        
+                        <!-- AVATAR MASK -->
+                        <div class="w-full h-full rounded-full bg-black overflow-hidden relative z-10 border-2 border-zinc-800/50">
                             <img v-if="user?.profile_picture" :src="resolveAvatar(user.profile_picture)" class="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110" />
                             <div v-else class="w-full h-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">
                                 {{ user?.pseudo?.charAt(0).toUpperCase() || 'U' }}
@@ -48,14 +56,25 @@
                                 <CameraIcon class="w-6 h-6 text-white" />
                             </div>
                         </div>
+
+                        <!-- FRAMES (Shown only if NOT in Meryoul Mode) -->
+                        <template v-if="!isMeryoul">
+                            <!-- Image Frame -->
+                            <img v-if="themeStore.getEquippedFrame && !themeStore.getEquippedFrame.isCssOnly" 
+                                 :src="themeStore.getEquippedFrame.image" 
+                                 class="absolute -inset-[22%] w-[144%] h-[144%] max-w-none object-contain pointer-events-none z-20 drop-shadow-2xl" />
+                            
+                            <!-- CSS Frame -->
+                            <div v-if="themeStore.getEquippedFrame && themeStore.getEquippedFrame.isCssOnly"
+                                 class="pointer-events-none z-20"
+                                 :class="themeStore.getEquippedFrame.cssClass">
+                            </div>
+                        </template>
                      </div>
                      <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleImageUpload" />
                      
-                     <!-- EQUIPPED FRAME -->
-                     <img v-if="themeStore.getEquippedFrame" :src="themeStore.getEquippedFrame.image" class="absolute -inset-[1.15rem] w-[140%] h-[140%] max-w-none object-contain pointer-events-none z-20 drop-shadow-2xl" :class="themeStore.getEquippedFrame.cssClass" />
-
                      <!-- Premium Badge -->
-                     <div v-if="user?.is_vip" class="absolute -bottom-2 -right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/20">
+                     <div v-if="user?.is_vip" class="absolute -bottom-2 -right-2 z-30 bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/20">
                         PREMIUM
                      </div>
                  </div>

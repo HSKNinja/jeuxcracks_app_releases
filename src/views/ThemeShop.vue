@@ -62,10 +62,14 @@
                 </div>
 
                 <!-- BANNER PREVIEW -->
-                <div v-if="item.type === 'banner'" class="absolute inset-0">
-                    <img :src="item.image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] to-transparent"></div>
-                </div>
+    <div v-if="item.type === 'banner'" class="absolute inset-0 overflow-hidden">
+        <!-- CSS Banner -->
+        <div v-if="item.isCssOnly" class="absolute inset-0 transition-transform duration-700 group-hover:scale-110" :class="item.cssClass"></div>
+        <!-- Image Banner -->
+        <img v-else :src="item.image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+        
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] to-transparent pointer-events-none"></div>
+    </div>
                 
                 <!-- PSEUDO EFFECT PREVIEW -->
                 <div v-if="item.type === 'pseudo_effect'" class="flex items-center justify-center w-full h-full bg-zinc-900/50">
