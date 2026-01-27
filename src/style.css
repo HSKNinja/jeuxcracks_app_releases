@@ -2,69 +2,181 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-    --bg-app: #050505; /* Black */
-    --bg-card: #18181b; /* Zinc 900 */
-    --border-subtle: #27272a; /* Zinc 800 */
-    --accent: #6366f1; /* Indigo 500 */
-    --text-primary: #f4f4f5; /* Zinc 100 */
-    --text-secondary: #a1a1aa; /* Zinc 400 */
+@layer base {
+  :root {
+    --color-primary: #6366f1;
+    --color-secondary: #ec4899;
+    --color-bg-dark: #09090b;
+    --color-bg-card: #18181b;
+  }
+  
+  html {
+     font-family: 'Inter', system-ui, sans-serif;
+     background-color: var(--color-bg-dark);
+     color: white;
+  }
 }
 
-body, html {
-  @apply h-full bg-gradient-to-br from-[#050505] to-[#151515] text-zinc-100 font-sans antialiased overflow-hidden;
-  font-family: 'Outfit', sans-serif;
-  color: var(--text-primary);
+/* --- THEME SHOP ANIMATIONS --- */
+
+/* 1. NEON PULSE FRAME */
+.frame-neon-blue {
+    border: 3px solid #6366f1;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #6366f1, 0 0 20px #6366f1, inset 0 0 10px #6366f1;
+    animation: pulse-neon 2s infinite;
+}
+@keyframes pulse-neon {
+    0%, 100% { box-shadow: 0 0 10px #6366f1, 0 0 20px #6366f1, inset 0 0 10px #6366f1; opacity: 1; }
+    50% { box-shadow: 0 0 20px #6366f1, 0 0 40px #6366f1, inset 0 0 20px #6366f1; opacity: 0.8; }
 }
 
-#app {
-  @apply h-full w-full;
-  background: var(--bg-app);
+/* 2. GOLD HALO FRAME */
+.frame-gold-halo {
+    border: 2px solid #ffd700;
+    border-radius: 50%;
+    box-shadow: 0 0 15px #ffd700, 0 0 30px #ffaa00;
+    animation: rotate-gold 8s linear infinite;
+    position: relative;
+}
+.frame-gold-halo::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border-top: 2px solid #fff;
+    border-right: 2px solid transparent;
+    animation: spin 3s linear infinite;
 }
 
-/* Modern Card Utility */
-.card {
-    @apply bg-zinc-900 border border-zinc-800 rounded-xl transition-all duration-200;
-}
-.card:hover {
-    @apply border-zinc-700 bg-zinc-800/50;
+
+/* 3. RGB SPIN FRAME */
+.frame-rgb-spin {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, red, orange, yellow, green, blue, purple, red);
+    animation: spin 4s linear infinite;
+    mask: radial-gradient(transparent 60%, black 61%);
+    -webkit-mask: radial-gradient(transparent 60%, black 61%);
 }
 
-/* Typography Utilities */
-.h1 {
-    @apply text-3xl font-bold tracking-tight text-white mb-2;
+/* 4. GLITCH FRAME */
+.frame-glitch {
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: -2px -2px 0 #0ff, 2px 2px 0 #f0f;
+    animation: glitch-border 1s infinite steps(2);
 }
-.h2 {
-    @apply text-xl font-semibold tracking-tight text-white mb-4;
-}
-.subtext {
-    @apply text-sm text-zinc-400;
-}
-
-/* Button Utilities */
-.btn-primary {
-    @apply px-4 py-2 bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-colors shadow-sm;
-}
-.btn-ghost {
-    @apply px-4 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors;
-}
-.btn-icon {
-    @apply p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors;
+@keyframes glitch-border {
+    0% { box-shadow: -2px -2px 0 #0ff, 2px 2px 0 #f0f; transform: translate(0,0); }
+    25% { box-shadow: 2px 2px 0 #0ff, -2px -2px 0 #f0f; transform: translate(-1px, 1px); }
+    50% { box-shadow: -2px 2px 0 #0ff, 2px -2px 0 #f0f; transform: translate(1px, -1px); }
+    75% { box-shadow: 2px -2px 0 #0ff, -2px 2px 0 #f0f; transform: translate(0,0); }
 }
 
-/* Custom Scrollbar (Minimal) */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* 5. FIRE AURA FRAME */
+.frame-fire-aura {
+    border-radius: 50%;
+    box-shadow: 0 -5px 10px #ffcc00, 0 -10px 20px #ff6600, 0 -15px 30px #ff0000;
+    animation: fire-flicker 0.5s infinite alternate;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-zinc-800 rounded-full hover:bg-zinc-700;
+@keyframes fire-flicker {
+    0% { box-shadow: 0 -5px 10px #ffcc00, 0 -10px 20px #ff6600, 0 -15px 30px #ff0000; }
+    100% { box-shadow: 0 -7px 12px #ffcc00, 0 -12px 25px #ff6600, 0 -18px 35px #ff0000; }
 }
 
-/* Organic Transitions */
+/* 6. CYBER TECH FRAME */
+.frame-cyber {
+    border-radius: 50%;
+    border: 2px dashed #00ffd5;
+    box-shadow: 0 0 10px #00ffd5;
+    animation: spin-slow 10s linear infinite;
+}
+
+/* 7. VOID FRAME */
+.frame-void {
+    border-radius: 50%;
+    box-shadow: 0 0 50px black, inset 0 0 20px black;
+    background: black;
+    border: 1px solid #333;
+}
+
+/* 8. TOXIC FRAME */
+.frame-toxic {
+    border-radius: 50%;
+    border: 3px solid #39ff14;
+    box-shadow: 0 0 15px #39ff14;
+    position: relative;
+    overflow: hidden;
+}
+
+/* --- TEXT EFFECTS --- */
+
+/* 1. GLITCH TEXT */
+.text-effect-glitch {
+    position: relative;
+    color: white;
+    text-shadow: 2px 0 #ff0080, -2px 0 #00ff00;
+    animation: glitch-text-anim 0.5s infinite;
+}
+@keyframes glitch-text-anim {
+   0% { transform: translate(0); text-shadow: 2px 0 #ff0080, -2px 0 #00ff00; }
+   25% { transform: translate(1px, 1px); text-shadow: -2px 0 #ff0080, 2px 0 #00ff00; }
+   50% { transform: translate(-1px, 0); }
+   75% { transform: translate(0, -1px); }
+   100% { transform: translate(0); }
+}
+
+/* 2. FIRE TEXT */
+.text-effect-fire {
+    background: linear-gradient(to top, #ff9900, #ff0000);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 -2px 4px #ff0000;
+    animation: fire-text 1s infinite alternate;
+}
+
+/* 3. RAINBOW TEXT */
+.text-effect-rainbow {
+    background: linear-gradient(90deg, red, orange, yellow, green, blue, purple, red);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: rainbow-move 3s linear infinite;
+    font-weight: 900;
+}
+@keyframes rainbow-move {
+    0% { background-position: 0%; }
+    100% { background-position: 200%; }
+}
+
+/* 4. NEON GLOW TEXT */
+.text-effect-neon {
+    color: #fff;
+    text-shadow: 0 0 5px #fff, 0 0 10px #0ff, 0 0 20px #0ff;
+}
+
+/* 5. GHOST TEXT */
+.text-effect-ghost {
+    color: rgba(255,255,255,0.5);
+    text-shadow: 0 0 10px rgba(255,255,255,0.5);
+    animation: ghost-float 2s ease-in-out infinite;
+}
+@keyframes ghost-float {
+    0%, 100% { transform: translateY(0); opacity: 0.5; }
+    50% { transform: translateY(-3px); opacity: 0.8; }
+}
+
+/* Utility Animations */
+.animate-spin-slow {
+    animation: spin 8s linear infinite;
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Global Transitions */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -75,10 +187,37 @@ body, html {
 }
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(-5px) scale(0.99); /* Subtle exit */
+  transform: translateY(-5px) scale(0.99);
 }
 
-/* Animations "Organiques" */
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+}
+
+/* Enhanced Card */
+.card {
+    @apply bg-zinc-900/80 border border-zinc-800/60 rounded-xl transition-all duration-300 backdrop-blur-sm;
+}
+.card:hover {
+    @apply border-indigo-500/30 bg-zinc-800/80 -translate-y-1 shadow-lg shadow-indigo-500/5;
+}
+
+/* Organic Interactions */
+.btn-primary:active, .btn-ghost:active, .btn-icon:active, button:active {
+    @apply transform scale-95 transition-transform duration-150;
+}
+
 @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-5px); }
@@ -104,24 +243,3 @@ body, html {
     background-size: 200% 100%;
     animation: shimmer 3s infinite linear;
 }
-
-/* Global Interactive Polish */
-.hover-lift {
-    @apply transition-transform duration-300 ease-out;
-}
-.hover-lift:hover {
-    @apply -translate-y-1;
-}
-
-.btn-primary:active, .btn-ghost:active, .btn-icon:active, button:active {
-    @apply transform scale-95 transition-transform duration-150;
-}
-
-/* Enhanced Card */
-.card {
-    @apply bg-zinc-900/80 border border-zinc-800/60 rounded-xl transition-all duration-300 backdrop-blur-sm;
-}
-.card:hover {
-    @apply border-indigo-500/30 bg-zinc-800/80 -translate-y-1 shadow-lg shadow-indigo-500/5;
-}
-

@@ -14,6 +14,8 @@ import Premium from "../views/Premium.vue";
 import DMCA from "../views/DMCA.vue";
 import { useMainStore } from '../store'
 
+import ThemeShop from "../views/ThemeShop.vue";
+
 const routes = [
     {
         path: "/",
@@ -25,6 +27,12 @@ const routes = [
         path: "/catalogue",
         name: "Catalogue",
         component: Catalog,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: "/shop",
+        name: "Magasin",
+        component: ThemeShop,
         meta: { requiresAuth: true }
     },
     {

@@ -26,6 +26,10 @@
             <FolderIcon class="w-5 h-5" />
             <span>Bibliothèque</span>
         </router-link>
+        <router-link to="/shop" class="nav-item">
+            <ShoppingBagIcon class="w-5 h-5" />
+            <span>Boutique</span>
+        </router-link>
       </div>
 
       <!-- Section 2 -->
@@ -69,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { HomeIcon, RectangleStackIcon, FolderIcon, ArrowDownTrayIcon, UserCircleIcon, HeartIcon } from '@heroicons/vue/24/outline';
+import { HomeIcon, RectangleStackIcon, FolderIcon, ArrowDownTrayIcon, UserCircleIcon, HeartIcon, ShoppingBagIcon } from '@heroicons/vue/24/outline';
 import { API_CONFIG } from '../../config/api';
 import { useDownloadStore } from '../../store/download';
 import { useMainStore } from '../../store';

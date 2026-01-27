@@ -12,8 +12,26 @@
         
         <!-- LARGE CARD: Profile Info (Span 2 cols) -->
         <div class="md:col-span-2 relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-8 flex flex-col justify-between group transition-all duration-500" :class="{ 'meryoul-card': isMeryoul }">
+             <!-- EQUIPPED BANNER -->
+             <div v-if="themeStore.getEquippedBanner" class="absolute inset-0 z-0">
+                 <img :src="themeStore.getEquippedBanner.image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-60" />
+                 <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/50 to-transparent"></div>
+                 <div class="absolute inset-0 bg-black/20"></div>
+             </div>
+
              <!-- Ambient Background -->
              <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16"></div>
+
+             <!-- Meryoul Toggle -->
+             <div v-if="userHasMeryoulGroup" class="absolute top-4 right-4 z-20">
+                 <button 
+                    @click="showMeryoulMode = !showMeryoulMode"
+                    class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-all duration-300"
+                    :class="showMeryoulMode ? 'bg-red-500 text-white border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'"
+                 >
+                    {{ showMeryoulMode ? 'Mode PGM : ON' : 'Mode PGM : OFF' }}
+                 </button>
+             </div>
              
              <div class="relative z-10 flex flex-col md:flex-row gap-6 items-center md:items-start">
                  <!-- Avatar -->
@@ -33,6 +51,9 @@
                      </div>
                      <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleImageUpload" />
                      
+                     <!-- EQUIPPED FRAME -->
+                     <img v-if="themeStore.getEquippedFrame" :src="themeStore.getEquippedFrame.image" class="absolute -inset-[1.15rem] w-[140%] h-[140%] max-w-none object-contain pointer-events-none z-20 drop-shadow-2xl" :class="themeStore.getEquippedFrame.cssClass" />
+
                      <!-- Premium Badge -->
                      <div v-if="user?.is_vip" class="absolute -bottom-2 -right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/20">
                         PREMIUM
@@ -42,7 +63,14 @@
                  <!-- Info -->
                  <div class="text-center md:text-left space-y-2 flex-1">
                      <div class="flex items-center justify-center md:justify-start gap-3 flex-wrap">
-                        <h2 class="text-3xl font-bold text-white transition-all" :class="{ 'glitch-text text-4xl': isMeryoul }" :data-text="user?.pseudo">{{ user?.pseudo }}</h2>
+                        <h2 class="text-3xl font-bold text-white transition-all" 
+                            :class="[
+                                isMeryoul ? 'glitch-text text-4xl' : '',
+                                themeStore.getEquippedPseudoEffect ? themeStore.getEquippedPseudoEffect.cssClass : ''
+                            ]" 
+                            :data-text="user?.pseudo">
+                            {{ user?.pseudo }}
+                        </h2>
                         <!-- Rôles -->
                         <div class="flex items-center gap-2 flex-wrap">
                             <span v-if="user?.is_staff || user?.is_superuser" class="px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold tracking-wide">STAFF</span>
@@ -295,6 +323,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue';
 import { useMainStore } from '../store';
+import { useThemeStore } from '../store/theme';
 import { useRouter } from 'vue-router';
 import { API_CONFIG } from '../config/api';
 // Components unused
@@ -318,6 +347,7 @@ import {
 
 const store = useMainStore();
 const router = useRouter();
+const themeStore = useThemeStore(); // Import Theme Store
 const user = computed(() => store.user);
 const libraryCount = computed(() => store.library.length);
 const favoritesCount = computed(() => store.favorites.length);
@@ -329,12 +359,18 @@ const isEditing = ref(false);
 const isSuggestionOpen = ref(false);
 const fileInput = ref<HTMLInputElement|null>(null);
 
-const isMeryoul = computed(() => {
+const showMeryoulMode = ref(true); // Default ON
+
+const userHasMeryoulGroup = computed(() => {
     const groups = user.value?.temporary_group_name;
     if (!groups) return false;
     // Check case insensitive
-    if (Array.isArray(groups)) return groups.some(g => g.toLowerCase() === 'meryoul');
-    return groups.toLowerCase() === 'meryoul';
+    if (Array.isArray(groups)) return groups.some(g => g.toLowerCase().includes('meryoul'));
+    return groups.toLowerCase().includes('meryoul');
+});
+
+const isMeryoul = computed(() => {
+    return userHasMeryoulGroup.value && showMeryoulMode.value;
 });
 
 const editForm = ref({ pseudo: '' });
