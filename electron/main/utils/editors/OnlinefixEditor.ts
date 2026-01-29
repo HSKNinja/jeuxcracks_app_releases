@@ -103,12 +103,11 @@ export class OnlineFixEditor implements EditorInterface {
     console.log(`📦 Extraction: ${fileName} (Fix: ${isFixFile})`);
     
     // Utiliser le service d'installation qui gère le worker thread
-    await installService.runRAR(filePath, fileName, gameData, 'online-fix.me');
+    const finalPath = await installService.runRAR(filePath, fileName, gameData, 'online-fix.me');
     
     // Si c'est la dernière étape (jeu principal), ajouter à la bibliothèque
     if (!isFixFile) {
-        this.addToLibrary(filePath, gameData);
-        installService.installFinished(filePath, gameData);
+        installService.installFinished(finalPath as string, gameData);
     }
   };
 
@@ -124,39 +123,5 @@ export class OnlineFixEditor implements EditorInterface {
     }
   };
 
-  private addToLibrary = (gamePath: string, gameData: Game): void => {
-    try {
-      const libraryPath = join(app.getPath('userData'), 'downloads', 'index.json');
-      
-      // Créer le fichier s'il n'existe pas
-      if (!fs.existsSync(libraryPath)) {
-        fs.writeFileSync(libraryPath, JSON.stringify([]));
-      }
-      
-      // Lire la bibliothèque existante
-      const libraryData = fs.readFileSync(libraryPath, 'utf8');
-      const library = JSON.parse(libraryData);
-      
-      // Vérifier si le jeu existe déjà
-      const existingGame = library.find((game: any) => game.id === gameData.id);
-      
-      if (!existingGame) {
-        // Ajouter le nouveau jeu
-        const newGame: GameInstalled = {
-          id: gameData.id,
-          title: gameData.title,
-          path: gamePath,
-        };
-        
-        library.push(newGame);
-        
-        // Sauvegarder la bibliothèque
-        fs.writeFileSync(libraryPath, JSON.stringify(library, null, 2));
-        
-        console.log('📚 Jeu ajouté à la bibliothèque:', gameData.title);
-      }
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'ajout à la bibliothèque:', error);
-      }
-  };
+
 }

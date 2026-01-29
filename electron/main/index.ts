@@ -5,6 +5,7 @@ import { join, dirname } from 'path';
 import { rootPath } from 'electron-root-path';
 import * as fs from 'fs/promises';
 import { client } from './services/torrentService';
+import { libraryService } from './services/libraryService';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 
@@ -240,26 +241,108 @@ ipcMain.handle('write-file', async (_event, path, data, encoding = 'utf8') => {
 });
 
 ipcMain.handle('read-downloads', async () => {
+  let legacyGames: any[] = [];
   const path = join(app.getPath('userData'), 'downloads', 'index.json');
+  
+  // 1. Read Legacy
   try {
     const data = await fs.readFile(path, { encoding: 'utf8' });
-    
-    // Vérifier si le fichier est vide
-    if (!data || data.trim() === '') {
-      return '[]';
+    if (data && data.trim() !== '') {
+      legacyGames = JSON.parse(data);
     }
-    
-    // Retourner directement la chaîne JSON au lieu de la parser
-    return data;
   } catch (e) {
-    console.error('Error reading downloads file:', e);
-    // Si le fichier n'existe pas ou erreur de lecture, retourner un tableau vide
-    return '[]';
+    // Legacy file missing or invalid is fine
   }
+
+  // 2. Read New Library
+  const newGames = libraryService.getInstalledGames();
+  const formattedNewGames = newGames.map(g => ({
+      id: g.id,
+      title: g.title,
+      path: g.installPath || g.exePath || '', // Frontend expects 'path'
+      // Add other fields if necessary
+      finished: true,
+      ...g
+  }));
+
+  // 3. Merge (New overrides Legacy by ID)
+  // Create a map by ID
+  const gameMap = new Map();
+  
+  // Add legacy first
+  legacyGames.forEach(g => gameMap.set(g.id, g));
+  
+  // Add/Override with new
+  formattedNewGames.forEach(g => gameMap.set(g.id, g));
+  
+  // Return as JSON string
+  const merged = Array.from(gameMap.values());
+  return JSON.stringify(merged);
 });
 
 ipcMain.on('remove-game', async (e, gameID: string) => {
   try {
+    // 1. Nouvelle méthode via LibraryService
+    const libGame = libraryService.getGameInfo(gameID);
+    if (libGame) {
+        if (libGame.installPath) {
+            try {
+                // Robust delete with retries
+                const maxRetries = 5;
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        if ((await fs.stat(libGame.installPath).catch(() => null))) {
+                            await fs.rm(libGame.installPath, { recursive: true, force: true });
+                            console.log('🗑️ Fichiers supprimés (Library):', libGame.installPath);
+                        }
+                        break;
+                    } catch (err: any) {
+                        if (i === maxRetries - 1) throw err;
+                        if (err.code === 'EBUSY' || err.code === 'EPERM') {
+                            console.log(`⚠️ EBUSY lors de la suppression, nouvelle tentative (${i + 1}/${maxRetries})...`);
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        } else {
+                            throw err;
+                        }
+                    }
+                }
+                
+                // Nettoyage récursif des parents vides
+                try {
+                    let currentPath = dirname(libGame.installPath);
+                    const libraries = libraryService.getLibraries();
+                    
+                    // On remonte tant qu'on n'est pas à la racine d'une bibliothèque
+                    while (true) {
+                        const isLibRoot = libraries.some(l => l.path.replace(/\\/g, '/').toLowerCase() === currentPath.replace(/\\/g, '/').toLowerCase());
+                        if (isLibRoot) break; // Sécurité : on ne supprime jamais la racine de la bibliothèque
+                        
+                        // Sécurité anti boucle infinie (si on atteint la racine du disque)
+                        if (dirname(currentPath) === currentPath) break;
+
+                        const siblings = await fs.readdir(currentPath);
+                        if (siblings.length === 0) {
+                            await fs.rmdir(currentPath);
+                            console.log('🗑️ Dossier parent vide supprimé:', currentPath);
+                            currentPath = dirname(currentPath);
+                        } else {
+                            // Le dossier n'est pas vide, on arrête
+                            break;
+                        }
+                    }
+                } catch (e) { 
+                    console.error('Erreur lors du nettoyage des dossiers parents:', e);
+                }
+            } catch (err) {
+                console.error('Erreur suppression fichiers:', err);
+            }
+        }
+        libraryService.removeGame(gameID);
+        getMainWindow()?.webContents.send('game-removed', gameID);
+        return;
+    }
+
+    // 2. Legacy Method
     // Lire le fichier downloads/index.json
     const path = join(app.getPath('userData'), 'downloads', 'index.json');
     const data = await fs.readFile(path, 'utf8');

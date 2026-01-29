@@ -59,7 +59,7 @@ export const useMainStore = defineStore('main', {
         return user;
       } catch (e) {
         console.error('Failed to fetch user', e);
-        // If fetch fails (401), useFetch will trigger logout
+        throw e;
       }
     },
     async updateProfile(data: any) {

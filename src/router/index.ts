@@ -126,7 +126,13 @@ router.beforeEach((to, from, next) => {
     // Refresh user data periodically or on navigation to critical pages
     if (isAuthenticated) {
         // We catch errors to avoid blocking navigation if API fails
-        store.fetchUser().catch(e => console.error('Bg user fetch error', e))
+        store.fetchUser().catch(e => {
+            console.error('Bg user fetch error', e);
+            // If the fetch caused a logout (e.g. 401 Refresh Failed), redirect to login
+            if (!store.isAuthenticated) {
+                router.push({ name: 'Login' });
+            }
+        });
     }
 
     next()

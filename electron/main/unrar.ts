@@ -35,7 +35,7 @@ parentPort.on('message', async (data) => {
       }
     }
 
-    fs.unlinkSync(filePath);
+    // fs.unlinkSync(filePath); // Let the main process handle cleanup
     parentPort.postMessage('done');
   } catch (error) {
     parentPort.postMessage(`error: ${error.message}`);

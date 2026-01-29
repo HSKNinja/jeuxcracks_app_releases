@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { getMainWindow } from '..';
 import { installService } from './installService';
+import { libraryService } from './libraryService';
 import sudo from 'sudo-prompt';
 
 class LaunchService {
@@ -12,32 +13,17 @@ class LaunchService {
       console.log(`📡 Événement launch-game reçu pour le jeu ID: ${gameID}`);
       this.runGame(event, gameID);
     });
-    // Créer le répertoire downloads s'il n'existe pas
-    const downloadsPath = join(app.getPath('userData'), 'downloads');
-    if (!fs.existsSync(downloadsPath)) {
-      fs.mkdirSync(downloadsPath, { recursive: true });
-    }
   }
 
   private async waitForGameInJson(gameID: string, maxTries = 30, delayMs = 500): Promise<any> {
-    console.log(`🔍 Attente du jeu ${gameID} dans le fichier JSON...`);
+    console.log(`🔍 Attente du jeu ${gameID} dans la bibliothèque...`);
     for (let i = 0; i < maxTries; i++) {
-      try {
-        const data = fs.readFileSync(join(app.getPath('userData'), 'downloads', 'index.json'), { encoding: 'utf-8' });
-        const installed = JSON.parse(data);
-        // Compare IDs as strings to avoid number/string mismatch
-        const gameData = installed.find((game) => String(game.id) === String(gameID));
+        const gameData = libraryService.getGameInfo(gameID);
         if (gameData) {
-          console.log(`✅ Jeu ${gameID} trouvé dans le fichier JSON après ${i + 1} tentatives`);
-          return gameData;
-        } else if (i === 0) {
-             console.log(`ℹ️ IDs disponibles dans le JSON:`, installed.map(g => g.id));
+            console.log(`✅ Jeu ${gameID} trouvé dans la bibliothèque`);
+            return gameData;
         }
-      } catch (e) {
-        console.log(`⚠️ Erreur lors de la lecture du fichier JSON (tentative ${i + 1}):`, e);
-      }
-      console.log(`⏳ Tentative ${i + 1}/${maxTries} - Attente de ${delayMs}ms...`);
-      await new Promise(res => setTimeout(res, delayMs));
+        await new Promise(res => setTimeout(res, delayMs));
     }
     console.log(`❌ Jeu ${gameID} non trouvé après ${maxTries} tentatives`);
     return null;
@@ -99,19 +85,20 @@ class LaunchService {
     try {
       console.log(`🚀 Tentative de lancement du jeu ID: ${gameID}`);
       
-      // Attendre que le jeu soit bien présent dans le JSON
       const gameData = await this.waitForGameInJson(gameID);
       if (!gameData) {
         const win = getMainWindow();
-        console.error(`❌ Jeu ${gameID} non trouvé dans la bibliothèque après attente`);
-        win?.webContents.send('error', `Jeu non trouvé dans la bibliothèque (ID: ${gameID}). Veuillez réessayer dans quelques secondes.`);
+        win?.webContents.send('error', `Jeu non trouvé dans la bibliothèque (ID: ${gameID}).`);
         return;
       }
       
-      console.log(`✅ Jeu trouvé: ${gameData.title} dans ${gameData.path}`);
+      // Adapt field names for LibraryService (installPath instead of path, exePath instead of exeFile)
+      const originalPath = gameData.installPath || gameData.path;
+      const storedExe = gameData.exePath || gameData.exeFile;
+
+      console.log(`✅ Jeu trouvé: ${gameData.title} dans ${originalPath}`);
 
       const win = getMainWindow();
-      const originalPath = gameData.path;
       
       // Vérifier que le dossier existe
       if (!fs.existsSync(originalPath)) {
@@ -134,17 +121,20 @@ class LaunchService {
       
       console.log(`✅ Exécutables trouvés dans: ${originalPath}`);
 
-      if (gameData.exeFile) {
-        // exeFile peut être un chemin relatif (ex: 'Content Warning\\Content Warning.exe')
-        console.log(`🎯 Exécutable spécifique trouvé: ${gameData.exeFile}`);
-        const exePath = join(originalPath, gameData.exeFile);
+      if (storedExe) {
+        let exePath = storedExe;
+        if (!storedExe.includes(':') && !storedExe.startsWith('/')) {
+             exePath = join(originalPath, storedExe);
+        }
+
+        console.log(`🎯 Exécutable spécifique: ${exePath}`);
+        
         if (fs.existsSync(exePath)) {
           console.log(`✅ Exécutable trouvé et existe: ${exePath}`);
           const exeDir = join(exePath, '..');
           this.runEXE(exeDir, exePath.split(/[\\/]/).pop());
         } else {
           console.log(`❌ Exécutable spécifique non trouvé: ${exePath}`);
-          // Si on ne le trouve pas, on relance la recherche de tous les .exe
           this.findEXE(originalPath, gameData);
         }
       } else {
@@ -154,7 +144,7 @@ class LaunchService {
     } catch (error) {
       console.error('❌ Erreur lors du lancement du jeu:', error);
       const win = getMainWindow();
-      win?.webContents.send('error', `Erreur lors du lancement du jeu: ${error.message || error}`);
+      win?.webContents.send('error', `Erreur lors du lancement du jeu: ${error && typeof error === 'object' && 'message' in error ? error.message : error}`);
     }
   };
   private runEXE = (path, fileName) => {
@@ -207,20 +197,8 @@ class LaunchService {
   };
   
   private saveExeChoice = (gameID: string, exeFile: string) => {
-    try {
-      const data = fs.readFileSync(join(app.getPath('userData'), 'downloads', 'index.json'), { encoding: 'utf-8' });
-      const installed = JSON.parse(data);
-      const gameIndex = installed.findIndex((game) => game.id === gameID);
-      if (gameIndex !== -1) {
-        // Sauvegarder le chemin relatif (ou le nom du fichier) dans exeFile
-        installed[gameIndex].exeFile = exeFile;
-        fs.writeFileSync(join(app.getPath('userData'), 'downloads', 'index.json'), JSON.stringify(installed, null, 2));
-        console.log('💾 Choix de fichier exécutable sauvegardé:', exeFile);
-        console.log('📁 Chemin du jeu dans le JSON:', installed[gameIndex].path);
-      }
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde du choix:', error);
-    }
+      libraryService.updateGameExe(gameID, exeFile);
+      console.log('💾 Choix de fichier exécutable sauvegardé via LibraryService:', exeFile);
   };
   
   private findExeRecursively = (startPath: string, exeName: string): string | null => {
@@ -319,6 +297,10 @@ class LaunchService {
     const files = fs.readdirSync(dir);
     for (const file of files) {
       const filePath = join(dir, file);
+      // Skip archives and temp files to avoid EPERM on locked files and speed up scan
+      if (file.endsWith('.rar') || file.endsWith('.zip') || file.endsWith('.7z') || file.endsWith('.tmp')) {
+          continue;
+      }
       try {
         const stat = fs.statSync(filePath);
         if (stat.isDirectory()) {

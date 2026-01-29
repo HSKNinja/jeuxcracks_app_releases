@@ -213,15 +213,29 @@
         <p class="text-zinc-500 text-sm mb-8 font-medium">Sélectionnez le dossier d'installation pour <span class="text-white">{{ game?.title }}</span>.</p>
         
         <div class="space-y-6">
-            <div 
-                class="flex items-center justify-between p-5 bg-black border border-zinc-800 rounded-xl cursor-pointer hover:border-indigo-500/50 hover:bg-zinc-900 transition-all group"
-                @click="dialogPath"
-            >
-                <div>
-                    <p class="text-[10px] font-black text-zinc-600 uppercase mb-1 tracking-widest">Chemin actuel</p>
-                    <p class="text-sm font-mono text-zinc-300 truncate max-w-[250px] group-hover:text-white transition-colors">{{ destPath }}</p>
-                </div>
-                <FolderOpenIcon class="w-6 h-6 text-zinc-600 group-hover:text-indigo-400 transition-colors" />
+            <!-- Libraries List -->
+            <div class="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
+                 <div 
+                    v-for="lib in libraries" 
+                    :key="lib.id"
+                    @click="selectedLibraryId = lib.id"
+                    class="flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all"
+                    :class="selectedLibraryId === lib.id ? 'bg-indigo-600/10 border-indigo-500' : 'bg-black border-zinc-800 hover:bg-zinc-900'"
+                 >
+                    <div class="flex items-center gap-3">
+                         <FolderOpenIcon class="w-5 h-5" :class="selectedLibraryId === lib.id ? 'text-indigo-400' : 'text-zinc-600'" />
+                         <div>
+                             <div class="text-sm font-bold" :class="selectedLibraryId === lib.id ? 'text-white' : 'text-zinc-300'">{{ lib.label }}</div>
+                             <div class="text-[10px] text-zinc-500 font-mono">{{ lib.path }}</div>
+                         </div>
+                    </div>
+                    <div v-if="selectedLibraryId === lib.id" class="w-4 h-4 rounded-full bg-indigo-500 border-2 border-black"></div>
+                 </div>
+                 
+                 <!-- Add New -->
+                 <button @click="addLibrary" class="w-full py-3 text-xs font-bold text-zinc-500 hover:text-white border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl transition-colors">
+                     + Ajouter une bibliothèque
+                 </button>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -305,6 +319,8 @@ const destPath = ref<string>('');
 
 // Popup State
 const showInstallModal = ref(false);
+const libraries = ref<any[]>([]);
+const selectedLibraryId = ref<string>('');
 
 // --- IPC LISTENERS ---
 window.electronAPI?.invoke('get-save-path').then((path: string) => {
@@ -352,12 +368,52 @@ function handleInstallClick() {
     }
     
     // NEW INSTALL -> SHOW POPUP
+    fetchLibraries();
     showInstallModal.value = true;
 }
 
 function confirmInstall() {
+    const lib = libraries.value.find(l => l.id === selectedLibraryId.value);
+    if (!lib) {
+        notify({ type: 'error', text: 'Veuillez sélectionner une bibliothèque' });
+        return;
+    }
+    
+    // Construct Path: Library + GameTitle (Sanitized)
+    const sanitizedTitle = game.value?.title?.replace(/[^a-z0-9]/gi, '_').replace(/_{2,}/g, '_');
+    // Using forward slashes for consistency
+    destPath.value = (lib.path + '/' + sanitizedTitle).replace(/\\/g, '/');
+    
     showInstallModal.value = false;
     startDownload();
+}
+
+async function fetchLibraries() {
+    if (window.electronAPI) {
+        libraries.value = await window.electronAPI.invoke('get-libraries');
+        // Select default if no selection
+        if (!selectedLibraryId.value) {
+            const def = libraries.value.find(l => l.isDefault) || libraries.value[0];
+            if (def) selectedLibraryId.value = def.id;
+        }
+    }
+}
+
+async function addLibrary() {
+     try {
+        if (window.electronAPI) {
+            const path = await window.electronAPI.invoke('open-dialog', { properties: ['openDirectory'] });
+            if (path) {
+                const updated = await window.electronAPI.invoke('add-library', path);
+                if (updated) {
+                    libraries.value = updated;
+                    // Auto select the new one (it's the last one usually, or find by path)
+                    const newLib = updated.find((l:any) => l.path === path);
+                    if (newLib) selectedLibraryId.value = newLib.id;
+                }
+            }
+        }
+    } catch (e) { console.error(e); }
 }
 
 // ... existing logic ...
@@ -437,15 +493,15 @@ async function deleteGame() {
   if (installStore.isInstallExist(game.value?.id)) {
       if (installStore.isFinished(game.value?.id)) window.electronAPI?.send('remove-game', game.value?.id);
       installStore.removeInstallById(game.value?.id);
-      window.electronAPI?.send('delete-game', destPath.value + '/' + game.value?.title);
+      // Wait, delete-game expects path... ensure we have it
+      const path = installed.value?.path || (destPath.value + '/' + game.value?.title);
+      window.electronAPI?.send('delete-game', path);
   }
   vfm.close(modalSettings);
 }
 
-async function dialogPath() {
-  const savePath = await window.electronAPI?.invoke('open-dialog', { properties: ['openDirectory'] });
-  if (savePath) destPath.value = savePath;
-}
+// Removed dialogPath as it is replaced by addLibrary
+// async function dialogPath() { ... }
 
 // Rewritten primarily for Resume/Play logic, Start logic is handled by Main Button -> Popup -> startDownload
 async function beforeDownload() {
@@ -555,15 +611,26 @@ function parseHTML(html: string) {
 
 async function isInstalled(id: string) {
   try {
-    const downloads = await window.electronAPI?.invoke('read-downloads');
-    if (!downloads || downloads === '[]') return false;
-    const games = JSON.parse(downloads);
-    if (games.some((g: any) => g.id == id)) {
-        installed.value = games.find((g: any) => g.id == id);
+    const isInstalledBool = await window.electronAPI?.invoke('is-game-installed', id);
+    if (isInstalledBool) {
+        // If installed, try to get info
+        const info = await window.electronAPI?.invoke('get-game-install-info', id);
+        if (info) {
+             installed.value = {
+                 id: info.id,
+                 title: info.title,
+                 path: info.installPath,
+                 executable: info.exePath
+             };
+        }
         return true;
     }
+    installed.value = null;
     return false;
-  } catch (e) { return false; }
+  } catch (e) { 
+      installed.value = null;
+      return false; 
+  }
 }
 
 function prettyBites(bytes: number) {

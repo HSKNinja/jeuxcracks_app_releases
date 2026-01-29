@@ -5,42 +5,22 @@ import * as fs from 'fs';
 import { GameInstaller } from '../utils/GameInstaller';
 import { rootPath } from 'electron-root-path';
 import { getMainWindow } from '..';
+import { libraryService } from './libraryService';
+
 class InstallService {
   private gameInstaller = new GameInstaller();
 
   constructor() {
     ipcMain.handle('is-game-installed', this.isGameInstalled);
     ipcMain.on('set-exe-file', this.setEXEFile);
-    // Créer le répertoire downloads s'il n'existe pas
-    const downloadsPath = join(app.getPath('userData'), 'downloads');
-    if (!fs.existsSync(downloadsPath)) {
-      fs.mkdirSync(downloadsPath, { recursive: true });
-    }
   }
-  private isGameInstalled(_, gameID: string) {
-    const data = fs.readFileSync(join(app.getPath('userData'), 'downloads', 'index.json'), { encoding: 'utf-8' });
-    const installed = JSON.parse(data);
-    if (installed.find((game) => game.id === gameID)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-  private setEXEFile(_, gameID: string, exePath: string) {
-    try {
-      // Lire le fichier downloads/index.json
-      const data: string = fs.readFileSync(join(app.getPath('userData'), 'downloads', 'index.json'), { encoding: 'utf-8' });
-      let installed = JSON.parse(data);
 
-      // Trouver le jeu et mettre à jour le fichier exe
-      const gameIndex = installed.findIndex((game) => game.id === gameID);
-      if (gameIndex !== -1) {
-        installed[gameIndex].exeFile = exePath;
-        fs.writeFileSync(join(app.getPath('userData'), 'downloads', 'index.json'), JSON.stringify(installed));
-      }
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du fichier exe:', error);
-    }
+  private isGameInstalled(_, gameID: string) {
+      return libraryService.isGameInstalled(gameID);
+  }
+
+  private setEXEFile(_, gameID: string, exePath: string) {
+      libraryService.updateGameExe(gameID, exePath);
   }
 
   public installGame = async (gameData: Game, path: string) => {
@@ -158,24 +138,29 @@ class InstallService {
       }
     }
   };
+
   public installFinished = async (filePath: string, gameData: Game): Promise<void> => {
-    const newGameData: GameInstalled = {
+    // Determine which library this path belongs to, or just check default
+    const libraries = libraryService.getLibraries();
+    const matchedLib = libraries.find(lib => filePath.replace(/\\/g, '/').startsWith(lib.path.replace(/\\/g, '/'))) || libraries[0];
+
+    libraryService.registerInstalledGame({
+        id: gameData.id,
+        title: gameData.title,
+        installPath: filePath,
+        libraryId: matchedLib.id,
+        installDate: new Date().toISOString()
+    });
+
+    const newGameData = {
       id: gameData.id,
       title: gameData.title,
       path: filePath,
     };
-    this.addGameInIndex(filePath, newGameData);
     const win = getMainWindow();
     win?.webContents.send('install-done', newGameData);
   };
-  private addGameInIndex = (savePath: string, gameData: GameInstalled) => {
-    const data: string = fs.readFileSync(join(app.getPath('userData'), 'downloads', 'index.json'), { encoding: 'utf-8' });
-    const installed: GameInstalled[] = JSON.parse(data);
-    if (!installed.find((game) => game.id === gameData.id)) {
-      installed.push(gameData);
-    }
-    fs.writeFileSync(join(app.getPath('userData'), 'downloads', 'index.json'), JSON.stringify(installed));
-  };
+
   async runRAR(path: string, fileName: string, gameData: any, password?: string) {
     const win = getMainWindow();
     win?.webContents.send('install-progress', { progress: 0, message: 'Extraction en cours...', gameID: gameData?.id });
@@ -197,17 +182,140 @@ class InstallService {
       console.log('👷 Démarrage du worker unrar:', workerPath, 'pour le jeu:', gameData?.title);
 
       const { Worker } = require('worker_threads');
-      const worker = new Worker(workerPath, {
-         // If using .ts in dev, might need execArgv: ['-r', 'ts-node/register'] 
-         // But usually electron-vite handles this. 
-      });
+      const worker = new Worker(workerPath, {});
+      let isFinished = false;
 
       worker.on('message', (message) => {
         if (message === 'done') {
-          console.log('✅ Extraction terminée');
+          isFinished = true;
+          console.log('✅ Extraction terminée', workerPath);
           win?.webContents.send('install-progress', { progress: 100, message: 'Extraction terminée', gameID: gameData?.id });
-          worker.terminate();
-          resolve(true);
+          
+          // Cleanup RAR (with retry)
+          const rarPath = join(path, fileName);
+          const cleanup = async () => {
+             for(let i=0; i<5; i++) {
+                 try {
+                     if(fs.existsSync(rarPath)) {
+                         fs.unlinkSync(rarPath);
+                         console.log('🗑️ Archive RAR supprimée:', rarPath);
+                     }
+                     break;
+                 } catch(e) {
+                     console.log(`⚠️ Echec suppression RAR (tentative ${i+1}):`, e.message);
+                     await new Promise(r => setTimeout(r, 1000));
+                 }
+             }
+          };
+          
+          cleanup().then(async () => {
+              // Deep Flattening Strategy
+              let finalPath = path;
+              try {
+                  // 1. Define Target Root (Library/GameName)
+                  // 'path' is usually Library/GameName/TorrentName. We want Library/GameName.
+                  // But check if 'path' IS already the root (unlikely for OnlineFix).
+                  // Safest: Try to move to 'path/..' if 'path' seems to be a wrapper.
+                  const parentDir = join(path, '..');
+                  
+                  // 2. Find the "Real" Content Root
+                  // Search recursively downwards until we find a folder with multiple files or .exe
+                  // (ignoring 'Fix Repair', txt, archives)
+                  const findContentRoot = (currentPath: string): string => {
+                      if (!fs.existsSync(currentPath)) return currentPath;
+                      if (!fs.lstatSync(currentPath).isDirectory()) return currentPath;
+
+                      const items = fs.readdirSync(currentPath);
+                      const validItems = items.filter(f => 
+                           f !== 'Fix Repair' && f !== fileName &&
+                           !f.endsWith('.rar') && !f.endsWith('.zip') &&
+                           !f.endsWith('.txt') && !f.endsWith('.url') && !f.endsWith('.ini')
+                      );
+
+                      // If single valid folder, go deeper
+                      if (validItems.length === 1 && fs.lstatSync(join(currentPath, validItems[0])).isDirectory()) {
+                          return findContentRoot(join(currentPath, validItems[0]));
+                      }
+                      
+                      // Otherwise, this is the root
+                      return currentPath;
+                  };
+
+                  const sourceRoot = findContentRoot(path);
+                  
+                  // 3. Move Content from SourceRoot to ParentDir
+                  // Only if SourceRoot is deeper than ParentDir
+                  if (sourceRoot.startsWith(parentDir) && sourceRoot !== parentDir) {
+                      console.log(`🚀 Deep Flatten: Déplacement de ${sourceRoot} vers ${parentDir}`);
+                      
+                      // A. Rescue "Fix Repair" from intermediate folders (e.g. path)
+                      // "Fix Repair" might be in 'path' (TorrentFolder) but not in 'sourceRoot' (GameSubFolder)
+                      if (path !== sourceRoot && fs.existsSync(path)) {
+                          const potentialFix = join(path, 'Fix Repair');
+                          if (fs.existsSync(potentialFix)) {
+                              console.log('🔧 Sauvetage du dossier Fix Repair...');
+                              try {
+                                  fs.renameSync(potentialFix, join(parentDir, 'Fix Repair'));
+                              } catch(e) { console.error('Echec déplacement Fix Repair:', e); }
+                          }
+                      }
+
+                      // B. Move Game Files
+                      const itemsToMove = fs.readdirSync(sourceRoot);
+                      for(const item of itemsToMove) {
+                          const src = join(sourceRoot, item);
+                          const dest = join(parentDir, item);
+                          
+                          // Retry loop for move
+                          for(let k=0; k<5; k++) {
+                              try {
+                                  // Overwrite/Merge handling
+                                  if (fs.existsSync(dest)) {
+                                      const destStat = fs.lstatSync(dest);
+                                      if (destStat.isDirectory()) {
+                                         // If dest dir exists, we can't just renameSync over it.
+                                         console.warn(`⚠️ Collision dossier ${item}, ignoré.`); 
+                                      } else {
+                                          fs.unlinkSync(dest); // Overwrite file
+                                          fs.renameSync(src, dest);
+                                      }
+                                  } else {
+                                      fs.renameSync(src, dest);
+                                  }
+                                  break;
+                              } catch(err: any) {
+                                  if (k===4) console.warn(`⚠️ Echec déplacement ${item}:`, err.message);
+                                  await new Promise(r => setTimeout(r, 500));
+                              }
+                          }
+                      }
+                      
+                      // 4. Cleanup old structure (SourceRoot up to ParentDir)
+                      try {
+                          // Allow some time for locks to release
+                          await new Promise(r => setTimeout(r, 1000));
+                          
+                          // We delete 'path' (TorrentFolder)
+                          // Safe bet: Delete 'path' if it's not ParentDir.
+                          if (path !== parentDir && fs.existsSync(path)) {
+                                try {
+                                    fs.rmSync(path, { recursive: true, force: true });
+                                } catch(cleanupErr: any) {
+                                    console.warn('⚠️ Impossible de supprimer le dossier temporaire (fichiers verrouillés ?):', cleanupErr.message);
+                                    // This is not fatal, the game is installed.
+                                }
+                          }
+                      } catch(e) { console.warn('Nettoyage post-aplatissement incomplet:', e); }
+
+                      finalPath = parentDir;
+                  }
+
+              } catch (e) {
+                  console.error('Erreur critique aplatissement:', e);
+              }
+              
+              resolve(finalPath);
+          });
         } else if (message.startsWith('error:')) {
           console.error('❌ Erreur worker:', message);
           win?.webContents.send('error', 'Erreur lors de l\'extraction: ' + message);
