@@ -141,32 +141,46 @@
              </div>
         </div>
 
-        <!-- STATS CARD: Library -->
-        <div class="relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-6 flex flex-col justify-center items-center group cursor-default hover:border-indigo-500/30 transition-colors">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-2 group-hover:scale-110 transition-transform duration-500">
-                <ComputerDesktopIcon class="w-6 h-6" />
+        <!-- STATS ROW (Library, Favorites, Playtime, Suggestion) -->
+        <div class="lg:col-span-3 grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            
+            <!-- STATS CARD: Library -->
+            <div class="relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-6 flex flex-col justify-center items-center group cursor-default hover:border-indigo-500/30 transition-colors">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-2 group-hover:scale-110 transition-transform duration-500">
+                    <ComputerDesktopIcon class="w-6 h-6" />
+                </div>
+                <div class="text-4xl font-bold text-white mb-1">{{ libraryCount }}</div>
+                <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center">Jeux Installés</div>
             </div>
-            <div class="text-4xl font-bold text-white mb-1">{{ libraryCount }}</div>
-            <div class="text-xs font-medium text-zinc-500 uppercase tracking-widest">Jeux Installés</div>
-        </div>
 
-        <!-- STATS CARD: Favorites -->
-        <div class="relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-6 flex flex-col justify-center items-center group cursor-default hover:border-pink-500/30 transition-colors">
-             <div class="w-12 h-12 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-400 mb-2 group-hover:scale-110 transition-transform duration-500">
-                <HeartIcon class="w-6 h-6" />
+            <!-- STATS CARD: Favorites -->
+            <div class="relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-6 flex flex-col justify-center items-center group cursor-default hover:border-pink-500/30 transition-colors">
+                <div class="w-12 h-12 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-400 mb-2 group-hover:scale-110 transition-transform duration-500">
+                    <HeartIcon class="w-6 h-6" />
+                </div>
+                <div class="text-4xl font-bold text-white mb-1">{{ favoritesCount }}</div>
+                <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center">Favoris</div>
             </div>
-            <div class="text-4xl font-bold text-white mb-1">{{ favoritesCount }}</div>
-            <div class="text-xs font-medium text-zinc-500 uppercase tracking-widest">Favoris</div>
-        </div>
 
-        <!-- ACTION CARD: Suggestion (Small) -->
-        <button @click="isSuggestionOpen = true" class="relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-6 flex flex-col justify-center items-center group hover:border-indigo-500 hover:bg-indigo-500/5 transition-all duration-300">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center text-white mb-2 shadow-lg shadow-indigo-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                <ChatBubbleLeftRightIcon class="w-6 h-6" />
+            <!-- STATS CARD: Playtime -->
+            <div class="relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-6 flex flex-col justify-center items-center group cursor-default hover:border-emerald-500/30 transition-colors">
+                 <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-2 group-hover:scale-110 transition-transform duration-500">
+                    <ClockIcon class="w-6 h-6" />
+                </div>
+                <div class="text-2xl font-bold text-white mb-1 break-all text-center">{{ prettyMilliseconds(totalStats.totalTimePlayedMs) }}</div>
+                <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center">Temps de jeu</div>
             </div>
-            <div class="text-lg font-bold text-white mb-1">Une idée ?</div>
-            <div class="text-xs font-medium text-zinc-500 group-hover:text-indigo-400 transition-colors uppercase tracking-widest">Suggérer</div>
-        </button>
+
+            <!-- ACTION CARD: Suggestion -->
+            <button @click="isSuggestionOpen = true" class="relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-6 flex flex-col justify-center items-center group hover:border-indigo-500 hover:bg-indigo-500/5 transition-all duration-300">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center text-white mb-2 shadow-lg shadow-indigo-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
+                    <ChatBubbleLeftRightIcon class="w-6 h-6" />
+                </div>
+                <div class="text-lg font-bold text-white mb-1">Une idée ?</div>
+                <div class="text-[10px] font-bold text-zinc-500 group-hover:text-indigo-400 transition-colors uppercase tracking-widest text-center">Suggérer</div>
+            </button>
+
+        </div>
 
     </div>
 
@@ -460,7 +474,8 @@ import {
     TrashIcon,
     XMarkIcon,
     StarIcon,
-    ScaleIcon
+    ScaleIcon,
+    ClockIcon
 } from '@heroicons/vue/24/solid';
 
 const store = useMainStore();
@@ -476,6 +491,7 @@ const libraries = ref<any[]>([]);
 const isEditing = ref(false);
 const isSuggestionOpen = ref(false);
 const fileInput = ref<HTMLInputElement|null>(null);
+const totalStats = ref({ totalLaunches: 0, totalTimePlayedMs: 0 });
 
 const showMeryoulMode = ref(true); // Default ON
 
@@ -577,6 +593,33 @@ const setAsDefault = async (id: string) => {
     }
 };
 
+const fetchTotalStats = async () => {
+    const userId = store.user?.id || 'anonymous';
+    console.log('📊 Fetching total stats for user:', userId);
+    
+    if (window.electronAPI) {
+        try {
+            totalStats.value = await window.electronAPI.invoke('get-total-user-stats', userId);
+            console.log('✅ Total stats received:', totalStats.value);
+        } catch(e) { console.error(e); }
+    }
+};
+
+function prettyMilliseconds(ms: number) {
+  if (!ms) return '0h 0m';
+  const sec = Math.floor(ms / 1000);
+  const min = Math.floor(sec / 60);
+  const hour = Math.floor(min / 60);
+  
+  if (hour > 0) return `${hour}h ${min % 60}m`;
+  return `${min}m`;
+}
+
+onMounted(async () => { 
+    await store.fetchFavorites();
+    await fetchLibraries();
+    await fetchTotalStats();
+});
 </script>
 
 <style scoped>

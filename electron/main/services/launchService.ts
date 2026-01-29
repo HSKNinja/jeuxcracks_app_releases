@@ -5,13 +5,17 @@ import { spawn } from 'child_process';
 import { getMainWindow } from '..';
 import { installService } from './installService';
 import { libraryService } from './libraryService';
+import { gameStatsService } from './gameStatsService';
 import sudo from 'sudo-prompt';
 
 class LaunchService {
   constructor() {
-    ipcMain.on('launch-game', (event, gameID) => {
-      console.log(`📡 Événement launch-game reçu pour le jeu ID: ${gameID}`);
-      this.runGame(event, gameID);
+    ipcMain.on('launch-game', (event, gameID, userId) => {
+      const effectiveUserId = userId || 'anonymous';
+      if (!userId) console.warn('⚠️ UserId manquant or falsy, utilisation de "anonymous" pour les stats.');
+      
+      console.log(`📡 Événement launch-game reçu pour le jeu ID: ${gameID} (User: ${effectiveUserId})`);
+      this.runGame(event, gameID, effectiveUserId);
     });
   }
 
@@ -81,7 +85,7 @@ class LaunchService {
     return false;
   }
 
-  private runGame = async (_, gameID) => {
+  private runGame = async (_, gameID, userId) => {
     try {
       console.log(`🚀 Tentative de lancement du jeu ID: ${gameID}`);
       
@@ -132,14 +136,14 @@ class LaunchService {
         if (fs.existsSync(exePath)) {
           console.log(`✅ Exécutable trouvé et existe: ${exePath}`);
           const exeDir = join(exePath, '..');
-          this.runEXE(exeDir, exePath.split(/[\\/]/).pop());
+          this.runEXE(exeDir, exePath.split(/[\\/]/).pop(), gameID, userId);
         } else {
           console.log(`❌ Exécutable spécifique non trouvé: ${exePath}`);
-          this.findEXE(originalPath, gameData);
+          this.findEXE(originalPath, gameData, userId);
         }
       } else {
         console.log(`🔍 Aucun exécutable spécifique, recherche de tous les .exe`);
-        this.findEXE(originalPath, gameData);
+        this.findEXE(originalPath, gameData, userId);
       }
     } catch (error) {
       console.error('❌ Erreur lors du lancement du jeu:', error);
@@ -147,7 +151,7 @@ class LaunchService {
       win?.webContents.send('error', `Erreur lors du lancement du jeu: ${error && typeof error === 'object' && 'message' in error ? error.message : error}`);
     }
   };
-  private runEXE = (path, fileName) => {
+  private runEXE = (path, fileName, gameID: string, userId?: string) => {
     const win = getMainWindow();
     const executable = fileName;
     const executablePath = join(path, executable);
@@ -157,6 +161,11 @@ class LaunchService {
     console.log('📄 Nom du fichier exécutable:', fileName);
     console.log('🔗 Chemin complet:', executablePath);
     console.log('📂 Le fichier existe:', fs.existsSync(executablePath));
+
+    // Stats: Increment Launch
+    if (userId && gameID) {
+        gameStatsService.incrementLaunch(userId, gameID);
+    }
     
     try {
       // Utiliser spawn au lieu de sudo sur Windows
@@ -166,6 +175,8 @@ class LaunchService {
         stdio: 'ignore' // Ignorer stdin/stdout/stderr
       });
       
+      const startTime = Date.now();
+
       // Détacher complètement le processus enfant
       child.unref();
       
@@ -175,6 +186,13 @@ class LaunchService {
       // Écouter la fermeture du processus
       child.on('close', (code) => {
         console.log('🎮 Jeu fermé avec le code:', code);
+        
+        // Stats: Add Playtime
+        if (userId && gameID) {
+            const duration = Date.now() - startTime;
+            gameStatsService.addPlaytime(userId, gameID, duration);
+        }
+
         win?.webContents.send('game-closed');
       });
       
@@ -188,11 +206,24 @@ class LaunchService {
       win?.webContents.send('error', `Erreur lors du lancement: ${error.message}`);
     }
   };
-  private findEXE = (path, gameData) => {
+  private findEXE = (path, gameData, userId?) => {
     const win = getMainWindow();
     const executables: string[] = [];
     this.collectExecutablesRecursively(path, executables, path);
     // On envoie tous les .exe trouvés (chemin relatif)
+    // IMPORTANT: On doit passer userId à la fenetre pour qu'elle le renvoie lors du choix final,
+    // OU ALORS, on stocke userId quelque part.
+    // LE PLUS SIMPLE: La fenetre de choix renvoie 'launch-game' avec un exe spécifique.
+    // MAIS ici 'find-many-exe' est un event pour la popup de choix d'exe.
+    // La popup de choix va rappeller `save-exe-choice` ou relancer launch-game?
+    // Non, il semble que la logique de choix d'exe soit gérée coté front qui va re-trigger un launch-game avec l'exe choisi?
+    // Vérifions le front `game.vue`.
+    
+    // Si c'est le front qui gère, il a déjà le userId.
+    // Si la logique de choix passe par IPC `launch-game` avec un nouvel argument exe, alors ça marchera car App.vue passe userId.
+    
+    // CEPENDANT, si `findEXE` échoue et ouvre `openFileDialog`, là on a besoin de userId.
+    
     win?.webContents.send('find-many-exe', executables, gameData.id, gameData.path, gameData.title);
   };
   
@@ -223,7 +254,7 @@ class LaunchService {
     }
   };
   
-  private findAllExecutablesRecursively = (startPath: string, gameData: any) => {
+  private findAllExecutablesRecursively = (startPath: string, gameData: any, userId?: string) => {
     console.log('🔍 Recherche de tous les fichiers .exe dans:', startPath);
     const win = getMainWindow();
     const executables: string[] = [];
@@ -238,11 +269,11 @@ class LaunchService {
       } else {
         console.log('❌ Aucun fichier .exe trouvé, ouverture de l\'explorateur');
         // Aucun fichier .exe trouvé, ouvrir l'explorateur
-        this.openFileDialog(startPath, gameData);
+        this.openFileDialog(startPath, gameData, userId);
       }
     } catch (error) {
       console.error('Erreur lors de la recherche de tous les exécutables:', error);
-      this.openFileDialog(startPath, gameData);
+      this.openFileDialog(startPath, gameData, userId);
     }
   };
   
@@ -318,7 +349,7 @@ class LaunchService {
     }
   };
   
-  private openFileDialog = async (path: string, gameData: any) => {
+  private openFileDialog = async (path: string, gameData: any, userId?: string) => {
     try {
       const result = await dialog.showOpenDialog({
         title: 'Sélectionner le fichier exécutable',
@@ -338,7 +369,7 @@ class LaunchService {
         this.saveExeChoice(gameData.id, fileName);
         
         // Lancer le jeu
-        this.runEXE(path, fileName);
+        this.runEXE(path, fileName, gameData.id, userId);
       }
     } catch (error) {
       console.error('Erreur lors de la sélection du fichier:', error);

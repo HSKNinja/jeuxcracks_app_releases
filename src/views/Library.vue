@@ -83,7 +83,13 @@
                 <div class="absolute inset-0 p-6 flex flex-col justify-end z-30 pointer-events-none">
                     <h4 class="text-2xl font-black text-white uppercase tracking-tight leading-none mb-2 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">{{ game.name || game.title }}</h4>
                     <div class="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
-                        <span class="text-[10px] bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Prêt à jouer</span>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px] bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded font-bold uppercase tracking-wider w-fit">Prêt à jouer</span>
+                            <div v-if="userStats[game.id]" class="flex items-center gap-2 text-[10px] text-zinc-400 font-medium">
+                                <span class="flex items-center gap-1"><ClockIcon class="w-3 h-3" /> {{ prettyMilliseconds(userStats[game.id].totalTimePlayedMs) }}</span>
+                                <span class="flex items-center gap-1"><RocketLaunchIcon class="w-3 h-3" /> {{ userStats[game.id].totalLaunches }}</span>
+                            </div>
+                        </div>
                         <button @click.stop="launchGame(game)" class="pointer-events-auto flex items-center justify-center w-10 h-10 bg-white text-black rounded-full hover:scale-110 hover:bg-indigo-500 hover:text-white transition-all shadow-lg"><PlayIcon class="w-5 h-5 ml-0.5" /></button>
                     </div>
                 </div>
@@ -109,6 +115,9 @@
                 </div>
                 <div class="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
                      <h4 class="text-xs font-bold text-white uppercase truncate">{{ game.name || game.title }}</h4>
+                     <div v-if="userStats[game.id]" class="flex items-center gap-2 text-[9px] text-zinc-400 mt-0.5">
+                        <ClockIcon class="w-3 h-3" /> {{ prettyMilliseconds(userStats[game.id].totalTimePlayedMs) }}
+                     </div>
                 </div>
             </div>
         </div>
@@ -124,7 +133,13 @@
                 </div>
                 <div class="flex-1 min-w-0">
                      <h4 class="text-sm font-bold text-white uppercase truncate">{{ game.name || game.title }}</h4>
-                     <p class="text-[10px] text-zinc-500 font-medium">Installé</p>
+                     <div class="flex items-center gap-3 mt-0.5">
+                        <p class="text-[10px] text-zinc-500 font-medium">Installé</p>
+                        <div v-if="userStats[game.id]" class="flex items-center gap-2 text-[10px] text-zinc-500">
+                             <span class="flex items-center gap-1"><ClockIcon class="w-3 h-3" /> {{ prettyMilliseconds(userStats[game.id].totalTimePlayedMs) }}</span>
+                             <span class="flex items-center gap-1 border-l border-zinc-700 pl-2"><RocketLaunchIcon class="w-3 h-3" /> {{ userStats[game.id].totalLaunches }}</span>
+                        </div>
+                     </div>
                 </div>
                 <div class="flex items-center gap-2 pr-4 opacity-0 group-hover:opacity-100 transition-opacity">
                      <button @click.stop="openLocation(game)" class="p-2 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white" title="Dossier"><FolderIcon class="w-4 h-4" /></button>
@@ -144,7 +159,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMainStore } from '../store';
 import { useFetch } from '../utils/useFetch';
-import { PlayIcon, ArrowPathIcon, FolderIcon, EllipsisVerticalIcon, Squares2X2Icon, ListBulletIcon, RectangleGroupIcon } from '@heroicons/vue/24/solid';
+import { PlayIcon, ArrowPathIcon, FolderIcon, EllipsisVerticalIcon, Squares2X2Icon, ListBulletIcon, RectangleGroupIcon, ClockIcon, RocketLaunchIcon } from '@heroicons/vue/24/solid';
 
 const router = useRouter();
 const store = useMainStore();
@@ -153,9 +168,21 @@ const viewMode = ref<'grid' | 'covers' | 'list'>('grid');
 
 // Local state to hold enriched data (merged store + api)
 const enrichedGames = ref<any[]>([]);
+const userStats = ref<Record<string, any>>({});
+
+function prettyMilliseconds(ms: number) {
+  if (!ms) return '0h 0m';
+  const sec = Math.floor(ms / 1000);
+  const min = Math.floor(sec / 60);
+  const hour = Math.floor(min / 60);
+  
+  if (hour > 0) return `${hour}h ${min % 60}m`;
+  return `${min}m`;
+}
 
 // Fetch missing metadata for games
 const enrichLibrary = async () => {
+    // ... existing enrich logic ...
     for (const game of enrichedGames.value) {
         if (!game.header && !game.icon && game.id) {
             try {
@@ -173,6 +200,20 @@ const enrichLibrary = async () => {
             } catch (e) {
                 console.error(`Failed to enrich game ${game.id}`, e);
             }
+        }
+    }
+};
+
+const fetchStats = async () => {
+    const userId = store.user?.id || 'anonymous';
+    console.log('📊 Fetching stats for user:', userId, 'Store User:', store.user);
+    
+    if ((window as any).electronAPI) {
+        try {
+            userStats.value = await (window as any).electronAPI.invoke('get-all-user-stats', userId);
+            console.log('✅ Stats received:', userStats.value);
+        } catch (e) {
+            console.error('Failed to fetch stats', e);
         }
     }
 };
@@ -208,10 +249,25 @@ const scanGames = async () => {
     }
 };
 
-const launchGame = (game: any) => {
+const launchGame = async (game: any) => {
     console.log('Launch', game);
     if ((window as any).electronAPI) {
-         (window as any).electronAPI.send('launch-game', game.id);
+         let userId = store.user?.id;
+         
+         // Try to recover user ID if missing but we have tokens
+         if (!userId && store.tokens) {
+             console.log('⚠️ Missing User ID on launch, attempting to fetch...');
+             try {
+                 await store.fetchUser();
+                 userId = store.user?.id;
+                 console.log('✅ User ID recovered:', userId);
+             } catch (e) {
+                 console.error('Failed to recover user ID', e);
+             }
+         }
+         
+         userId = userId || 'anonymous';
+         (window as any).electronAPI.send('launch-game', game.id, userId);
     } else {
         notify({ type: 'error', title: 'Erreur', text: 'Fonctionnalité non disponible ici.' });
     }
@@ -312,10 +368,11 @@ const pauseVideo = (e: Event) => {
     }
 };
 
-onMounted(() => {
+onMounted(async () => {
     if (store.library.length === 0) {
         store.syncLibraryFromFile();
     }
+    await fetchStats();
 });
 </script>
 

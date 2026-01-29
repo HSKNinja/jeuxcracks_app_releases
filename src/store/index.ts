@@ -55,6 +55,16 @@ export const useMainStore = defineStore('main', {
       try {
         // Force fresh fetch
         const user = await useFetch('/auth/api/user/me');
+        console.log('👤 fetchUser raw response:', user); 
+        if (user) {
+            // Normalize ID: API might return pk, _id
+            if (!user.id && user.pk) user.id = user.pk;
+            if (!user.id && user._id) user.id = user._id;
+
+            if (!user.id) console.error('❌ CRITICAL: User object still missing ID after API fix', user);
+            else console.log('✅ User ID received:', user.id);
+        }
+        
         this.user = user;
         return user;
       } catch (e) {

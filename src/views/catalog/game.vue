@@ -133,6 +133,18 @@
                             <span class="text-xs font-bold uppercase text-zinc-600">Genre</span>
                             <span class="text-white">{{ game?.categories?.slice(0,2).join(', ') || 'N/A' }}</span>
                         </div>
+                        
+                        <!-- Stats -->
+                        <div v-if="stats" class="pt-4 border-t border-zinc-800 w-full flex flex-col items-end gap-4 animate-fade-in">
+                            <div class="flex flex-col items-end">
+                                <span class="text-xs font-bold uppercase text-indigo-400">Temps de jeu</span>
+                                <span class="text-xl font-black text-white">{{ prettyMilliseconds(stats.totalTimePlayedMs) }}</span>
+                            </div>
+                            <div class="flex flex-col items-end">
+                                <span class="text-xs font-bold uppercase text-zinc-600">Lancements</span>
+                                <span class="text-white font-mono">{{ stats.totalLaunches }}</span>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -316,6 +328,7 @@ const configurationSystemRecommended = ref<string | null>(null);
 const installed = ref<{ id: string; title: string; path: string; executable?: string } | null>(null);
 const isGameInstalled = ref(false);
 const destPath = ref<string>('');
+const stats = ref<{ totalLaunches: number; totalTimePlayedMs: number; lastPlayedDate: string | null } | null>(null);
 
 // Popup State
 const showInstallModal = ref(false);
@@ -525,7 +538,14 @@ async function beforeDownload() {
   } else if (isGameInstalled.value || installStore.isFinished(game.value?.id)) {
       // PLAY
       const syncSuccess = await store.forceLibrarySync();
-      if (syncSuccess) window.electronAPI?.send('launch-game', game.value?.id);
+      if (syncSuccess) {
+          let userId = store.user?.id;
+          if (!userId && store.tokens) {
+              try { await store.fetchUser(); userId = store.user?.id; } catch (e) { console.error(e); }
+          }
+          userId = userId || 'anonymous';
+          window.electronAPI?.send('launch-game', game.value?.id, userId);
+      }
       else notify({ type: 'error', title: 'Erreur', text: 'Sync error' });
   } 
   // Note: New Install logic is extracted to handleInstallClick -> popup -> startDownload
@@ -596,6 +616,15 @@ async function fetchData(id: string | string[]) {
         };
         
         await updateInstallationStatus();
+        
+        // Fetch Stats
+        if (store.user?.id) {
+            try {
+                stats.value = await window.electronAPI?.invoke('get-game-stats', { userId: store.user.id, gameId: data.id });
+            } catch (e) {
+                console.error('Failed to fetch stats', e);
+            }
+        }
       }
   } catch (err: any) {
       console.error("Fetch Data Error:", err);

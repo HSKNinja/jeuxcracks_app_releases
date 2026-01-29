@@ -282,12 +282,23 @@ function restartApp() {
   window.electronAPI?.send('restart-app');
 }
 
-function chooseEXE(exe: string): void {
+async function chooseEXE(exe: string) {
   window.electronAPI?.send('set-exe-file', gameIDExe.value, exe);
   vfm.close(modalChooseEXE);
   notify({ type: 'success', title: 'Fichier sélectionné', text: `"${exe}" a été choisi comme exécutable principal` });
-  setTimeout(() => {
-    window.electronAPI?.send('launch-game', gameIDExe.value);
+  
+  setTimeout(async () => {
+    let userId = store.user?.id;
+    if (!userId && store.tokens) {
+         console.log('🔄 Recovery: Fetching user before launch in chooseEXE...');
+         try { 
+            await store.fetchUser(); 
+            userId = store.user?.id; 
+         } catch (e) { console.error(e); }
+    }
+    userId = userId || 'anonymous';
+    console.log('🚀 Lancement avec User:', userId);
+    window.electronAPI?.send('launch-game', gameIDExe.value, userId);
   }, 500);
 }
 
@@ -304,6 +315,17 @@ onMounted(async () => {
   }, 1000);
 
   await initializeLibrary();
+  
+  // Verify User ID presence
+  if (store.isAuthenticated && !store.user?.id) {
+    console.log('🔄 User ID missing in store, refetching user profile...');
+    try {
+        await store.fetchUser();
+        console.log('✅ User profile refreshed:', store.user);
+    } catch (e) {
+        console.error('❌ Failed to refresh user profile:', e);
+    }
+  }
   
   if (!store.isAuthenticated && router.currentRoute.value.path !== '/login') {
     router.replace('/login');
