@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, dialog, Menu, Tray, nativeImage } from 'electron';
 import { release } from 'os';
 import { join, dirname } from 'path';
 import { rootPath } from 'electron-root-path';
@@ -9,20 +9,9 @@ import { libraryService } from './services/libraryService';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 
-// const decompress = require('decompress');
-// const assert = require('assert');
 import './services';
 
 // The built directory structure
-//
-// ├─┬ dist-electron
-// │ ├─┬ main
-// │ │ └── index.js    > Electron-Main
-// │ └─┬ preload
-// │   └── index.js    > Preload-Scripts
-// ├─┬ dist
-// │ └── index.html    > Electron-Renderer
-//
 process.env.DIST_ELECTRON = join(__dirname, '..');
 process.env.DIST = join(process.env.DIST_ELECTRON, '../dist');
 process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL ? join(process.env.DIST_ELECTRON, '../public') : process.env.DIST;
@@ -38,13 +27,10 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0);
 }
 
-// Remove electron security warnings
-// This warning only shows in development mode
-// Read more on https://www.electronjs.org/docs/latest/tutorial/security
-// process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
-
+let store: any; // Initialized in whenReady
 let win: BrowserWindow | null = null;
-// Here, you can also use other preload
+let tray: Tray | null = null;
+
 const preload = join(__dirname, '../preload/index.js');
 const url = process.env.VITE_DEV_SERVER_URL;
 const indexHtml = join(process.env.DIST, 'index.html');
@@ -52,91 +38,116 @@ const indexHtml = join(process.env.DIST, 'index.html');
 console.log('test', join(dirname(''), 'assets', 'logo.webp'));
 
 async function createWindow() {
+  const savedBounds = store ? store.get('windowBounds') : null;
+
   win = new BrowserWindow({
     title: 'JeuxCracks Launcher',
-    show: false,
-    width: 1280,
-    height: 720,
-    minWidth: 1280,
-    minHeight: 720,
-    transparent: true,
-    frame: false,
+    show: false, // Use ready-to-show
+    width: savedBounds?.width || 1280,
+    height: savedBounds?.height || 720,
+    minWidth: 1024,
+    minHeight: 600,
+    x: savedBounds?.x,
+    y: savedBounds?.y,
+    // transparent: true, // Disable for Mica/Acrylic & Native Snap
+    backgroundMaterial: 'mica', 
+    titleBarStyle: 'hidden', 
+    titleBarOverlay: {
+        color: '#00000000', 
+        symbolColor: '#ffffff',
+        height: 60 // Aligné avec le header (h-16 ~ 64px)
+    },
     movable: true,
     hasShadow: true,
     resizable: true,
     icon: join(dirname(''), 'assets', 'logo.ico'),
     webPreferences: {
       preload,
-      nodeIntegration: false, // SÉCURISÉ : on désactive l'accès direct Node
-      contextIsolation: true, // SÉCURISÉ : on isole le contexte
+      nodeIntegration: false,
+      contextIsolation: true,
+      devTools: !app.isPackaged,
     },
-    center: false,
-    x: process.env.SECOND_MONITOR ? -1400 : 0,
-    y: process.env.SECOND_MONITOR ? 100 : 0,
-    fullscreen: process.env.SECOND_MONITOR ? true : false,
+    center: !savedBounds,
   });
 
-  win.show();
+  win.setMenu(null);
 
-  // Bloque l'ouverture des DevTools via Ctrl+Shift+I et F12
-  // win.webContents.on('before-input-event', (event, input) => {
-  //   // Ne bloquer que les raccourcis clavier, pas les clics de souris
-  //   if (input.type === 'keyDown' || input.type === 'keyUp') {
-  //     if (
-  //       (input.control && input.shift && input.key.toLowerCase() === 'i') ||
-  //       input.key === 'F12' ||
-  //       (input.control && input.key.toLowerCase() === 'r')
-  //     ) {
-  //       event.preventDefault();
-  //     }
-  //   }
-  // });
-  //Listen the event "enter-full-screen" and "leave-full-screen"
+  const saveState = () => {
+      if (!win || win.isMaximized() || win.isFullScreen() || !store) return;
+      store.set('windowBounds', win.getBounds());
+  };
+  win.on('resize', saveState);
+  win.on('move', saveState);
+  win.on('close', saveState);
+
+  win.once('ready-to-show', () => {
+    win?.show();
+    win?.focus();
+  });
+
+  if (app.isPackaged) {
+      win.webContents.on('context-menu', (e) => e.preventDefault());
+      win.webContents.on('before-input-event', (event, input) => {
+          if (input.key === 'F12' || (input.control && input.shift && input.key === 'I')) {
+              event.preventDefault();
+          }
+      });
+  }
+
   win.on('enter-full-screen', () => {
     win.webContents.send('enter-full-screen');
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
-    // electron-vite-vue#298
     console.log('🔧 Mode développement - Chargement depuis:', url);
     win.loadURL(url);
-    // Open devTool if the app is not packaged
-    // win.webContents.openDevTools()
+    win.webContents.openDevTools();
   } else {
     console.log('📦 Mode production - Chargement depuis:', indexHtml);
     console.log('📁 Dossier DIST:', process.env.DIST);
     win.loadFile(indexHtml);
-    // win.webContents.openDevTools(); // Désactivé pour la prod
-    // win.webContents.openDevTools(); // Force OPEN for debugging
   }
 
-  // FORCE OPEN DEVTOOLS (GLOBAL)
-  win.webContents.openDevTools();
-
-  // Test actively push message to the Electron-Renderer
   win.webContents.on('did-finish-load', () => {
     console.log('✅ Page chargée avec succès');
     win?.webContents.send('main-process-message', new Date().toLocaleString());
   });
 
-  // Gestion des erreurs de chargement
   win.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-    console.error('❌ Erreur de chargement:', {
-      errorCode,
-      errorDescription,
-      validatedURL
-    });
+    console.error('❌ Erreur de chargement:', { errorCode, errorDescription, validatedURL });
   });
 
-  // Make all links open with the browser, not with the application
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https:')) shell.openExternal(url);
     return { action: 'deny' };
   });
-  // win.webContents.on('will-navigate', (event, url) => { }) #344
 }
 
 app.whenReady().then(async () => {
+  // Initialize Store (ESM workaround)
+  try {
+      const { default: StoreVal } = await import('electron-store');
+      store = new StoreVal();
+  } catch(e) { console.error('Failed to load electron-store', e); }
+
+  // Initialize Tray
+  try {
+      const iconPath = join(dirname(''), 'assets', 'logo.ico');
+      tray = new Tray(nativeImage.createFromPath(iconPath));
+      tray.setToolTip('JeuxCracks Launcher');
+      
+      const contextMenu = Menu.buildFromTemplate([
+        { label: 'Ouvrir', click: () => { win?.show(); win?.focus(); } },
+        { label: 'Quitter', click: () => { app.quit(); } }
+      ]);
+      tray.setContextMenu(contextMenu);
+      
+      tray.on('double-click', () => {
+          win?.show();
+          win?.focus();
+      });
+  } catch(e) { console.error('Failed to create Tray', e); }
+
   // Créer le répertoire downloads s'il n'existe pas
   const downloadsPath = join(app.getPath('userData'), 'downloads');
   try {

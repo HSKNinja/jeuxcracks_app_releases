@@ -48,10 +48,10 @@
             </div>
 
             <!-- 2. CONTENT CONTAINER -->
-            <div class="absolute inset-0 z-20 p-12 md:p-20 lg:p-24 flex flex-col justify-end items-start h-full max-w-[1920px] mx-auto">
+            <div class="absolute inset-0 z-20 p-6 md:p-12 xl:p-24 flex flex-col justify-end items-start h-full max-w-[1920px] mx-auto">
                 
                 <!-- Top Info (Floating) -->
-                <div class="absolute top-12 left-12 md:top-16 md:left-16 flex items-center gap-6 animate-slide-down">
+                <div class="absolute top-6 left-6 md:top-12 md:left-12 xl:top-16 xl:left-16 flex items-center gap-6 animate-slide-down">
                      <div class="flex items-center gap-3">
                         <div class="h-[1px] w-12 bg-white/50"></div>
                         <span class="text-xs font-black uppercase tracking-[0.3em] text-white/80">
@@ -77,31 +77,31 @@
                     </div>
 
                     <!-- Title -->
-                    <h1 class="text-6xl md:text-7xl lg:text-8xl font-black text-white leading-none tracking-tighter uppercase drop-shadow-2xl mix-blend-screen animate-reveal-text max-w-5xl">
+                    <h1 class="text-4xl md:text-6xl xl:text-8xl font-black text-white leading-none tracking-tighter uppercase drop-shadow-2xl mix-blend-screen animate-reveal-text max-w-5xl">
                         {{ currentGame.title }}
                     </h1>
                     
                     <!-- Description -->
-                    <p class="max-w-xl text-base md:text-lg text-zinc-300 font-medium leading-relaxed drop-shadow-lg animate-slide-up border-l-2 border-indigo-500 pl-6 line-clamp-3" style="animation-delay: 300ms">
+                    <p class="max-w-xl text-sm md:text-lg text-zinc-300 font-medium leading-relaxed drop-shadow-lg animate-slide-up border-l-2 border-indigo-500 pl-4 md:pl-6 line-clamp-3" style="animation-delay: 300ms">
                         {{ currentGame.descriptionShort }}
                     </p>
 
                     <!-- Actions -->
-                    <div class="flex items-center gap-6 pt-8 animate-slide-up" style="animation-delay: 400ms">
+                    <div class="flex items-center gap-4 xl:gap-6 pt-6 xl:pt-8 animate-slide-up" style="animation-delay: 400ms">
                         <button 
                             @click="goToPage(`/catalogue/${currentGame.id}`)"
-                            class="group relative px-10 py-5 bg-white text-black overflow-hidden"
+                            class="group relative px-6 py-3 xl:px-10 xl:py-5 bg-white text-black overflow-hidden"
                         >
                             <div class="absolute inset-0 bg-indigo-500 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out"></div>
-                            <span class="relative z-10 flex items-center gap-3 font-black uppercase tracking-widest text-sm group-hover:text-white transition-colors">
-                                <PlayIcon class="w-5 h-5" />
+                            <span class="relative z-10 flex items-center gap-2 xl:gap-3 font-black uppercase tracking-widest text-xs xl:text-sm group-hover:text-white transition-colors">
+                                <PlayIcon class="w-4 h-4 xl:w-5 xl:h-5" />
                                 Découvrir
                             </span>
                         </button>
 
                          <button 
                             @click="nextSlide"
-                            class="px-8 py-5 border border-white/10 hover:bg-white/5 text-white font-bold uppercase tracking-widest text-xs backdrop-blur-md transition-all flex items-center gap-3"
+                            class="px-5 py-3 xl:px-8 xl:py-5 border border-white/10 hover:bg-white/5 text-white font-bold uppercase tracking-widest text-[10px] xl:text-xs backdrop-blur-md transition-all flex items-center gap-2 xl:gap-3"
                         >
                             Suivant
                             <ArrowLongRightIcon class="w-5 h-5" />

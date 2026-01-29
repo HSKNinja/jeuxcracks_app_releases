@@ -1,38 +1,23 @@
 <template>
-  <header class="h-16 flex items-center justify-between px-6 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-30 select-none" style="-webkit-app-region: drag">
+  <header class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-30 select-none transition-all duration-300" style="-webkit-app-region: drag">
     
-    <!-- Title / Breadcrumbs -->
-    <div class="flex items-center gap-4">
-       <h2 class="text-sm font-semibold text-zinc-100">{{ pageTitle || 'JeuxCracks' }}</h2>
+    <!-- Title / Breadcrumbs (Hidden on very small screens to make room for generic search if focused, or just truncate) -->
+    <div class="flex items-center gap-4 min-w-0 pr-4">
+       <h2 class="text-sm font-bold text-zinc-100 truncate">{{ pageTitle || 'JeuxCracks' }}</h2>
     </div>
 
     <!-- Right Controls -->
-    <div class="flex items-center gap-4" style="-webkit-app-region: no-drag">
+    <div class="flex items-center gap-4 pr-[135px] flex-shrink-0" style="-webkit-app-region: no-drag">
        <!-- Search -->
-       <div class="relative group">
-         <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
+       <div class="relative group w-full md:w-auto">
+         <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
          <input 
            v-model="searchQuery"
            @keyup.enter="handleSearch"
            type="text" 
-           placeholder="Rechercher un jeu..." 
-           class="bg-zinc-900 border border-zinc-800 text-sm rounded-md py-1.5 pl-9 pr-4 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-700 focus:bg-zinc-800 transition-all w-64"
+           placeholder="Rechercher..." 
+           class="bg-zinc-900/50 border border-white/5 text-sm rounded-xl py-2 pl-9 pr-4 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:bg-zinc-900 focus:border-indigo-500/50 transition-all w-32 focus:w-48 sm:w-48 sm:focus:w-64 md:w-64"
          />
-       </div>
-
-       <div class="w-px h-4 bg-zinc-800"></div>
-
-       <!-- Window Controls -->
-       <div class="flex items-center gap-2">
-          <button @click="minimize" class="btn-icon cursor-pointer">
-            <MinusIcon class="w-4 h-4" />
-          </button>
-          <button @click="maximize" class="btn-icon cursor-pointer">
-             <Square2StackIcon class="w-4 h-4" />
-          </button>
-          <button @click="close" class="btn-icon hover:bg-red-900/50 hover:text-red-200 cursor-pointer">
-             <XMarkIcon class="w-4 h-4" />
-          </button>
        </div>
     </div>
 
@@ -40,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { MagnifyingGlassIcon, MinusIcon, Square2StackIcon, XMarkIcon, ChevronLeftIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, ChevronLeftIcon } from '@heroicons/vue/24/outline';
 import { useRouter, useRoute } from 'vue-router';
 import { computed, ref } from 'vue';
 
@@ -68,8 +53,4 @@ const pageTitle = computed(() => {
     if (route.path.startsWith('/account')) return 'Compte';
     return '';
 });
-
-const minimize = () => window.electronAPI?.minimize();
-const maximize = () => window.electronAPI?.maximize();
-const close = () => window.electronAPI?.close();
 </script>

@@ -1,9 +1,9 @@
 <template>
-  <div class="h-full flex flex-col p-8 md:p-12 space-y-12 overflow-y-auto custom-scrollbar">
+  <div class="h-full flex flex-col p-4 md:p-8 xl:p-12 space-y-8 md:space-y-12 overflow-y-auto custom-scrollbar">
     
     <!-- Header -->
-    <div class="border-b border-white/5 pb-8 animate-fade-in">
-        <h1 class="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase mb-2">
+    <div class="border-b border-white/5 pb-6 md:pb-8 animate-fade-in">
+        <h1 class="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase mb-2">
             Vos <span class="text-indigo-500">Favoris</span>
         </h1>
         <p class="text-zinc-500 font-medium">Retrouvez ici tous vos jeux coup de cœur.</p>
@@ -30,8 +30,10 @@
         </button>
     </div>
 
+
+
     <!-- Favorites Grid -->
-    <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8 animate-slide-up">
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-8 animate-slide-up">
         <div 
             v-for="(game, index) in favoritesData" 
             :key="game.id" 

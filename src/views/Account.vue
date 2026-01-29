@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full overflow-y-auto custom-scrollbar p-6 md:p-8 space-y-6">
+  <div class="h-full overflow-y-auto custom-scrollbar p-4 md:p-8 xl:p-12 space-y-6">
     
     <!-- Header with Breadcrumb or Title -->
     <div>
@@ -8,10 +8,10 @@
     </div>
 
     <!-- Bento Grid Layout -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         
-        <!-- LARGE CARD: Profile Info (Span 2 cols) -->
-        <div class="md:col-span-2 relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-8 flex flex-col justify-between group transition-all duration-500" :class="{ 'meryoul-card': isMeryoul }">
+        <!-- LARGE CARD: Profile Info (Full Width) -->
+        <div class="lg:col-span-3 relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-4 md:p-8 flex flex-col justify-between group transition-all duration-500" :class="{ 'meryoul-card': isMeryoul }">
              <!-- EQUIPPED BANNER -->
              <div v-if="themeStore.getEquippedBanner" class="absolute inset-0 z-0">
                  <!-- CSS Banner -->
@@ -37,93 +37,104 @@
                  </button>
              </div>
              
-             <div class="relative z-10 flex flex-col md:flex-row gap-6 items-center md:items-start">
-                 <!-- Avatar -->
-                 <div class="relative group/avatar cursor-pointer" @click="triggerFileInput">
-                     <!-- MAIN CONTAINER -->
-                     <div class="relative w-24 h-24 rounded-full flex items-center justify-center transition-transform duration-500" 
-                          :class="isMeryoul ? 'animate-spin-slow-reverse ring-4 ring-offset-2 ring-offset-black ring-red-500' : ''">
-                        
-                        <!-- AVATAR MASK -->
-                        <div class="w-full h-full rounded-full bg-black overflow-hidden relative z-10 border-2 border-zinc-800/50">
-                            <img v-if="user?.profile_picture" :src="resolveAvatar(user.profile_picture)" class="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110" />
-                            <div v-else class="w-full h-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">
-                                {{ user?.pseudo?.charAt(0).toUpperCase() || 'U' }}
-                            </div>
-                            
-                            <!-- Edit Overlay -->
-                            <div class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
-                                <CameraIcon class="w-6 h-6 text-white" />
-                            </div>
-                        </div>
-
-                        <!-- FRAMES (Shown only if NOT in Meryoul Mode) -->
-                        <template v-if="!isMeryoul">
-                            <!-- Image Frame -->
-                            <img v-if="themeStore.getEquippedFrame && !themeStore.getEquippedFrame.isCssOnly" 
-                                 :src="themeStore.getEquippedFrame.image" 
-                                 class="absolute -inset-[22%] w-[144%] h-[144%] max-w-none object-contain pointer-events-none z-20 drop-shadow-2xl" />
-                            
-                            <!-- CSS Frame -->
-                            <div v-if="themeStore.getEquippedFrame && themeStore.getEquippedFrame.isCssOnly"
-                                 class="pointer-events-none z-20"
-                                 :class="themeStore.getEquippedFrame.cssClass">
-                            </div>
-                        </template>
-                     </div>
-                     <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleImageUpload" />
+             <div class="relative z-10 flex flex-col gap-6">
+                 
+                 <!-- Main Content: Flex Row on ALL screens (Avatar Left, Info Right) -->
+                 <div class="flex items-start gap-4 md:gap-6 w-full">
                      
-                     <!-- Premium Badge -->
-                     <div v-if="user?.is_vip" class="absolute -bottom-2 -right-2 z-30 bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/20">
-                        PREMIUM
-                     </div>
-                 </div>
-
-                 <!-- Info -->
-                 <div class="text-center md:text-left space-y-2 flex-1">
-                     <div class="flex items-center justify-center md:justify-start gap-3 flex-wrap">
-                        <h2 class="text-3xl font-bold text-white transition-all" 
-                            :class="[
-                                isMeryoul ? 'glitch-text text-4xl' : '',
-                                themeStore.getEquippedPseudoEffect ? themeStore.getEquippedPseudoEffect.cssClass : ''
-                            ]" 
-                            :data-text="user?.pseudo">
-                            {{ user?.pseudo }}
-                        </h2>
-                        <!-- Rôles -->
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span v-if="user?.is_staff || user?.is_superuser" class="px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold tracking-wide">STAFF</span>
-                            <span v-else class="px-2.5 py-1 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs font-bold tracking-wide">MEMBRE</span>
+                     <!-- Avatar -->
+                     <div class="relative group/avatar cursor-pointer flex-shrink-0" @click="triggerFileInput">
+                         <!-- MAIN CONTAINER -->
+                         <div class="relative w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center transition-transform duration-500" 
+                              :class="isMeryoul ? 'animate-spin-slow-reverse ring-4 ring-offset-2 ring-offset-black ring-red-500' : ''">
                             
-                            <!-- Temporary Groups Badges -->
-                            <template v-if="user?.temporary_group_name">
-                                <span v-for="group in (Array.isArray(user.temporary_group_name) ? user.temporary_group_name : [user.temporary_group_name])" :key="group" 
-                                      class="px-2.5 py-1 rounded-md text-xs font-bold tracking-wide uppercase shadow-sm transition-all duration-300"
-                                      :class="group.toLowerCase().includes('meryoul') ? 'bg-gradient-to-r from-red-600 via-amber-500 to-purple-600 text-white animate-pulse border-none shadow-[0_0_20px_rgba(255,0,0,0.6)] scale-110 mx-2' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400'">
-                                  {{ group }}
-                                </span>
+                            <!-- AVATAR MASK -->
+                            <div class="w-full h-full rounded-full bg-black overflow-hidden relative z-10 border-2 border-zinc-800/50">
+                                <img v-if="user?.profile_picture" :src="resolveAvatar(user.profile_picture)" class="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110" />
+                                <div v-else class="w-full h-full flex items-center justify-center bg-zinc-900 text-white font-bold text-2xl">
+                                    {{ user?.pseudo?.charAt(0).toUpperCase() || 'U' }}
+                                </div>
+                                
+                                <div class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                                    <CameraIcon class="w-6 h-6 text-white" />
+                                </div>
+                            </div>
+
+                            <!-- FRAMES -->
+                            <template v-if="!isMeryoul">
+                                <img v-if="themeStore.getEquippedFrame && !themeStore.getEquippedFrame.isCssOnly" 
+                                     :src="themeStore.getEquippedFrame.image" 
+                                     class="absolute -inset-[22%] w-[144%] h-[144%] max-w-none object-contain pointer-events-none z-20 drop-shadow-2xl" />
+                                <div v-if="themeStore.getEquippedFrame && themeStore.getEquippedFrame.isCssOnly"
+                                     class="pointer-events-none z-20"
+                                     :class="themeStore.getEquippedFrame.cssClass">
+                                </div>
                             </template>
-                        </div>
+                         </div>
+                         <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleImageUpload" />
+                         
+                         <div v-if="user?.is_vip" class="absolute -bottom-2 -right-2 z-30 bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/20">
+                            PREMIUM
+                         </div>
                      </div>
-                     
-                     <div class="flex items-center justify-center md:justify-start gap-4 text-sm text-zinc-500">
-                         <span class="flex items-center gap-1.5">
-                             <EnvelopeIcon class="w-4 h-4" />
-                             {{ user?.email }}
-                         </span>
-                         <span class="flex items-center gap-1.5">
-                             <CalendarIcon class="w-4 h-4" />
-                             Membre depuis {{ formatDate(user?.date_joined) }}
-                         </span>
+
+                     <!-- Info (Left aligned always) -->
+                     <div class="text-left space-y-1 flex-1 min-w-0 py-1">
+                        <!-- Name & Tags Wrapper -->
+                        <div class="flex flex-col gap-2">
+                           <h2 class="text-2xl md:text-4xl font-bold text-white transition-all truncate w-full" 
+                               :class="[
+                                   isMeryoul ? 'glitch-text text-3xl md:text-5xl' : '',
+                                   themeStore.getEquippedPseudoEffect ? themeStore.getEquippedPseudoEffect.cssClass : ''
+                               ]" 
+                               :data-text="user?.pseudo">
+                               {{ user?.pseudo }}
+                           </h2>
+                           <!-- Rôles (New Line) -->
+                           <div class="flex items-center gap-2 flex-wrap">
+                               <span v-if="user?.is_staff || user?.is_superuser" class="px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold tracking-wide">STAFF</span>
+                               <span v-else class="px-2.5 py-1 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs font-bold tracking-wide">MEMBRE</span>
+                               
+                               <template v-if="user?.temporary_group_name">
+                                   <span v-for="group in (Array.isArray(user.temporary_group_name) ? user.temporary_group_name : [user.temporary_group_name])" :key="group" 
+                                         class="px-2.5 py-1 rounded-md text-xs font-bold tracking-wide uppercase shadow-sm transition-all duration-300"
+                                         :class="group.toLowerCase().includes('meryoul') ? 'bg-gradient-to-r from-red-600 via-amber-500 to-purple-600 text-white animate-pulse border-none shadow-[0_0_20px_rgba(255,0,0,0.6)] scale-110 mx-2' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400'">
+                                     {{ group }}
+                                   </span>
+                               </template>
+                           </div>
+                        </div>
+                         
+                         <div class="flex flex-col md:flex-row items-start gap-1 md:gap-4 text-xs md:text-sm text-zinc-500">
+                             <span class="flex items-center gap-1.5">
+                                 <EnvelopeIcon class="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                 {{ user?.email }}
+                             </span>
+                             <span class="hidden md:inline text-zinc-700">•</span>
+                             <span class="flex items-center gap-1.5">
+                                 <CalendarIcon class="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                 Membre depuis {{ formatDate(user?.date_joined) }}
+                             </span>
+                         </div>
+                     </div>
+
+                     <!-- Actions (Desktop Only) -->
+                     <div class="hidden md:flex flex-col gap-2">
+                         <button @click="isEditing = true" class="px-4 py-2 rounded-xl bg-white text-black font-bold text-sm hover:bg-zinc-200 transition-colors">
+                             Modifier
+                         </button>
+                         <button @click="logout" class="px-4 py-2 rounded-xl bg-zinc-900 border border-white/10 text-zinc-400 font-medium text-sm hover:text-white hover:bg-zinc-800 transition-colors">
+                             Déconnexion
+                         </button>
                      </div>
                  </div>
 
-                 <!-- Actions -->
-                 <div class="flex flex-col gap-2">
-                     <button @click="isEditing = true" class="px-4 py-2 rounded-xl bg-white text-black font-bold text-sm hover:bg-zinc-200 transition-colors">
+                 <!-- Actions (Mobile Only - Full Width Row) -->
+                 <div class="md:hidden flex gap-3 w-full border-t border-white/5 pt-4">
+                     <button @click="isEditing = true" class="flex-1 py-2.5 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-wide hover:bg-zinc-200 transition-colors text-center shadow-lg shadow-white/5">
                          Modifier
                      </button>
-                     <button @click="logout" class="px-4 py-2 rounded-xl bg-zinc-900 border border-white/10 text-zinc-400 font-medium text-sm hover:text-white hover:bg-zinc-800 transition-colors">
+                     <button @click="logout" class="flex-1 py-2.5 rounded-xl bg-zinc-900 border border-white/10 text-zinc-400 font-bold text-xs uppercase tracking-wide hover:text-white hover:bg-zinc-800 transition-colors text-center">
                          Déconnexion
                      </button>
                  </div>
@@ -148,21 +159,14 @@
             <div class="text-xs font-medium text-zinc-500 uppercase tracking-widest">Favoris</div>
         </div>
 
-        <!-- ACTION CARD: Suggestion -->
-        <div class="md:col-span-2 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-white/5 p-6 flex items-center justify-between group hover:border-indigo-500/40 transition-colors">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                    <ChatBubbleLeftRightIcon class="w-6 h-6 text-white" />
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg text-white">Une idée pour améliorer l'app ?</h3>
-                    <p class="text-indigo-200/60 text-sm">Vos retours sont essentiels pour le développement.</p>
-                </div>
+        <!-- ACTION CARD: Suggestion (Small) -->
+        <button @click="isSuggestionOpen = true" class="relative overflow-hidden rounded-3xl bg-[#0f0f0f] border border-white/5 p-6 flex flex-col justify-center items-center group hover:border-indigo-500 hover:bg-indigo-500/5 transition-all duration-300">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center text-white mb-2 shadow-lg shadow-indigo-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
+                <ChatBubbleLeftRightIcon class="w-6 h-6" />
             </div>
-            <button @click="isSuggestionOpen = true" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/20">
-                Suggérer
-            </button>
-        </div>
+            <div class="text-lg font-bold text-white mb-1">Une idée ?</div>
+            <div class="text-xs font-medium text-zinc-500 group-hover:text-indigo-400 transition-colors uppercase tracking-widest">Suggérer</div>
+        </button>
 
     </div>
 
@@ -241,6 +245,20 @@
                       class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm"
                       :class="notificationsEnabled ? 'translate-x-5' : 'translate-x-0'"
                     ></div>
+                </button>
+            </div>
+
+            <!-- DMCA -->
+            <div class="p-4 md:p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                <div class="flex items-center gap-4">
+                    <ScaleIcon class="w-6 h-6 text-zinc-600" />
+                    <div>
+                        <div class="font-medium text-zinc-200">Legal & DMCA</div>
+                        <div class="text-xs text-zinc-500">Politique de conformité et droits d'auteur</div>
+                    </div>
+                </div>
+                <button @click="isDmcaOpen = true" class="px-3 py-1.5 text-xs font-bold bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors">
+                    Consulter
                 </button>
             </div>
 
@@ -330,6 +348,51 @@
       </div>
     </div>
 
+    <!-- DMCA Modal -->
+    <div v-if="isDmcaOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" @click.self="isDmcaOpen = false">
+      <div class="bg-[#0f0f0f] border border-white/10 rounded-3xl p-8 w-full max-w-2xl shadow-2xl relative overflow-hidden animate-fade-in-up max-h-[80vh] flex flex-col">
+        
+        <div class="flex items-center justify-between mb-6 flex-shrink-0">
+            <h3 class="text-xl font-bold text-white uppercase tracking-tight">Politique DMCA</h3>
+            <button @click="isDmcaOpen = false" class="p-1 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors">
+                <XMarkIcon class="w-5 h-5" />
+            </button>
+        </div>
+        
+        <div class="overflow-y-auto custom-scrollbar pr-2 text-sm text-zinc-400 leading-relaxed space-y-4 text-justify">
+            <h4 class="font-bold text-white uppercase mb-2">POLITIQUE DE CONFORMITÉ À LA DIGITAL MILLENNIUM COPYRIGHT ACT (DMCA) DE JEUXCRACKS.COM ET JEUXCRACKS.FR</h4>
+            
+            <p>
+                JeuxCracks.com et JeuxCracks.fr s'engage à respecter scrupuleusement les dispositions de la Digital Millennium Copyright Act (DMCA) de l'Europe. Nous accordons une importance primordiale à toutes les réclamations relatives à des infractions aux droits d'auteur et nous nous engageons à prendre des mesures correctives dans les plus brefs délais.
+            </p>
+            <p>
+                Si vous estimez qu'un logiciel ou un jeu vidéo protégé par des droits d'auteur est illégalement distribué sur notre plateforme, nous vous prions de bien vouloir nous adresser une notification écrite contenant les informations suivantes :
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Adresse physique complète</li>
+                <li>Numéro de téléphone direct</li>
+                <li>Adresse de courrier électronique valide</li>
+                <li>Site web associé, le cas échéant</li>
+            </ul>
+            <p>
+                Merci d'envoyer cette notification d'infraction à l'adresse électronique suivante : <span class="text-indigo-400 font-bold select-all">upsilon@jeuxcracks.fr</span>.
+            </p>
+            <p>
+                Notre équipe juridique examinera chaque notification avec le plus grand sérieux et s'engage à vous fournir une réponse dans un délai de 72 heures. Si vous ne recevez pas de réponse dans ce délai, nous vous invitons à actualiser la page concernée ; vous constaterez que le contenu litigieux a été retiré.
+            </p>
+            <p class="p-4 bg-zinc-900 rounded-xl border border-white/5 text-xs italic">
+                Il est important de souligner que JeuxCracks.com et JeuxCracks.fr ne soutient en aucun cas les activités de piratage. Les liens proposés sur notre site sont destinés exclusivement à des fins de sauvegarde et de récupération de données. Nous vous exhortons à ne pas télécharger de fichiers si vous ne possédez pas le support original correspondant. De plus, nous vous encourageons vivement à soutenir les développeurs de jeux et de logiciels en achetant leurs produits lorsque ceux-ci vous satisfont.
+            </p>
+        </div>
+        
+        <div class="mt-6 pt-4 border-t border-white/5 flex justify-end flex-shrink-0">
+            <button @click="isDmcaOpen = false" class="px-6 py-2 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-colors">
+                J'ai compris
+            </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Delete Account Modal -->
     <div v-if="isDeleteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" @click.self="isDeleteModalOpen = false">
       <div class="bg-[#0f0f0f] border border-red-500/20 rounded-3xl p-8 w-full max-w-sm shadow-2xl relative overflow-hidden animate-fade-in-up">
@@ -396,7 +459,8 @@ import {
     BellIcon,
     TrashIcon,
     XMarkIcon,
-    StarIcon
+    StarIcon,
+    ScaleIcon
 } from '@heroicons/vue/24/solid';
 
 const store = useMainStore();
@@ -439,6 +503,7 @@ const resolveAvatar = (path: string | undefined | null) => {
 const formatDate = (date: string | undefined) => date ? new Date(date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '2024';
 
 const isDeleteModalOpen = ref(false);
+const isDmcaOpen = ref(false);
 const deleteConfirmationText = ref('');
 
 // Watchers

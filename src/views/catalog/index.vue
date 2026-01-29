@@ -1,27 +1,65 @@
 <template>
   <div class="h-full bg-[#050505] text-white overflow-y-auto custom-scrollbar scroll-smooth">
     
-    <div class="max-w-[1920px] mx-auto p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row gap-12 items-start">
+    <div class="max-w-[1920px] mx-auto p-4 md:p-8 xl:p-12 flex flex-col xl:flex-row gap-8 xl:gap-12 items-start relative">
         
-        <!-- SIDEBAR FILTERS -->
-        <aside class="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-12 space-y-12 animate-fade-in" :class="{ 'hidden lg:block': !showMobileFilters }">
+        <!-- MOBILE HEADER Actions (Visible < XL) -->
+        <div class="w-full xl:hidden flex items-center justify-between mb-6 animate-fade-in">
+             <div>
+                <h1 class="text-3xl font-black text-white tracking-tighter uppercase">Catalogue</h1>
+                <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{{ pagination.totalResults }} Jeux</p>
+             </div>
+             <div class="flex flex-col items-center gap-2">
+                 <button 
+                    @click="showMobileFilters = true"
+                    class="flex items-center gap-2 px-5 py-3 bg-white text-black rounded-xl text-xs font-black uppercase hover:bg-zinc-200 transition-colors"
+                >
+                    <FunnelIcon class="w-4 h-4" />
+                    Filtres
+                </button>
+                <button 
+                    v-if="hasActiveFilters"
+                    @click="resetAll"
+                    class="text-[10px] font-bold text-red-500 uppercase hover:text-red-400 flex items-center gap-1"
+                >
+                    <XMarkIcon class="w-3 h-3" />
+                    Réinitialiser
+                </button>
+             </div>
+        </div>
+
+        <!-- BACKDROP (Mobile Only) -->
+        <div 
+            v-if="showMobileFilters" 
+            @click="showMobileFilters = false" 
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 xl:hidden animate-fade-in"
+        ></div>
+
+        <!-- SIDEBAR DRAWER -->
+        <aside 
+            class="fixed inset-y-0 left-0 w-80 bg-zinc-950 border-r border-white/5 p-8 z-[9999] transform transition-transform duration-300 ease-out xl:relative xl:transform-none xl:w-64 xl:p-0 xl:bg-transparent xl:border-none xl:z-0 xl:sticky xl:top-8 xl:h-auto custom-scrollbar overflow-y-auto"
+            :class="showMobileFilters ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'"
+        >
             
-            <!-- Header -->
-            <div>
+            <!-- Mobile Close Header -->
+            <div class="flex xl:hidden items-center justify-between mb-8">
+                <h2 class="text-xl font-black text-white uppercase tracking-tighter">Filtres</h2>
+                <button 
+                    type="button"
+                    @click.stop="showMobileFilters = false" 
+                    class="p-4 hover:bg-zinc-900 rounded-full transition-colors cursor-pointer relative z-[10000] pointer-events-auto"
+                >
+                    <XMarkIcon class="w-6 h-6 text-zinc-400" />
+                </button>
+            </div>
+
+            <!-- Header (Desktop Only) -->
+            <div class="hidden xl:block mb-8">
                 <h1 class="text-4xl font-black text-white tracking-tighter uppercase mb-2">Catalogue</h1>
                 <div class="flex items-center gap-2">
                      <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
                      <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest">{{ pagination.totalResults }} Jeux</p>
                 </div>
-                
-                <!-- Mobile Toggle -->
-                <button 
-                    @click="showMobileFilters = !showMobileFilters"
-                    class="lg:hidden mt-6 w-full flex items-center justify-center gap-2 px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-xl text-xs font-black uppercase text-white hover:bg-zinc-800 transition-colors"
-                >
-                    <FunnelIcon class="w-4 h-4" />
-                    {{ showMobileFilters ? 'Fermer' : 'Filtres' }}
-                </button>
             </div>
 
             <!-- Search -->
@@ -37,7 +75,7 @@
             </div>
 
             <!-- Filters Section -->
-            <div class="space-y-10">
+            <div class="space-y-12 mt-12">
                 
                 <!-- Sort -->
                 <div class="space-y-4">
@@ -114,7 +152,7 @@
             
             <button 
                 @click="resetAll"
-                class="w-full py-4 bg-zinc-900 text-zinc-500 font-black uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all rounded-xl"
+                class="w-full mt-12 py-4 bg-zinc-900 text-zinc-500 font-black uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all rounded-xl"
             >
                 Réinitialiser
             </button>
@@ -136,7 +174,7 @@
             </div>
 
             <!-- Grid (Landscape Cards) -->
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8 animate-fade-in-up">
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 xl:gap-8 animate-fade-in-up">
                 
                 <div 
                     v-for="(game, index) in games" 
@@ -172,15 +210,15 @@
                     </div>
 
                     <!-- Info Area -->
-                    <div class="p-5 flex flex-col gap-3">
+                    <div class="p-4 xl:p-5 flex flex-col gap-2 xl:gap-3">
                         <div class="flex justify-between items-start">
                              <div>
                                  <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">{{ game.categories?.[0] || 'Jeu' }}</span>
-                                 <h3 class="text-lg font-black text-white uppercase leading-none group-hover:text-indigo-400 transition-colors line-clamp-1">{{ game.title }}</h3>
+                                 <h3 class="text-base xl:text-lg font-black text-white uppercase leading-none group-hover:text-indigo-400 transition-colors line-clamp-1">{{ game.title }}</h3>
                              </div>
                         </div>
                         
-                        <div class="flex items-center justify-between pt-3 border-t border-zinc-800/50">
+                        <div class="flex items-center justify-between pt-2 xl:pt-3 border-t border-zinc-800/50">
                             <span class="text-[10px] font-bold text-zinc-600 uppercase">{{ game.releaseYear }}</span>
                             <div class="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase group-hover:text-zinc-300 transition-colors">
                                 <EyeIcon class="w-3 h-3" />
@@ -225,7 +263,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useFetch } from '../../utils/useFetch';
 import { 
@@ -233,7 +271,8 @@ import {
     EyeIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
-    FunnelIcon 
+    FunnelIcon,
+    XMarkIcon
 } from '@heroicons/vue/24/solid';
 
 const router = useRouter();
@@ -266,6 +305,13 @@ const filters = ref({
     views: 'all', // 'all', 'true' (popular), 'false' (new)
     multiplayer: 'all', // 'all', 'true', 'false'
     categories: [] as string[]
+});
+
+const hasActiveFilters = computed(() => {
+    return filters.value.views !== 'all' || 
+           filters.value.multiplayer !== 'all' || 
+           filters.value.categories.length > 0 ||
+           searchQuery.value.length > 0;
 });
 
 

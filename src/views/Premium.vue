@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-full p-8 md:p-12 pb-24 relative overflow-hidden flex flex-col items-center">
+  <div class="min-h-full p-4 md:p-8 xl:p-12 pb-24 relative overflow-hidden flex flex-col items-center">
     
     <!-- Background Effects -->
     <div class="absolute inset-0 z-0 pointer-events-none">
@@ -7,7 +7,7 @@
     </div>
 
     <!-- HERO SECTION -->
-    <div class="relative z-10 text-center space-y-4 max-w-4xl mx-auto mb-16">
+    <div class="relative z-10 text-center space-y-4 max-w-4xl mx-auto mb-10 md:mb-16">
       <h1 class="text-4xl md:text-6xl font-black text-white tracking-tight">
         Passez au niveau <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-500 to-amber-600">Supérieur</span>
       </h1>
@@ -17,7 +17,7 @@
     </div>
 
     <!-- PRICING GRIDS -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto relative z-10 w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto relative z-10 w-full">
         
         <!-- PLAN 1: GRATUIT -->
         <div class="relative p-8 rounded-3xl bg-[#0a0a0a] border border-zinc-800 flex flex-col transition-transform duration-300 hover:-translate-y-2">

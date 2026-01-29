@@ -1,74 +1,69 @@
 <template>
-  <div class="h-full w-full bg-[#09090b] flex items-center justify-center p-4">
+  <div class="h-full w-full bg-[#09090b] relative overflow-hidden flex flex-col">
     
-    <!-- Window Controls & Drag Region -->
-    <div class="absolute top-0 left-0 w-full h-12 flex justify-end items-center px-4 z-[9999]" style="-webkit-app-region: drag">
-        <div class="flex gap-2" style="-webkit-app-region: no-drag">
-             <button @click="minimize" class="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer">
-                <MinusIcon class="w-5 h-5" />
-             </button>
-             <button @click="maximize" class="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer">
-                <Square2StackIcon class="w-4 h-4" />
-             </button>
-             <button @click="close" class="p-2 text-zinc-500 hover:text-white hover:bg-red-600 rounded-lg transition-colors cursor-pointer">
-                <XMarkIcon class="w-5 h-5" />
-             </button>
-        </div>
-    </div>
+    <!-- Window Controls & Drag Region (Buttons provided by Native Overlay) -->
+    <div class="flex-shrink-0 h-[60px] w-full z-[9999]" style="-webkit-app-region: drag"></div>
 
-    <!-- Register Card -->
-    <div class="w-full max-w-md card p-8 space-y-6 animate-fade-in relative overflow-hidden" style="-webkit-app-region: no-drag">
-         
-         <!-- Background decoration -->
-         <div class="absolute top-0 left-0 p-32 bg-indigo-600/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
-
-         <!-- Header -->
-         <div class="text-center space-y-2 relative z-10">
-             <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-black font-bold text-2xl mx-auto shadow-lg mb-4">
-                 J
-             </div>
-             <h1 class="text-2xl font-bold text-white tracking-tight">Créer un compte</h1>
-             <p class="text-zinc-500 text-sm">Rejoignez la communauté JeuxCracks.</p>
-         </div>
-
-         <!-- Form -->
-         <form @submit.prevent="handleRegister" class="space-y-4 relative z-10">
-             <div class="space-y-1">
-                 <label class="text-xs font-bold text-zinc-400 uppercase tracking-wide">Pseudo</label>
-                 <input v-model="form.pseudo" type="text" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none" placeholder="Votre pseudo" required />
-             </div>
-
-             <div class="space-y-1">
-                 <label class="text-xs font-bold text-zinc-400 uppercase tracking-wide">Email</label>
-                 <input v-model="form.email" type="email" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none" placeholder="votre@email.com" required />
-             </div>
+    <!-- Scrollable Content Area -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar flex items-center justify-center p-4">
+        
+        <!-- Register Card -->
+        <div class="w-full max-w-sm md:max-w-[420px] card p-5 space-y-4 animate-fade-in relative overflow-hidden" style="-webkit-app-region: no-drag">
              
-             <div class="space-y-1">
-                 <label class="text-xs font-bold text-zinc-400 uppercase tracking-wide">Mot de passe</label>
-                 <input v-model="form.password" type="password" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none" placeholder="••••••••" required />
+             <!-- Background decoration -->
+             <div class="absolute top-0 left-0 p-32 bg-indigo-600/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+
+             <!-- Header (Ultra Compact) -->
+             <div class="text-center space-y-1 relative z-10">
+                 <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-black font-bold text-lg mx-auto shadow-lg mb-2">
+                     J
+                 </div>
+                 <h1 class="text-lg font-bold text-white tracking-tight">Créer un compte</h1>
              </div>
 
-             <div class="space-y-1">
-                 <label class="text-xs font-bold text-zinc-400 uppercase tracking-wide">Confirmer le mot de passe</label>
-                 <input v-model="form.confirmPassword" type="password" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none" :class="{'border-red-500': passwordMismatch}" placeholder="••••••••" required />
-                 <p v-if="passwordMismatch" class="text-red-500 text-xs">Les mots de passe ne correspondent pas.</p>
+             <!-- Form -->
+             <form @submit.prevent="handleRegister" class="space-y-3 relative z-10">
+                 <div class="space-y-0.5">
+                     <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">Pseudo</label>
+                     <input v-model="form.pseudo" type="text" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none" placeholder="Votre pseudo" required />
+                 </div>
+
+                 <div class="space-y-0.5">
+                     <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">Email</label>
+                     <input v-model="form.email" type="email" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none" placeholder="votre@email.com" required />
+                 </div>
+                 
+                 <!-- Grid for Passwords -->
+                 <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-0.5">
+                        <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">Mot de passe</label>
+                        <input v-model="form.password" type="password" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none" placeholder="••••••••" required />
+                    </div>
+
+                    <div class="space-y-0.5">
+                        <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">Confirmer</label>
+                        <input v-model="form.confirmPassword" type="password" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none" :class="{'border-red-500': passwordMismatch}" placeholder="••••••••" required />
+                    </div>
+                 </div>
+                 
+                 <p v-if="passwordMismatch" class="text-red-500 text-[10px] text-center -mt-1">Les mots de passe ne correspondent pas.</p>
+
+                 <div v-if="error" class="p-2 bg-red-900/20 border border-red-900/50 rounded-lg text-red-400 text-xs text-center break-words">
+                     {{ error }}
+                 </div>
+
+                 <button type="submit" :disabled="loading || passwordMismatch" class="w-full py-2 bg-white text-black font-bold text-sm rounded-lg hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-1">
+                     <span v-if="loading" class="w-3 h-3 border-2 border-zinc-400 border-t-zinc-800 rounded-full animate-spin"></span>
+                     <span>{{ loading ? '...' : 'S\'inscrire' }}</span>
+                 </button>
+             </form>
+
+             <!-- Footer -->
+             <div class="text-center text-[10px] text-zinc-600 relative z-10">
+                 Déjà un compte ? <router-link to="/login" class="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer">Se connecter</router-link>
              </div>
 
-             <div v-if="error" class="p-3 bg-red-900/20 border border-red-900/50 rounded-lg text-red-400 text-sm text-center break-words">
-                 {{ error }}
-             </div>
-
-             <button type="submit" :disabled="loading || passwordMismatch" class="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2">
-                 <span v-if="loading" class="w-4 h-4 border-2 border-zinc-400 border-t-zinc-800 rounded-full animate-spin"></span>
-                 <span>{{ loading ? 'Inscription en cours...' : 'S\'inscrire' }}</span>
-             </button>
-         </form>
-
-         <!-- Footer -->
-         <div class="text-center text-xs text-zinc-600 relative z-10">
-             Déjà un compte ? <router-link to="/login" class="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer">Se connecter</router-link>
-         </div>
-
+        </div>
     </div>
   </div>
 </template>

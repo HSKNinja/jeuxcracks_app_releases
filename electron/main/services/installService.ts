@@ -164,6 +164,7 @@ class InstallService {
   async runRAR(path: string, fileName: string, gameData: any, password?: string) {
     const win = getMainWindow();
     win?.webContents.send('install-progress', { progress: 0, message: 'Extraction en cours...', gameID: gameData?.id });
+    win?.setProgressBar(0, { mode: 'indeterminate' }); // Barre de tâche indéterminée
     
     return new Promise((resolve, reject) => {
       // Determine worker path based on environment
@@ -190,6 +191,8 @@ class InstallService {
           isFinished = true;
           console.log('✅ Extraction terminée', workerPath);
           win?.webContents.send('install-progress', { progress: 100, message: 'Extraction terminée', gameID: gameData?.id });
+          win?.setProgressBar(1, { mode: 'normal' }); // 100% avant de clear
+          setTimeout(() => win?.setProgressBar(-1), 1000); // Clear après 1s
           
           // Cleanup RAR (with retry)
           const rarPath = join(path, fileName);
@@ -254,9 +257,16 @@ class InstallService {
                           const potentialFix = join(path, 'Fix Repair');
                           if (fs.existsSync(potentialFix)) {
                               console.log('🔧 Sauvetage du dossier Fix Repair...');
-                              try {
-                                  fs.renameSync(potentialFix, join(parentDir, 'Fix Repair'));
-                              } catch(e) { console.error('Echec déplacement Fix Repair:', e); }
+                              const targetFix = join(parentDir, 'Fix Repair');
+                              for(let i=0; i<5; i++) {
+                                  try {
+                                      fs.renameSync(potentialFix, targetFix);
+                                      break;
+                                  } catch(e: any) { 
+                                      console.warn(`⚠️ Echec déplacement Fix Repair (tentative ${i+1}):`, e.message); 
+                                      await new Promise(r => setTimeout(r, 800));
+                                  }
+                              }
                           }
                       }
 
@@ -318,6 +328,9 @@ class InstallService {
           });
         } else if (message.startsWith('error:')) {
           console.error('❌ Erreur worker:', message);
+          win?.setProgressBar(1, { mode: 'error' }); // Barre rouge
+          setTimeout(() => win?.setProgressBar(-1), 5000);
+
           win?.webContents.send('error', 'Erreur lors de l\'extraction: ' + message);
           // TODO: Send failed event with ID?
           if (gameData?.id) win?.webContents.send('install-failed', gameData.id);

@@ -36,7 +36,11 @@ import { useThemeStore } from '../store/theme';
 const route = useRoute();
 const themeStore = useThemeStore();
 
-const isAuthPage = computed(() => ['/login', '/register'].includes(route.path));
+const isAuthPage = computed(() => {
+    const p = route.path.toLowerCase();
+    // Broad check for login/register to prevent layout duplication
+    return p.includes('/login') || p.includes('/register') || route.name === 'Login' || route.name === 'Register';
+});
 
 const themeClass = computed(() => {
     const defaultTheme = 'bg-gradient-to-br from-[#050505] to-[#151515]';

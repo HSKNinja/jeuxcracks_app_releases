@@ -1,9 +1,9 @@
 <template>
-  <div class="h-full flex flex-col p-8 md:p-12 space-y-12 overflow-y-auto custom-scrollbar">
+  <div class="h-full flex flex-col p-4 md:p-8 xl:p-12 space-y-8 md:space-y-12 overflow-y-auto custom-scrollbar">
     
     <!-- Header -->
-    <div class="border-b border-white/5 pb-8 animate-fade-in">
-        <h1 class="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase mb-2">
+    <div class="border-b border-white/5 pb-6 md:pb-8 animate-fade-in">
+        <h1 class="text-2xl md:text-4xl xl:text-5xl font-black text-white tracking-tighter uppercase mb-2">
             Centre de <span class="text-indigo-500">Téléchargement</span>
         </h1>
         <p class="text-zinc-500 font-medium">Gérez vos téléchargements et installations en temps réel.</p>
@@ -28,7 +28,7 @@
 
         <div v-else class="grid grid-cols-1 gap-4">
             <div v-for="dl in downloadStore.downloads" :key="dl.gameID" 
-                 class="group relative bg-[#0a0a0a] border border-zinc-800 hover:border-indigo-500/30 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/5 overflow-hidden">
+                 class="group relative bg-[#0a0a0a] border border-zinc-800 hover:border-indigo-500/30 rounded-2xl p-4 md:p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/5 overflow-hidden">
                  
                  <!-- Background Beam -->
                  <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-50"></div>
@@ -131,9 +131,9 @@
         <div class="rounded-xl border border-zinc-800 bg-[#0a0a0a] overflow-hidden">
              <!-- Finished Installs -->
              <div v-for="item in finishedInstalls" :key="item.id" 
-                  class="group flex items-center justify-between p-4 border-b border-zinc-800/50 last:border-0 hover:bg-white/5 transition-colors cursor-default">
+                  class="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-b border-zinc-800/50 last:border-0 hover:bg-white/5 transition-colors cursor-default">
                   
-                  <div class="flex items-center gap-4">
+                  <div class="flex items-center gap-4 w-full sm:w-auto">
                       <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center border border-green-500/20">
                           <CheckIcon class="w-5 h-5 text-green-500" />
                       </div>
@@ -143,7 +143,7 @@
                       </div>
                   </div>
 
-                  <button class="px-4 py-2 text-xs font-bold uppercase text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded hover:bg-zinc-800 transition-colors">
+                  <button class="w-full sm:w-auto px-4 py-2 text-xs font-bold uppercase text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded hover:bg-zinc-800 transition-colors">
                       JOUER
                   </button>
              </div>

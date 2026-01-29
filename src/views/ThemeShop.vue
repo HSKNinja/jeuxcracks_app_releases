@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full overflow-y-auto custom-scrollbar p-6 md:p-8 space-y-8">
+  <div class="h-full overflow-y-auto custom-scrollbar p-4 md:p-8 xl:p-12 space-y-8">
     
     <!-- HEADER -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -32,7 +32,7 @@
     </div>
 
     <!-- GRID -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
         <div 
             v-for="item in filteredItems" 
             :key="item.id"

@@ -1,8 +1,8 @@
 <template>
-  <aside class="w-[280px] h-full flex flex-col bg-zinc-950 border-r border-zinc-800 flex-shrink-0 z-20">
+  <aside class="w-[220px] xl:w-[280px] h-full flex flex-col bg-zinc-950 border-r border-zinc-800 flex-shrink-0 z-20 transition-[width] duration-300">
     
     <!-- Brand -->
-    <div class="h-16 flex items-center px-6 gap-3 select-none">
+    <div class="h-16 flex items-center px-4 xl:px-6 gap-3 select-none overflow-hidden">
        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-bold text-lg shadow-sm">
           J
        </div>
@@ -10,7 +10,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-1 px-4 py-4 space-y-8 overflow-y-auto custom-scrollbar">
+    <nav class="flex-1 px-2 xl:px-4 py-3 xl:py-4 space-y-6 xl:space-y-8 overflow-y-auto custom-scrollbar">
       
       <!-- Section 1 -->
       <div class="space-y-1">
@@ -25,14 +25,6 @@
         <router-link to="/library" class="nav-item">
             <FolderIcon class="w-5 h-5" />
             <span>Bibliothèque</span>
-        </router-link>
-        <router-link to="/premium" class="nav-item group/premium">
-            <SparklesIcon class="w-5 h-5 group-hover/premium:text-amber-500 transition-colors" />
-            <span class="group-hover/premium:text-amber-400 transition-colors">Premium</span>
-        </router-link>
-        <router-link to="/dmca" class="nav-item">
-            <ScaleIcon class="w-5 h-5" />
-            <span>DMCA</span>
         </router-link>
       </div>
 
@@ -57,6 +49,10 @@
             <router-link to="/shop" class="nav-item">
                 <ShoppingBagIcon class="w-5 h-5" />
                 <span>Boutique</span>
+            </router-link>
+            <router-link to="/premium" class="nav-item group/premium">
+                <SparklesIcon class="w-5 h-5 group-hover/premium:text-amber-500 transition-colors" />
+                <span class="group-hover/premium:text-amber-400 transition-colors">Premium</span>
             </router-link>
         </div>
       </div>
