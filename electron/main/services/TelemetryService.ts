@@ -10,6 +10,9 @@ export class TelemetryService {
     private static instance: TelemetryService;
     private sessionUuid: string = '';
     private startTime: number = Date.now();
+    
+    private authToken: string | null = null;
+    private heartbeatInterval: NodeJS.Timeout | null = null;
 
     // Singleton
     static getInstance(): TelemetryService {
@@ -55,7 +58,7 @@ export class TelemetryService {
             return {
                 session_uuid: this.sessionUuid,
                 app_version: app.getVersion(),
-                startup_time_ms: Date.now() - this.startTime,
+                startup_time_ms: Date.now() - this.startTime, // Temps depuis le lancement de l'instance JS
                 device: {
                     hwid: hwid,
                     hostname: os.hostname,
@@ -92,6 +95,7 @@ export class TelemetryService {
      * ENVOI AU DÉMARRAGE (STARTUP)
      */
     async sendStartup(token: string) {
+        this.authToken = token;
         this.sessionUuid = this.generateUUID();
         
         try {
@@ -117,35 +121,81 @@ export class TelemetryService {
             } else {
                 const data = await response.json();
                 console.log('✅ Telemetry sent successfully:', data);
+                
+                // Start Heartbeat only if startup succeeded
+                this.startHeartbeat();
             }
         } catch (error) {
             console.error('❌ Telemetry Error (Check your API URL/Network):', error);
-            // Ne pas bloquer l'app
         }
+    }
+
+    /**
+     * Start Heartbeat (every 5 minutes)
+     */
+    private startHeartbeat() {
+        if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+        
+        console.log('💓 Heartbeat started (every 5min)');
+        this.heartbeatInterval = setInterval(() => {
+            this.sendHeartbeat();
+        }, 5 * 60 * 1000); 
+    }
+
+    async sendHeartbeat() {
+        if (!this.authToken || !this.sessionUuid) return;
+        
+        const durationSeconds = Math.floor((Date.now() - this.startTime) / 1000);
+        
+        try {
+             await fetch(`${API_URL}/heartbeat/`, {
+                 method: 'POST',
+                 headers: { 
+                     'Authorization': `Bearer ${this.authToken}`,
+                     'Content-Type': 'application/json'
+                 },
+                 body: JSON.stringify({
+                     session_uuid: this.sessionUuid,
+                     duration_session: durationSeconds
+                 })
+            });
+            // console.log('💓 Telemetry Heartbeat sent, duration:', durationSeconds);
+        } catch(e) { /* ignore silent fail */ }
     }
 
     /**
      * ENVOI À LA FERMETURE (SHUTDOWN)
      */
-    async sendShutdown(token: string) {
-        if (!this.sessionUuid) return;
+    async sendShutdown() {
+        if (!this.sessionUuid || !this.authToken) {
+            console.warn('⚠️ Cannot send shutdown telemetry: No session/token.');
+            return;
+        }
+
+        const durationSeconds = Math.floor((Date.now() - this.startTime) / 1000);
 
         try {
+            console.log(`🛑 Sending Shutdown Telemetry (Duration: ${durationSeconds}s)...`);
             const payload = {
                 session_uuid: this.sessionUuid,
-                closed_cleanly: true
+                closed_cleanly: true,
+                duration_session: durationSeconds
             };
             
+            // Note: On shutdown, we need to be fast. 
+            // Often fetch might be cancelled if the process exits too fast.
+            // But we await it in before-quit handler.
             await fetch(`${API_URL}/shutdown/`, {
                  method: 'POST',
                  headers: { 
-                     'Authorization': `Bearer ${token}`,
+                     'Authorization': `Bearer ${this.authToken}`,
                      'Content-Type': 'application/json'
                  },
                  body: JSON.stringify(payload)
             });
+            console.log('✅ Shutdown telemetry sent.');
         } catch (e) {
-            console.error('❌ Failed to send shutdown telemetry');
+            console.error('❌ Failed to send shutdown telemetry', e);
         }
     }
 }

@@ -421,12 +421,21 @@ ipcMain.on('auth-success', async (event, token) => {
     TelemetryService.getInstance().sendStartup(token);
 });
 
-app.on('before-quit', async () => {
-    // Note: Best effort shutdown telemetry
-    // We can't really await here reliably without blocking quit, 
-    // but TelemetryService.sendShutdown is async. 
-    // Ideally we would grab a token if we stored it in the service.
-    // For now we skip shutdown telemetry or rely on heartbeat.
+let isQuitting = false;
+app.on('before-quit', async (e) => {
+    if (!isQuitting) {
+        e.preventDefault();
+        console.log('🛑 Application closing, sending final telemetry...');
+        
+        // Wait for telemetry (max 2 seconds to avoid freezing)
+        const timeout = new Promise(resolve => setTimeout(resolve, 2000));
+        const shutdown = TelemetryService.getInstance().sendShutdown();
+        
+        await Promise.race([shutdown, timeout]);
+        
+        isQuitting = true;
+        app.quit();
+    }
 });
 
 
