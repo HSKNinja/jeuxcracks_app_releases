@@ -19,6 +19,7 @@
     "start": "electron ."
   },
   "devDependencies": {
+    "@types/systeminformation": "^3.54.1",
     "@vitejs/plugin-vue": "^5.0.4",
     "autoprefixer": "^10.4.15",
     "electron": "^25.0.0",
@@ -44,12 +45,14 @@
     "electron-squirrel-startup": "^1.0.0",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.6.2",
+    "node-machine-id": "^1.1.12",
     "node-unrar-js": "^2.0.2",
     "nodejs-file-downloader": "^4.12.1",
     "pinia": "^2.1.6",
     "pinia-plugin-persistedstate": "^3.2.0",
     "sudo-prompt": "^9.2.1",
     "swiper": "^11.1.0",
+    "systeminformation": "^5.30.7",
     "vue-final-modal": "^4.5.4",
     "vue-router": "^4.2.4",
     "vue-tsc": "^2.0.7",
