@@ -19,18 +19,29 @@
            class="bg-zinc-900/50 border border-white/5 text-sm rounded-xl py-2 pl-9 pr-4 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:bg-zinc-900 focus:border-indigo-500/50 transition-all w-32 focus:w-48 sm:w-48 sm:focus:w-64 md:w-64"
          />
        </div>
+
+       <!-- Social Toggle -->
+       <button @click="socialStore.togglePanel()" class="relative p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors group">
+          <UsersIcon class="w-5 h-5" />
+          <span v-if="socialStore.totalNotifications > 0" 
+                class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-zinc-950 px-1">
+             {{ socialStore.totalNotifications > 99 ? '99+' : socialStore.totalNotifications }}
+          </span>
+       </button>
     </div>
 
   </header>
 </template>
 
 <script setup lang="ts">
-import { MagnifyingGlassIcon, ChevronLeftIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, ChevronLeftIcon, UsersIcon } from '@heroicons/vue/24/outline';
 import { useRouter, useRoute } from 'vue-router';
 import { computed, ref } from 'vue';
+import { useSocialStore } from '../../store/social';
 
 const router = useRouter();
 const route = useRoute();
+const socialStore = useSocialStore();
 
 const searchQuery = ref('');
 

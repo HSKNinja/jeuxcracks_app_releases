@@ -4,6 +4,10 @@
   <!-- Global Modals -->
   <ModalsContainer />
   
+  <!-- Social Overlay -->
+  <FriendList v-if="store.isAuthenticated" />
+  <ChatWindow v-if="store.isAuthenticated" />
+  
   <ModalConfirm :modal-id="modalChooseEXE" title="Lancement du Jeu" @confirm="vfm.close(modalChooseEXE)" button="Annuler">
     <div class="space-y-8">
         
@@ -137,10 +141,14 @@ import { useDownloadStore } from './store/download';
 const downloadStore = useDownloadStore();
 import { useInstallStore } from './store/install';
 const installStore = useInstallStore();
+import { useSocialStore } from './store/social'; // Init Social Store
+const socialStore = useSocialStore();
 import { useVfm } from 'vue-final-modal';
 import ModalConfirm from './components/ModalConfirm.vue';
 import ProLayout from './layouts/ProLayout.vue';
 import UpdateNotification from './components/system/UpdateNotification.vue';
+import FriendList from './components/social/FriendList.vue';
+import ChatWindow from './components/social/ChatWindow.vue';
 
 // Déclaration globale pour TypeScript
 declare global {
@@ -331,6 +339,9 @@ onMounted(async () => {
   if (store.isAuthenticated && store.tokens) {
       console.log('📡 Auto-Triggering Telemetry startup (App Mount)...');
       window.electronAPI?.send('auth-success', store.tokens.access);
+      
+      // Init Social System
+      await socialStore.initialize();
   }
   
   if (!store.isAuthenticated && router.currentRoute.value.path !== '/login') {
