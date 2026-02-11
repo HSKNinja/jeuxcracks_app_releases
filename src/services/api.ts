@@ -131,36 +131,85 @@ export class JeuxCracksAPI {
   /**
    * Obtenir les détails d'un jeu
    */
-  static async getGame(id: string): Promise<any> {
-    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.DETAIL}?format=json&id=${id}`);
+  static async getGame(id: string | number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.DETAIL}${id}/`);
   }
   
   /**
-   * Ajouter/retirer un jeu des favoris
+   * Ajouter un jeu aux favoris
    */
-  static async toggleFavorite(gameId: number): Promise<any> {
-    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.TOGGLE_FAVORITE}${gameId}/`, 'POST');
+  static async addFavorite(gameId: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.FAVORITE}${gameId}/favorite/`, 'POST');
   }
   
   /**
-   * Liker/unliker un jeu
+   * Retirer un jeu des favoris
    */
-  static async toggleLike(gameId: string): Promise<any> {
-    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.TOGGLE_LIKE}${gameId}/`, 'POST');
+  static async removeFavorite(gameId: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.UNFAVORITE}${gameId}/unfavorite/`, 'POST');
   }
   
   /**
-   * Signaler un jeu
+   * Liker un jeu
    */
-  static async reportGame(gameId: string, reason: string): Promise<any> {
-    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.REPORT}${gameId}/`, 'POST', { reason });
+  static async likeGame(gameId: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.LIKE}${gameId}/like/`, 'POST');
+  }
+  
+  /**
+   * Unliker un jeu
+   */
+  static async unlikeGame(gameId: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.UNLIKE}${gameId}/unlike/`, 'POST');
   }
   
   /**
    * Incrémenter les vues d'un jeu
    */
-  static async incrementViews(gameId: string): Promise<any> {
-    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.VIEWS}${gameId}/`);
+  static async incrementViews(gameId: string | number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.VIEW}${gameId}/view/`, 'POST');
+  }
+  
+  /**
+   * Obtenir les jeux favoris
+   */
+  static async getFavorites(): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.FAVORITE}favorites/`);
+  }
+
+  /**
+   * Obtenir les jeux likés
+   */
+  static async getLikedGames(): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.LIKE}liked/`);
+  }
+
+  /**
+   * Obtenir les liens de téléchargement
+   */
+  static async getDownloadLinks(gameId: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.GAMES.DOWNLOAD}${gameId}/download/`);
+  }
+  
+  /**
+   * Obtenir les jeux populaires
+   */
+  static async getPopularGames(): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.GAMES.POPULAR);
+  }
+  
+  /**
+   * Obtenir les jeux récents
+   */
+  static async getRecentGames(): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.GAMES.RECENT);
+  }
+  
+  /**
+   * Obtenir les catégories
+   */
+  static async getCategories(): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.GAMES.CATEGORIES);
   }
   
   // ===== MULTILINKS =====

@@ -149,18 +149,17 @@ export const useMainStore = defineStore('main', {
     async toggleFavorite(gameID: string | number) {
       if (!this.isAuthenticated) return false;
       try {
-        await useFetch(`/Cracks/api/toggle_favorite/${gameID}/`, 'POST');
-        // Update local state intelligently to avoid full refetch delay
         const id = Number(gameID);
-        const index = this.favorites.indexOf(id as never); // Handle string/number mismatch
-        
-        // If strict match fails, try string conversion check
         const indexStr = this.favorites.findIndex(f => String(f) === String(id));
         
         if (indexStr !== -1) {
-            this.favorites.splice(indexStr, 1);
+          // Remove from favorites
+          await useFetch(`/api/app/games/${gameID}/unfavorite/`, 'POST');
+          this.favorites.splice(indexStr, 1);
         } else {
-            this.favorites.push(id as never);
+          // Add to favorites
+          await useFetch(`/api/app/games/${gameID}/favorite/`, 'POST');
+          this.favorites.push(id as never);
         }
         
         // Background sync to be sure

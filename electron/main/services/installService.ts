@@ -1,4 +1,4 @@
-import { Game } from '../../../types/global';
+
 import { BrowserWindow, ipcMain, app } from 'electron';
 import { join } from 'path';
 import * as fs from 'fs';
@@ -149,7 +149,9 @@ class InstallService {
         title: gameData.title,
         installPath: filePath,
         libraryId: matchedLib.id,
-        installDate: new Date().toISOString()
+        installDate: new Date().toISOString(),
+        version: (gameData as any).version,
+        source: (gameData as any).source || gameData.source || '',
     });
 
     const newGameData = {

@@ -20,6 +20,15 @@
          />
        </div>
 
+       <!-- Notifications Toggle -->
+       <button @click="notificationStore.togglePanel()" class="relative p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors group">
+          <BellIcon class="w-5 h-5" />
+          <span v-if="notificationStore.unreadCount > 0" 
+                class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-zinc-950 px-1">
+             {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+          </span>
+       </button>
+
        <!-- Social Toggle -->
        <button @click="socialStore.togglePanel()" class="relative p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors group">
           <UsersIcon class="w-5 h-5" />
@@ -34,14 +43,16 @@
 </template>
 
 <script setup lang="ts">
-import { MagnifyingGlassIcon, ChevronLeftIcon, UsersIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, ChevronLeftIcon, UsersIcon, BellIcon } from '@heroicons/vue/24/outline';
 import { useRouter, useRoute } from 'vue-router';
 import { computed, ref } from 'vue';
 import { useSocialStore } from '../../store/social';
+import { useNotificationStore } from '../../store/notifications';
 
 const router = useRouter();
 const route = useRoute();
 const socialStore = useSocialStore();
+const notificationStore = useNotificationStore();
 
 const searchQuery = ref('');
 

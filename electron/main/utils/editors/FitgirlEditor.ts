@@ -1,8 +1,7 @@
 import * as fs from 'fs';
 import { join } from 'path';
-import { EditorInterface } from '../../../../types/global';
 import { installService } from '../../services/installService';
-import { Game, GameInstalled } from '../../../../types/global';
+
 import { rootPath } from 'electron-root-path';
 import { exec } from 'child_process';
 import { getMainWindow } from '../..';

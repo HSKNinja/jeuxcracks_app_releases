@@ -86,6 +86,7 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMainStore } from '../store';
 import { useFetch } from '../utils/useFetch';
+import { JeuxCracksAPI } from '../services/api';
 import { HeartIcon } from '@heroicons/vue/24/solid';
 
 const router = useRouter();
@@ -93,36 +94,26 @@ const store = useMainStore();
 const loading = ref(true);
 const favoritesData = ref<any[]>([]);
 
-// Fetch full game details for each ID in store.favorites
+// Fetch favorites from API
 const loadFavorites = async () => {
     loading.value = true;
-    console.log('Loading favorites for IDs:', store.favorites);
-    
-    if (!store.favorites || store.favorites.length === 0) {
-        favoritesData.value = [];
-        loading.value = false;
-        return;
-    }
-
-    const promises = store.favorites.map(async (id) => {
-        try {
-            // Ensure ID is valid before fetching
-            if (!id) return null;
-            
-            const data: any = await useFetch(`/Cracks/api/game/?format=json&id=${id}`);
-            if (data && data.status) {
-                return data;
-            }
-        } catch (e) {
-            console.error(`Failed to fetch favorite ${id}`, e);
+    try {
+        const response: any = await JeuxCracksAPI.getFavorites();
+        // API returns list of game objects directly
+        if (Array.isArray(response)) {
+            favoritesData.value = response;
+        } else if (response.results) {
+             favoritesData.value = response.results;
+        } else {
+            console.error('Format de réponse inattendu:', response);
+            favoritesData.value = [];
         }
-        return null;
-    });
-
-    const results = await Promise.all(promises);
-    favoritesData.value = results.filter(g => g !== null);
-    console.log('Favorites loaded:', favoritesData.value);
-    loading.value = false;
+    } catch (e) {
+        console.error('Failed to load favorites', e);
+        favoritesData.value = [];
+    } finally {
+        loading.value = false;
+    }
 };
 
 const removeFavorite = async (id: string) => {

@@ -44,7 +44,11 @@ interface AuthTokens {
     recommended?: any;
   };
   monetization?: any;
-  source?: any[];
+  source?: any[] | string;
+  informations?: {
+    credit?: string;
+    [key: string]: any;
+  };
 }
 
 // Interface pour les jeux installés
@@ -110,4 +114,9 @@ interface PasswordForm {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+}
+
+interface EditorInterface {
+  verifyStructure(path: string): boolean;
+  installGame(path: string, gameData: Game): Promise<void>;
 }

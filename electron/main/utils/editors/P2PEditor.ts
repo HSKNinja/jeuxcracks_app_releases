@@ -1,7 +1,7 @@
 import * as fs from 'fs';
-import { EditorInterface } from '../../../../types/global';
+
 import { installService } from '../../services/installService';
-import { Game } from '../../../../types/global';
+
 import { getMainWindow } from '../..';
 
 export class P2PEditor implements EditorInterface {

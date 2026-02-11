@@ -2,7 +2,6 @@
 import { OnlineFixEditor } from './editors/OnlinefixEditor';
 import { FitgirlEditor } from './editors/FitgirlEditor';
 import { P2PEditor } from './editors/P2PEditor';
-import { Game, EditorInterface } from '../../../types/global';
 import { BrowserWindow } from 'electron';
 import { getMainWindow } from '..';
 
@@ -87,8 +86,13 @@ export class GameInstaller {
 
   private getEditorName(gameData: Game): string {
     // Vérifier la source
-    if (gameData.source && Array.isArray(gameData.source) && gameData.source.length > 0) {
-      return gameData.source[0].name;
+    if (gameData.source) {
+      if (typeof gameData.source === 'string') {
+        return gameData.source;
+      }
+      if (Array.isArray(gameData.source) && gameData.source.length > 0) {
+        return gameData.source[0].name;
+      }
     }
     
     return '';
@@ -96,10 +100,16 @@ export class GameInstaller {
 
   private isOnlineFixGame(gameData: Game): boolean {
     // Vérifier la source
-    if (gameData.source && Array.isArray(gameData.source)) {
-      return gameData.source.some(source => 
-        source.name && source.name.toLowerCase().includes('onlinefix')
-      );
+    if (gameData.source) {
+      if (typeof gameData.source === 'string') {
+        return gameData.source.toLowerCase().includes('onlinefix') || 
+               gameData.source.toLowerCase().includes('online-fix');
+      }
+      if (Array.isArray(gameData.source)) {
+        return gameData.source.some(source => 
+          source.name && source.name.toLowerCase().includes('onlinefix')
+        );
+      }
     }
     
     return false;

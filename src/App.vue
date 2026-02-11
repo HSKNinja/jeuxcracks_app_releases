@@ -8,78 +8,59 @@
   <FriendList v-if="store.isAuthenticated" />
   <ChatWindow v-if="store.isAuthenticated" />
   
+  <!-- Notification Panel -->
+  <NotificationPanel v-if="store.isAuthenticated" />
+  
   <ModalConfirm :modal-id="modalChooseEXE" title="Lancement du Jeu" @confirm="vfm.close(modalChooseEXE)" button="Annuler">
-    <div class="space-y-8">
+    <div class="space-y-6">
         
-        <!-- Hero Status -->
-        <div class="relative overflow-hidden rounded-2xl bg-black/40 border border-white/5 p-6 flex flex-col items-center text-center group">
-            <!-- Background Glow -->
-            <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-700"></div>
-            
-            <div class="relative z-10 w-16 h-16 mb-4 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 p-[1px] shadow-[0_0_30px_rgba(99,102,241,0.3)]">
-                <div class="w-full h-full rounded-2xl bg-black flex items-center justify-center">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <h3 class="relative z-10 text-lg font-bold text-white mb-1 tracking-tight">Fichier manquant</h3>
-            <p class="relative z-10 text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
-                Nous avons détecté plusieurs exécutables. Sélectionnez celui qui lance le jeu pour continuer.
-            </p>
+        <!-- Header -->
+        <div class="text-center space-y-2">
+             <div class="w-12 h-12 mx-auto rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)] animate-pulse-slow">
+                 <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                 </svg>
+             </div>
+             <div>
+                 <h3 class="text-xs font-black text-white uppercase tracking-[0.2em]">Sélection de l'Exécutable</h3>
+                 <p class="text-[10px] uppercase font-bold tracking-wider text-zinc-500 mt-1">Plusieurs fichiers détectés</p>
+             </div>
         </div>
 
         <!-- Scrollable List -->
-        <div class="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar px-1">
+        <div class="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar px-1">
             <div 
                 v-for="(exe, index) in executables" 
                 :key="index"
                 @click="chooseEXE(exe)"
-                class="group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 cursor-pointer overflow-hidden transform hover:-translate-y-0.5"
+                class="group flex items-center justify-between p-3 rounded-xl border border-transparent transition-all duration-300 cursor-pointer animate-slide-up"
                 :class="isRecommended(exe) 
-                    ? 'bg-indigo-900/20 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.15)] order-first' 
-                    : 'bg-zinc-900/40 border-white/5 hover:bg-zinc-800 hover:border-indigo-500/50'"
+                    ? 'bg-indigo-500/10 border-indigo-500/30 hover:bg-indigo-500/20' 
+                    : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'"
                 :style="{ animationDelay: `${index * 50}ms` }"
             >   
-                <!-- Selection Indicator Bar -->
-                <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                <!-- Icon -->
-                <div class="relative w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg transition-colors"
-                    :class="isRecommended(exe) ? 'bg-indigo-500/20 border border-indigo-500/30' : 'bg-white/5 border border-white/5 group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30'"
-                >
-                    <span class="text-[10px] font-black transition-colors"
-                        :class="isRecommended(exe) ? 'text-indigo-300' : 'text-zinc-500 group-hover:text-indigo-300'"
-                    >EXE</span>
-                </div>
-
-                <!-- Info -->
-                <div class="flex-1 min-w-0 flex flex-col">
-                    <div class="flex items-center gap-2">
-                        <h4 class="text-xs font-bold truncate transition-colors tracking-wide"
-                            :class="isRecommended(exe) ? 'text-white' : 'text-zinc-200 group-hover:text-white'"
-                        >
-                            {{ exe.split(/[\\/]/).pop() }}
-                        </h4>
-                        <span v-if="isRecommended(exe)" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-500 text-white shadow-sm shimmer-effect">
-                            RECOMMANDÉ
-                        </span>
+                <div class="flex items-center gap-3 min-w-0">
+                    <!-- Icon -->
+                    <div class="w-8 h-8 rounded bg-black/50 flex items-center justify-center flex-shrink-0" :class="isRecommended(exe) ? 'text-indigo-400' : 'text-zinc-500 group-hover:text-zinc-300'">
+                         <svg v-if="isRecommended(exe)" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                         <span v-else class="text-[9px] font-mono font-bold">EXE</span>
                     </div>
-                    <span class="text-[10px] truncate transition-colors font-mono mt-0.5"
-                        :class="isRecommended(exe) ? 'text-indigo-200/70' : 'text-zinc-600 group-hover:text-zinc-400'"
-                    >
-                        {{ exe }}
-                    </span>
+
+                    <!-- Text -->
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-xs font-bold text-white truncate group-hover:text-indigo-300 transition-colors">{{ exe.split(/[\\/]/).pop() }}</span>
+                        <span class="text-[9px] text-zinc-500 font-mono truncate max-w-[200px]">{{ exe }}</span>
+                    </div>
                 </div>
 
-                <!-- Action -->
-                <div class="w-8 h-8 rounded-full border border-white/5 flex items-center justify-center group-hover:bg-white group-hover:border-white transition-all">
-                    <svg class="w-4 h-4 text-zinc-600 group-hover:text-black transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7l7 7-7 7"/>
-                    </svg>
+                <!-- Right Action/Badge -->
+                <div v-if="isRecommended(exe)" class="px-2 py-1 bg-indigo-500 text-white text-[9px] font-bold rounded uppercase tracking-wider flex-shrink-0 shadow-lg shadow-indigo-500/20">
+                    Recommandé
                 </div>
+                <div v-else class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                </div>
+
             </div>
         </div>
     </div>
@@ -143,12 +124,15 @@ import { useInstallStore } from './store/install';
 const installStore = useInstallStore();
 import { useSocialStore } from './store/social'; // Init Social Store
 const socialStore = useSocialStore();
+import { useNotificationStore } from './store/notifications'; // Init Notification Store
+const notificationStore = useNotificationStore();
 import { useVfm } from 'vue-final-modal';
 import ModalConfirm from './components/ModalConfirm.vue';
 import ProLayout from './layouts/ProLayout.vue';
 import UpdateNotification from './components/system/UpdateNotification.vue';
 import FriendList from './components/social/FriendList.vue';
 import ChatWindow from './components/social/ChatWindow.vue';
+import NotificationPanel from './components/notifications/NotificationPanel.vue';
 
 // Déclaration globale pour TypeScript
 declare global {
@@ -222,6 +206,14 @@ if (window.electronAPI) {
     installStore.setFinished(game.id);
     store.addLibrary(game);
     await store.syncLibraryFromFile();
+    
+    // Add notification to notification panel
+    notificationStore.addLocalNotification({
+      title: 'Jeu prêt à jouer ! 🎮',
+      message: `${game.title || 'Le jeu'} est installé et prêt à être lancé.`,
+      type: 'SYSTEM',
+      link: `game://${game.id}`
+    });
   });
   window.electronAPI.on('install-progress', (e: any, status: any) => {
     if (status && status.gameID) {
@@ -342,6 +334,9 @@ onMounted(async () => {
       
       // Init Social System
       await socialStore.initialize();
+      
+      // Init Notification System
+      await notificationStore.initialize();
   }
   
   if (!store.isAuthenticated && router.currentRoute.value.path !== '/login') {

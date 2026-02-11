@@ -24,27 +24,36 @@
             <!-- 1. BACKGROUND LAYERS -->
             <div class="absolute inset-0 bg-black">
                 
-                <!-- Video Background -->
+                <!-- YouTube Video Embed (silent, loop, no branding) -->
+                <div v-if="youtubeVideoId" class="absolute inset-0 overflow-hidden">
+                    <iframe 
+                        :src="`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=1&loop=1&playlist=${youtubeVideoId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&vq=hd1080&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0`"
+                        class="absolute w-[120%] h-[120%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media"
+                    ></iframe>
+                </div>
+                <!-- Direct Video File -->
                 <video 
-                    v-if="currentGame.video"
+                    v-else-if="currentGame.video && !currentGame.video.includes('youtube')"
                     :src="currentGame.video" 
-                    class="w-full h-full object-cover opacity-60 animate-pan-zoom"
+                    :poster="currentGame.header"
+                    class="w-full h-full object-cover"
                     autoplay loop muted playsinline
                 ></video>
                 <!-- Image Fallback -->
                 <img 
                     v-else
                     :src="currentGame.header" 
-                    class="w-full h-full object-cover opacity-50 animate-pan-zoom" 
+                    class="w-full h-full object-cover" 
                 />
 
-                <!-- Artistic Overlays -->
-                <div class="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-                <div class="absolute inset-0 bg-[url('/assets/noise.png')] opacity-[0.03] mix-blend-overlay"></div>
+                <!-- Subtle Overlays (reduced intensity for clarity) -->
+                <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
                 
                 <!-- Vignette -->
-                <div class="absolute inset-0 ring-1 ring-white/5 inset-shadow"></div>
+                <div class="absolute inset-0 ring-1 ring-white/5"></div>
             </div>
 
             <!-- 2. CONTENT CONTAINER -->
@@ -69,7 +78,7 @@
                             Nouveauté
                          </span>
                          <span class="px-3 py-1 border border-white/20 backdrop-blur-md text-white/80 text-[10px] font-bold uppercase tracking-[0.25em]">
-                            {{ currentGame.categories?.[0] || 'Jeu' }}
+                            {{ currentGame.categories?.[0]?.name || currentGame.categories?.[0] || 'Jeu' }}
                          </span>
                          <span class="px-3 py-1 text-zinc-400 text-[10px] font-bold uppercase tracking-[0.25em] flex items-center gap-2">
                              <EyeIcon class="w-3 h-3" /> {{ formatNumber(currentGame.views) }}
@@ -165,6 +174,14 @@ const SLIDE_DURATION = 8000; // 8 seconds per slide
 
 const currentGame = computed(() => games.value[activeIndex.value]);
 
+// Extract YouTube video ID from URL
+const youtubeVideoId = computed(() => {
+    const url = currentGame.value?.video;
+    if (!url) return null;
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+    return match ? match[1] : null;
+});
+
 function goToPage(path: string) {
   router.push(path);
 }
@@ -213,38 +230,55 @@ function isNewGame(dateString: string) {
 onMounted(async () => {
   loading.value = true;
   try {
-    // API Call: Top 5 Games
-    const response: any = await useFetch('/Cracks/api/liste_jeux/?app=true&views=true&limit=5'); 
+    // Step 1: Get popular games list (IDs only)
+    const response: any = await useFetch('/api/app/games/popular/'); 
     
-    const fixGame = (g: any) => {
-        let header = g.header;
-        if(g.urls?.header_image) header = g.urls.header_image;
-        if(!header && g.urls?.image) header = g.urls.image; // Fallback
-        if(!header && g.informations?.image) header = "https://api.jeuxcracks.fr" + g.informations.image;
-        if (!header) header = '/assets/placeholder.webp';
+    const rawGames = response?.results || response?.games || (Array.isArray(response) ? response : []);
+    
+    if (rawGames.length === 0) {
+      throw new Error('Aucun jeu trouvé');
+    }
 
-        let video = g.video || g.urls?.trailer || null;
-
-        return {
-            ...g,
-            id: g.id,
-            title: g.informations?.title || g.title,
-            descriptionShort: stripHtml(g.short_description || g.descriptions?.short_description || g.description || ''),
-            header: header,
+    // Step 2: Fetch more games to ensure we have 5 with video or background
+    const gamesToFetch = rawGames.slice(0, 15); // Fetch up to 15 to filter
+    
+    const detailedGames = await Promise.all(
+      gamesToFetch.map(async (g: any) => {
+        try {
+          // Fetch game details to get video and background
+          const detail: any = await useFetch(`/api/app/games/${g.id}/`);
+          console.log('🎬 Game Detail:', detail?.title, 'Video:', detail?.video, 'Background:', detail?.background);
+          
+          const background = detail?.background || null;
+          const video = detail?.video || null;
+          
+          // Skip games with neither video nor background
+          if (!video && !background) {
+            return null;
+          }
+          
+          return {
+            id: detail?.id || g.id,
+            title: detail?.title || g.title,
+            descriptionShort: stripHtml(detail?.description_short || detail?.description || g.description_short || ''),
+            header: background || '/assets/placeholder.webp', // Use background as primary image
             video: video,
-            views: g.views,
-            categories: g.categories || [],
-            isNew: isNewGame(g.status?.created_at || g.created_at)
-        };
-    };
-
-    if (response && (response.results || response.games)) {
-        const rawGames = response.results || response.games;
-        games.value = rawGames.map(fixGame);
-        
-        if (games.value.length > 0) {
-            resetTimer();
+            views: detail?.views || g.views || 0,
+            categories: detail?.categories || g.categories || [],
+            isNew: isNewGame(detail?.published_at || g.published_at || g.created_at)
+          };
+        } catch (err) {
+          console.error('Failed to fetch detail for game', g.id, err);
+          return null; // Skip failed games
         }
+      })
+    );
+
+    // Filter out null games and take first 5
+    games.value = detailedGames.filter(g => g !== null).slice(0, 5);
+    
+    if (games.value.length > 0) {
+      resetTimer();
     }
 
   } catch (e) {

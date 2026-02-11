@@ -158,6 +158,15 @@ app.whenReady().then(async () => {
     console.error('Erreur lors de la création du répertoire downloads:', error);
   }
   
+  // Suppress specific warnings
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    if (args.length > 0 && typeof args[0] === 'string' && args[0].includes('ch-ua-form-factors')) {
+      return;
+    }
+    originalConsoleError(...args);
+  };
+
   createWindow();
 
   // Configuration des logs pour electron-updater

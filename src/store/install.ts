@@ -105,7 +105,7 @@ export const useInstallStore = defineStore('install', {
     },
     async fetchGameData(id: number) {
       try {
-        const game = await useFetch(`/Cracks/api/game/?format=json&id=${id}`);
+        const game = await useFetch(`/api/app/games/${id}/`);
       const index = this.getIndexInstall(id);
         if (index !== -1 && this.installs[index]) {
           // Traiter l'image avec getImageUrl

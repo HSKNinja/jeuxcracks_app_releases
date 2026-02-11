@@ -107,7 +107,15 @@ class DownloadService {
 
   private downloadTorrent = async (event, fileURL, savePath, gameData) => {
     try {
-      // Pour les torrents, on télécharge d'abord le fichier .torrent
+      // Si c'est un lien magnet, on démarre directement
+      if (fileURL.startsWith('magnet:')) {
+          const win = getMainWindow();
+          win?.webContents.send('download-pending');
+          await torrentService.startTorrent(event, fileURL, savePath, gameData);
+          return;
+      }
+
+      // Pour les fichiers .torrent (HTTP/HTTPS), on télécharge d'abord le fichier
     const { filePath, downloadStatus } = await this.downloadFile(fileURL, savePath, gameData);
     const win = getMainWindow();
       

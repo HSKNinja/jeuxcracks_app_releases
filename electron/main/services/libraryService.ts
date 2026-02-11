@@ -20,6 +20,7 @@ export interface InstalledGameRegistry {
     libraryId: string; // which library it belongs to
     installDate: string;
     version?: string;
+    source?: string;
 }
 
 export interface LibraryConfig {

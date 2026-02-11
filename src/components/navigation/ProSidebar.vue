@@ -42,8 +42,12 @@
                 </span>
             </router-link>
             <router-link to="/favorites" class="nav-item">
-                <HeartIcon class="w-5 h-5" />
+                <StarIcon class="w-5 h-5" />
                 <span>Favoris</span>
+            </router-link>
+            <router-link to="/liked" class="nav-item">
+                <HeartIcon class="w-5 h-5" />
+                <span>Jeux Aimés</span>
             </router-link>
             <!-- Moved Shop to User Section -->
             <router-link to="/shop" class="nav-item">
@@ -78,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { HomeIcon, RectangleStackIcon, FolderIcon, ArrowDownTrayIcon, UserCircleIcon, HeartIcon, ShoppingBagIcon, SparklesIcon, ScaleIcon } from '@heroicons/vue/24/outline';
+import { HomeIcon, RectangleStackIcon, FolderIcon, ArrowDownTrayIcon, UserCircleIcon, HeartIcon, ShoppingBagIcon, SparklesIcon, ScaleIcon, StarIcon } from '@heroicons/vue/24/outline';
 import { API_CONFIG } from '../../config/api';
 import { useDownloadStore } from '../../store/download';
 import { useMainStore } from '../../store';

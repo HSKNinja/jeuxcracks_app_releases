@@ -20,14 +20,21 @@ export const API_CONFIG = {
       USER_DELETE: '/auth/api/user/me/delete',
     },
     
-    // Jeux (Cracks)
+    // Jeux (Catalogue API)
     GAMES: {
-      LIST: '/Cracks/api/liste_jeux/',
-      DETAIL: '/Cracks/api/game/',
-      TOGGLE_FAVORITE: '/Cracks/api/toggle_favorite/',
-      TOGGLE_LIKE: '/Cracks/api/toggle_like/',
-      REPORT: '/Cracks/api/report/',
-      VIEWS: '/Cracks/api/views/',
+      LIST: '/api/app/games/',
+      DETAIL: '/api/app/games/', // Append {id}/ to get detail
+      POPULAR: '/api/app/games/popular/',
+      RECENT: '/api/app/games/recent/',
+      TRENDING: '/api/app/games/trending/',
+      BY_SLUG: '/api/app/games/by-slug/', // Append {slug}/
+      LIKE: '/api/app/games/', // Append {id}/like/
+      UNLIKE: '/api/app/games/', // Append {id}/unlike/
+      FAVORITE: '/api/app/games/', // Append {id}/favorite/
+      UNFAVORITE: '/api/app/games/', // Append {id}/unfavorite/
+      VIEW: '/api/app/games/', // Append {id}/view/
+      DOWNLOAD: '/api/app/games/', // Append {id}/download/
+      CATEGORIES: '/api/app/categories/',
     },
     
     // MultiLinks

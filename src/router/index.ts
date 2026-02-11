@@ -4,6 +4,7 @@ import Catalog from "../views/catalog/index.vue";
 import Game from "../views/catalog/game.vue";
 import Contact from "../views/Contact.vue";
 import Favorites from "../views/Favorites.vue";
+import Liked from "../views/Liked.vue";
 import Library from "../views/Library.vue";
 import Settings from "../views/Settings.vue";
 import Downloads from "../views/Downloads.vue";
@@ -50,6 +51,12 @@ const routes = [
         path: "/favorites",
         name: "Favories",
         component: Favorites,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: "/liked",
+        name: "Likes",
+        component: Liked,
         meta: { requiresAuth: true }
     },
     {

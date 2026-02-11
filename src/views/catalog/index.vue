@@ -75,75 +75,62 @@
             </div>
 
             <!-- Filters Section -->
-            <div class="space-y-12 mt-12">
+            <div class="space-y-10 mt-12">
                 
                 <!-- Sort -->
-                <div class="space-y-4">
+                <div class="space-y-3">
                     <h3 class="text-xs font-black text-zinc-500 uppercase tracking-[0.2em] border-l-2 border-zinc-800 pl-3">Trier par</h3>
-                    <div class="flex flex-col gap-2">
+                    <div class="flex flex-col gap-1">
                         <button 
-                            @click="setFilter('views', 'all')" 
-                            class="text-left text-sm font-bold uppercase transition-colors"
-                            :class="filters.views === 'all' ? 'text-white pl-2 border-l-2 border-indigo-500' : 'text-zinc-600 hover:text-zinc-400 pl-2 border-l-2 border-transparent'"
+                            v-for="opt in sortOptions"
+                            :key="opt.value"
+                            @click="setSort(opt.value)" 
+                            class="text-left text-sm font-bold uppercase transition-colors py-1"
+                            :class="filters.sort === opt.value ? 'text-white pl-2 border-l-2 border-indigo-500' : 'text-zinc-600 hover:text-zinc-400 pl-2 border-l-2 border-transparent'"
                         >
-                            Pertinence
-                        </button>
-                        <button 
-                            @click="setFilter('views', 'true')" 
-                            class="text-left text-sm font-bold uppercase transition-colors"
-                            :class="filters.views === 'true' ? 'text-white pl-2 border-l-2 border-indigo-500' : 'text-zinc-600 hover:text-zinc-400 pl-2 border-l-2 border-transparent'"
-                        >
-                            Populaires
-                        </button>
-                         <button 
-                            @click="setFilter('views', 'false')" 
-                            class="text-left text-sm font-bold uppercase transition-colors"
-                            :class="filters.views === 'false' ? 'text-white pl-2 border-l-2 border-indigo-500' : 'text-zinc-600 hover:text-zinc-400 pl-2 border-l-2 border-transparent'"
-                        >
-                            Nouveautés
+                            {{ opt.label }}
                         </button>
                     </div>
                 </div>
 
-                <!-- Mode -->
-                <div class="space-y-4">
-                    <h3 class="text-xs font-black text-zinc-500 uppercase tracking-[0.2em] border-l-2 border-zinc-800 pl-3">Mode</h3>
-                    <div class="flex flex-wrap gap-2">
-                         <button 
-                            @click="setFilter('multiplayer', 'all')" 
-                            class="px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider transition-all border"
-                            :class="filters.multiplayer === 'all' ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-600'"
-                        >Tout</button>
-                        <button 
-                            @click="setFilter('multiplayer', 'true')" 
-                            class="px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider transition-all border"
-                            :class="filters.multiplayer === 'true' ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-600'"
-                        >Multi</button>
-                         <button 
-                            @click="setFilter('multiplayer', 'false')" 
-                            class="px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider transition-all border"
-                            :class="filters.multiplayer === 'false' ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-600'"
-                        >Solo</button>
-                    </div>
-                </div>
-
+                <!-- Online Mode Toggle -->
                 <!-- Categories -->
-                <div class="space-y-4">
+                <div class="space-y-3">
                     <div class="flex items-center justify-between border-l-2 border-zinc-800 pl-3">
                          <h3 class="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Genre</h3>
-                         <button v-if="filters.categories.length > 0" @click="resetCategories" class="text-[10px] font-bold text-red-500 uppercase hover:text-red-400">Reset</button>
+                         <button v-if="filters.category !== ''" @click="filters.category = ''; fetchGames()" class="text-[10px] font-bold text-red-500 uppercase hover:text-red-400">Reset</button>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-x-2 gap-y-2">
+                    <div class="grid grid-cols-2 gap-x-2 gap-y-1.5">
                         <button 
                             v-for="cat in categories" 
-                            :key="cat.value"
-                            @click="toggleCategory(cat.value)"
-                            class="text-left px-3 py-2 rounded bg-zinc-900/50 hover:bg-zinc-900 text-[10px] font-bold uppercase transition-colors flex items-center justify-between group"
-                            :class="filters.categories.includes(cat.value) ? 'text-indigo-400 ring-1 ring-indigo-500/50' : 'text-zinc-500 hover:text-zinc-300'"
+                            :key="cat.slug"
+                            @click="setCategory(cat.slug)"
+                            class="text-left px-2.5 py-1.5 rounded bg-zinc-900/50 hover:bg-zinc-900 text-[10px] font-bold uppercase transition-colors flex items-center justify-between group"
+                            :class="filters.category === cat.slug ? 'text-indigo-400 ring-1 ring-indigo-500/50' : 'text-zinc-500 hover:text-zinc-300'"
                         >
                             {{ cat.name }}
-                            <span v-if="filters.categories.includes(cat.value)" class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            <span v-if="filters.category === cat.slug" class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between border-l-2 border-zinc-800 pl-3">
+                         <h3 class="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Tags</h3>
+                         <button v-if="filters.tags.length > 0" @click="resetTags" class="text-[10px] font-bold text-red-500 uppercase hover:text-red-400">Reset</button>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-1.5">
+                        <button 
+                            v-for="tag in availableTags" 
+                            :key="tag"
+                            @click="toggleTag(tag)"
+                            class="px-2 py-1 rounded text-[9px] font-bold uppercase transition-all border"
+                            :class="filters.tags.includes(tag) ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-600 hover:text-zinc-400'"
+                        >
+                            {{ tag }}
                         </button>
                     </div>
                 </div>
@@ -173,8 +160,8 @@
                 <p class="text-zinc-500">Essayez d'autres termes ou filtres.</p>
             </div>
 
-            <!-- Grid (Landscape Cards) -->
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 xl:gap-8 animate-fade-in-up">
+            <!-- Grid (Portrait Cards 264x354) -->
+            <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 xl:gap-6 animate-fade-in-up">
                 
                 <div 
                     v-for="(game, index) in games" 
@@ -183,8 +170,8 @@
                     @click="goToGame(game.id)"
                     :style="{ animationDelay: `${index * 50}ms` }"
                 >
-                    <!-- Image Area (Wider Aspect Ratio to fit Steam headers) -->
-                    <div class="relative w-full aspect-[2/1] overflow-hidden bg-zinc-900">
+                    <!-- Image Area (Portrait Aspect Ratio for new API images) -->
+                    <div class="relative w-full aspect-[3/4] overflow-hidden bg-zinc-900">
                         <img 
                             :src="game.header" 
                             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-102 opacity-80 group-hover:opacity-100"
@@ -210,16 +197,16 @@
                     </div>
 
                     <!-- Info Area -->
-                    <div class="p-4 xl:p-5 flex flex-col gap-2 xl:gap-3">
-                        <div class="flex justify-between items-start">
-                             <div>
-                                 <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">{{ game.categories?.[0] || 'Jeu' }}</span>
-                                 <h3 class="text-base xl:text-lg font-black text-white uppercase leading-none group-hover:text-indigo-400 transition-colors line-clamp-1">{{ game.title }}</h3>
+                    <div class="p-3 xl:p-4 flex flex-col gap-2 overflow-hidden">
+                        <div class="flex justify-between items-start min-w-0">
+                             <div class="min-w-0 w-full overflow-hidden">
+                                 <span class="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1 truncate">{{ game.categories?.[0]?.name || game.categories?.[0] || 'Jeu' }}</span>
+                                 <h3 class="text-sm xl:text-base font-black text-white uppercase leading-tight group-hover:text-indigo-400 transition-colors truncate">{{ game.title }}</h3>
                              </div>
                         </div>
                         
                         <div class="flex items-center justify-between pt-2 xl:pt-3 border-t border-zinc-800/50">
-                            <span class="text-[10px] font-bold text-zinc-600 uppercase">{{ game.releaseYear }}</span>
+                            <span class="text-[10px] font-bold text-zinc-600 uppercase">{{ game.latest_version?.size || 'N/A' }}</span>
                             <div class="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase group-hover:text-zinc-300 transition-colors">
                                 <EyeIcon class="w-3 h-3" />
                                 {{ formatNumber(game.views) }}
@@ -302,31 +289,58 @@ onMounted(() => {
 });
 
 const filters = ref({
-    views: 'all', // 'all', 'true' (popular), 'false' (new)
-    multiplayer: 'all', // 'all', 'true', 'false'
-    categories: [] as string[]
+    sort: 'relevance', // 'relevance', 'newest', 'popular', 'views', 'downloads'
+    is_online: true as boolean | null, // null = all, true = online only
+    category: '' as string, // single category slug
+    tags: [] as string[], // array of tag names
+    year: '' as string // release year filter
 });
 
 const hasActiveFilters = computed(() => {
-    return filters.value.views !== 'all' || 
-           filters.value.multiplayer !== 'all' || 
-           filters.value.categories.length > 0 ||
+    return filters.value.sort !== 'relevance' || 
+           filters.value.is_online !== null || 
+           filters.value.category !== '' ||
+           filters.value.tags.length > 0 ||
+           filters.value.year !== '' ||
            searchQuery.value.length > 0;
 });
 
 
-// Categories Data
+// Categories Data (from API)
 const categories = [
-  { name: 'Action', value: 'Action' },
-  { name: 'Aventure', value: 'Adventure' },
-  { name: 'RPG', value: 'RPG' },
-  { name: 'Stratégie', value: 'Strategy' },
-  { name: 'Simulation', value: 'Simulation' },
-  { name: 'Horreur', value: 'Horreur' },
-  { name: 'FPS', value: 'FPS' },
-  { name: 'Course', value: 'Racing' },
-  { name: 'Sport', value: 'Sport' },
-  { name: 'Indie', value: 'Indie' },
+    { name: 'Action', slug: 'action' },
+    { name: 'Adventure', slug: 'adventure' },
+    { name: 'RPG', slug: 'role-playing-rpg' },
+    { name: 'Shooter', slug: 'shooter' },
+    { name: 'Strategy', slug: 'strategy' },
+    { name: 'Simulator', slug: 'simulator' },
+    { name: 'Indie', slug: 'indie' },
+    { name: 'Racing', slug: 'racing' },
+    { name: 'Sport', slug: 'sport' },
+    { name: 'Puzzle', slug: 'puzzle' },
+    { name: 'Platform', slug: 'platform' },
+    { name: 'Arcade', slug: 'arcade' },
+    { name: 'Fighting', slug: 'fighting' },
+    { name: 'Tactical', slug: 'tactical' },
+    { name: 'Horror', slug: 'horror' },
+    { name: 'Visual Novel', slug: 'visual-novel' },
+];
+
+// Popular Tags Data
+const availableTags = [
+    'Multiplayer', 'Solo', 'Coop', 'Open world', 'Sandbox',
+    'Survival', 'Horror', 'PvP', 'Stealth', 'Simulation',
+    'Science fiction', 'Fantasy', 'Romance', 'Comedy',
+    'Split screen', 'Steam Cloud', 'HDR disponible'
+];
+
+// Sort Options
+const sortOptions = [
+    { label: 'Pertinence', value: 'relevance' },
+    { label: 'Populaires', value: 'popular' },
+    { label: 'Nouveautés', value: 'newest' },
+    { label: 'Vues', value: 'views' },
+    { label: 'Téléchargements', value: 'downloads' },
 ];
 
 // Methods
@@ -338,31 +352,50 @@ const goToGame = (id: string) => {
     router.push(`/catalogue/${id}`);
 };
 
-const setFilter = (key: 'views' | 'multiplayer', value: string) => {
-    filters.value[key] = value;
+const setSort = (value: string) => {
+    filters.value.sort = value;
     pagination.value.page = 1;
     fetchGames();
 };
 
-const toggleCategory = (cat: string) => {
-    if (filters.value.categories.includes(cat)) {
-        filters.value.categories = filters.value.categories.filter(c => c !== cat);
+const toggleOnline = () => {
+    if (filters.value.is_online === null) {
+        filters.value.is_online = true;
+    } else if (filters.value.is_online === true) {
+        filters.value.is_online = false;
     } else {
-        filters.value.categories.push(cat);
+        filters.value.is_online = null;
     }
     pagination.value.page = 1;
     fetchGames();
 };
 
-const resetCategories = () => {
-    filters.value.categories = [];
+const setCategory = (slug: string) => {
+    filters.value.category = filters.value.category === slug ? '' : slug;
+    pagination.value.page = 1;
+    fetchGames();
+};
+
+const toggleTag = (tag: string) => {
+    const idx = filters.value.tags.indexOf(tag);
+    if (idx >= 0) {
+        filters.value.tags.splice(idx, 1);
+    } else {
+        filters.value.tags.push(tag);
+    }
+    pagination.value.page = 1;
+    fetchGames();
+};
+
+const resetTags = () => {
+    filters.value.tags = [];
     pagination.value.page = 1;
     fetchGames();
 };
 
 const resetAll = () => {
     searchQuery.value = '';
-    filters.value = { views: 'all', multiplayer: 'all', categories: [] };
+    filters.value = { sort: 'relevance', is_online: true, category: '', tags: [], year: '' };
     pagination.value.page = 1;
     fetchGames();
 };
@@ -414,50 +447,84 @@ const { notify } = useNotification();
 
 // ... existing code ...
 
-// Fetch Logic
+// Fetch Logic - Uses new search API
 const fetchGames = async () => {
     loading.value = true;
     games.value = [];
     
     try {
-        let url = `/Cracks/api/liste_jeux/?app=true&format=json&page=${pagination.value.page}&limit=24`; 
+        // Build URL with new search API
+        const params = new URLSearchParams();
+        params.set('page', pagination.value.page.toString());
         
-        // Search
+        // Fuzzy search query
         if (searchQuery.value.trim()) {
-            url += `&title=${encodeURIComponent(searchQuery.value)}`;
+            params.set('q', searchQuery.value.trim());
         }
 
-        // Filters
-        if (filters.value.views !== 'all') url += `&views=${filters.value.views}`;
-        if (filters.value.multiplayer !== 'all') url += `&online=${filters.value.multiplayer}`;
-        filters.value.categories.forEach(cat => url += `&category=${cat}`);
+        // Category filter
+        if (filters.value.category) {
+            params.set('category', filters.value.category);
+        }
 
-        console.log('🌐 Fetching Games via URL:', url);
+        // Tags filter (comma-separated)
+        if (filters.value.tags.length > 0) {
+            params.set('tags', filters.value.tags.join(','));
+        }
+
+        // Online filter
+        if (filters.value.is_online !== null) {
+            params.set('is_online', filters.value.is_online.toString());
+        }
+
+        // Year filter
+        if (filters.value.year) {
+            params.set('year', filters.value.year);
+        }
+
+        // Sort order
+        if (filters.value.sort !== 'relevance') {
+            params.set('sort', filters.value.sort);
+        }
+
+        const url = `/api/app/games/search/?${params.toString()}`;
+        console.log('🔍 Fetching Games via Search API:', url);
+        
         const res: any = await useFetch(url);
         
-        if (res && res.games) {
-            games.value = res.games.map((g: any) => {
-                // Prioritize Landscape Header
-                let header = g.header;
-                if(g.urls?.header_image) header = g.urls.header_image;
-                if(!header && g.urls?.image) header = g.urls.image; 
-                if(!header && g.informations?.image) header = "https://api.jeuxcracks.fr" + g.informations.image;
+        if (res && (res.results || res.games)) {
+            const rawGames = res.results || res.games;
+            games.value = rawGames.map((g: any) => {
+                // Get header image (prioritize new API format)
+                let header = g.header || g.cover;
                 if (!header) header = '/assets/placeholder.webp';
 
                 return {
                     id: g.id,
-                    title: g.informations?.title || g.title,
+                    title: g.title,
                     header: header,
                     views: g.views || 0,
-                    isOnline: g.status?.is_online || false,
-                    releaseYear: g.status?.release_date ? new Date(g.status.release_date).getFullYear() : 'N/A',
-                    isNew: isNewGame(g.status?.created_at || g.created_at),
-                    video: g.video || g.urls?.trailer || null,
-                    categories: g.categories || []
+                    likes: g.likes || 0,
+                    isOnline: g.is_online || g.versions?.[0]?.is_online || false,
+                    releaseYear: g.release_date ? new Date(g.release_date).getFullYear() : 'N/A',
+                    isNew: isNewGame(g.published_at || g.created_at),
+                    video: g.video || null,
+                    categories: g.categories || [],
+                    is_liked: g.is_liked || false,
+                    is_favorited: g.is_favorited || false,
+                    latest_version: g.latest_version
                 };
             });
 
-            if (res.pagination) {
+            // Handle DRF pagination format
+            if (res.count !== undefined) {
+                const totalPages = Math.ceil(res.count / 24);
+                pagination.value = {
+                    page: pagination.value.page,
+                    totalPages: totalPages,
+                    totalResults: res.count
+                };
+            } else if (res.pagination) {
                 pagination.value = {
                     page: res.pagination.current_page || 1,
                     totalPages: res.pagination.total_pages || 1,

@@ -47,22 +47,33 @@
             
             <!-- Video/Image Background -->
             <div class="absolute inset-0 bg-black select-none pointer-events-none">
+                <!-- YouTube Video Embed (silent, loop, no branding) -->
+                <div v-if="youtubeVideoId" class="absolute inset-0 overflow-hidden">
+                    <iframe 
+                        :src="`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=1&loop=1&playlist=${youtubeVideoId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&vq=hd1080&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0`"
+                        class="absolute w-[120%] h-[120%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media"
+                    ></iframe>
+                </div>
+                <!-- Direct Video File -->
                 <video 
-                    v-if="game?.video" 
+                    v-else-if="game?.video && !game.video.includes('youtube')" 
                     :src="game?.video" 
-                    :poster="game?.header"
-                    class="w-full h-full object-cover opacity-60"
+                    :poster="game?.header || game?.background"
+                    class="w-full h-full object-cover"
                     autoplay loop muted playsinline
                 ></video>
+                <!-- Fallback Image -->
                 <img 
                     v-else 
-                    :src="game?.header" 
-                    class="w-full h-full object-cover opacity-50 scale-105 animate-slow-zoom"
+                    :src="game?.background || game?.header" 
+                    class="w-full h-full object-cover"
                 />
                 
-                <!-- Gradient Vignettes -->
-                <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-black/30"></div>
-                <div class="absolute inset-0 bg-gradient-to-r from-[#050505]/80 via-transparent to-[#050505]/80"></div>
+                <!-- Gradient Vignettes (reduced for clarity) -->
+                <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-black/20"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-[#050505]/60 via-transparent to-[#050505]/60"></div>
             </div>
 
             <!-- Content Overlay -->
@@ -82,8 +93,8 @@
                             </span>
                         </div>
 
-                        <!-- Huge Title -->
-                        <h1 class="text-6xl md:text-8xl lg:text-9xl font-black text-white leading-none tracking-tighter uppercase drop-shadow-2xl opacity-95">
+                        <!-- Title (Responsive) -->
+                        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-none tracking-tight uppercase drop-shadow-2xl line-clamp-2">
                             {{ game?.title }}
                         </h1>
 
@@ -98,11 +109,22 @@
                                 <span>{{ getActionButtonText() }}</span>
                             </button>
 
+                            <!-- Like Button -->
+                            <button 
+                                @click="toggleLike()"
+                                class="p-5 rounded-xl border border-white/20 hover:bg-white/10 transition-all group/likebtn"
+                                :title="game?.is_liked ? 'Je n\'aime plus' : 'J\'aime'"
+                            >
+                                <HeartIcon :class="['w-6 h-6 transition-colors', game?.is_liked ? 'text-red-500 fill-red-500' : 'text-zinc-300 group-hover/likebtn:text-red-500']" />
+                            </button>
+
+                            <!-- Favorite Button -->
                             <button 
                                 @click="toggleFavorite()"
                                 class="p-5 rounded-xl border border-white/20 hover:bg-white/10 transition-all group/favbtn"
+                                :title="isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'"
                             >
-                                <HeartIcon :class="['w-6 h-6 transition-colors', isFavorite ? 'text-red-500 fill-red-500' : 'text-zinc-300 group-hover/favbtn:text-red-500']" />
+                                <StarIcon :class="['w-6 h-6 transition-colors', isFavorite ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-300 group-hover/favbtn:text-yellow-500']" />
                             </button>
                         </div>
                         
@@ -123,15 +145,15 @@
                     <div class="lg:col-span-4 hidden lg:block text-right space-y-4 text-zinc-400 font-medium">
                         <div class="flex flex-col items-end">
                             <span class="text-xs font-bold uppercase text-zinc-600">Développeur</span>
-                            <span class="text-white">{{ game?.informations?.developer || 'N/A' }}</span>
+                            <span class="text-white">{{ game?.developer || 'N/A' }}</span>
                         </div>
                         <div class="flex flex-col items-end">
                             <span class="text-xs font-bold uppercase text-zinc-600">Date de sortie</span>
-                            <span class="text-white">{{ game?.informations?.release || 'N/A' }}</span>
+                            <span class="text-white">{{ game?.release_date || 'N/A' }}</span>
                         </div>
                         <div class="flex flex-col items-end">
                             <span class="text-xs font-bold uppercase text-zinc-600">Genre</span>
-                            <span class="text-white">{{ game?.categories?.slice(0,2).join(', ') || 'N/A' }}</span>
+                            <span class="text-white">{{ game?.categories?.slice(0,2).map(c => c.name || c).join(', ') || 'N/A' }}</span>
                         </div>
                         
                         <!-- Stats -->
@@ -151,6 +173,29 @@
             </div>
         </div>
 
+        <!-- SCREENSHOTS GALLERY -->
+        <div v-if="game?.screenshots?.length > 0" class="max-w-[1600px] mx-auto px-6 md:px-12 pt-16">
+            <h3 class="flex items-center gap-3 text-2xl font-black text-white uppercase tracking-tighter mb-6">
+                <PhotoIcon class="w-8 h-8 text-indigo-500" />
+                Captures d'écran
+            </h3>
+            <div class="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x snap-mandatory">
+                <div 
+                    v-for="(screenshot, index) in game.screenshots" 
+                    :key="index"
+                    class="flex-shrink-0 snap-start cursor-pointer group"
+                    @click="openScreenshot(screenshot)"
+                >
+                    <img 
+                        :src="screenshot" 
+                        :alt="`Screenshot ${index + 1}`"
+                        class="h-48 md:h-64 w-auto rounded-xl border border-white/10 object-cover transition-all group-hover:border-indigo-500/50 group-hover:scale-105 group-hover:shadow-[0_0_30px_rgba(99,102,241,0.3)]"
+                        loading="lazy"
+                    />
+                </div>
+            </div>
+        </div>
+
         <!-- DETAILS & SPECS SECTION -->
         <div class="max-w-[1600px] mx-auto px-6 md:px-12 pt-16 grid grid-cols-1 lg:grid-cols-3 gap-16">
             
@@ -161,7 +206,7 @@
                     À propos du jeu
                 </h3>
                 <div class="prose prose-invert prose-lg max-w-none text-zinc-400 font-light leading-relaxed p-8 rounded-3xl bg-zinc-900/30 border border-white/5">
-                    <div v-html="game?.description || game?.descriptionShort"></div>
+                    <div v-html="game?.description"></div>
                 </div>
             </div>
 
@@ -266,6 +311,57 @@
             </div>
         </div>
     </vue-final-modal>
+
+    <!-- MODAL: VERSION SELECTION -->
+    <vue-final-modal
+      v-model="showVersionModal"
+      class="flex justify-center items-center"
+      :content-class="['flex flex-col p-8 bg-[#0a0a0a] rounded-2xl border border-white/10 max-w-xl w-full mx-4 shadow-2xl relative overflow-hidden']"
+      overlay-class="bg-black/80 backdrop-blur-sm fixed inset-0 z-50 flex justify-center items-center"
+      :lock-scroll="true"
+    >
+        <div class="relative z-10">
+            <h2 class="text-2xl font-black text-white uppercase tracking-tighter mb-2">Sélectionner une version</h2>
+            <p class="text-zinc-500 mb-6 font-medium">Choisissez la version du jeu à télécharger. La plus récente est recommandée.</p>
+            
+            <div v-if="loadingVersions" class="py-8 text-center">
+                 <div class="inline-block w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+
+            <div v-else-if="versions.length === 0" class="py-8 text-center text-zinc-500 font-bold">
+                Aucune version disponible pour le moment.
+            </div>
+
+            <div v-else class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                <button 
+                    v-for="ver in versions" 
+                    :key="ver.id"
+                    @click="selectVersion(ver)"
+                    class="w-full p-4 rounded-xl border transition-all text-left group relative overflow-hidden"
+                    :class="ver.is_latest ? 'bg-indigo-500/10 border-indigo-500/50 hover:bg-indigo-500/20' : 'bg-zinc-900 border-white/5 hover:border-white/20'"
+                >
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-black text-white uppercase tracking-wider">{{ ver.version }}</span>
+                        <span v-if="ver.is_latest" class="px-2 py-0.5 bg-indigo-500 text-white text-[9px] font-bold uppercase rounded shadow">Recommandé</span>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs font-bold text-zinc-500 uppercase">
+                        <span :class="{'text-indigo-300': ver.is_latest}">{{ ver.source }}</span>
+                        <span v-if="ver.size" class="w-1 h-1 rounded-full bg-zinc-700"></span>
+                        <span v-if="ver.size">{{ ver.size }}</span>
+                        <!-- Online Indicator -->
+                         <span v-if="ver.is_online" class="ml-auto flex items-center gap-1 text-green-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                            Online
+                        </span>
+                    </div>
+                </button>
+            </div>
+
+            <div class="mt-8 flex justify-end">
+                <button @click="showVersionModal = false" class="px-6 py-3 text-zinc-400 font-bold uppercase hover:text-white transition-colors">Annuler</button>
+            </div>
+        </div>
+    </vue-final-modal>
     
     <!-- MODAL: CONFIRM CANCEL -->
     <ModalConfirm :modal-id="modalId" title="Annulation" @confirm="stopDownload()">
@@ -299,8 +395,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useVfm, VueFinalModal } from 'vue-final-modal';
 import { useFetch } from '../../utils/useFetch';
 import { 
-    EyeIcon, CalendarIcon, HeartIcon, ArrowDownTrayIcon, PlayIcon, 
-    FolderOpenIcon, CpuChipIcon, ArrowLeftIcon, DocumentTextIcon 
+    EyeIcon, CalendarIcon, HeartIcon, StarIcon, ArrowDownTrayIcon, PlayIcon, 
+    FolderOpenIcon, CpuChipIcon, ArrowLeftIcon, DocumentTextIcon, PhotoIcon 
 } from '@heroicons/vue/24/solid';
 import { useMainStore } from '../../store';
 import { useNotification } from '@kyvg/vue3-notification';
@@ -313,6 +409,11 @@ const { notify } = useNotification();
 const downloadStore = useDownloadStore();
 const installStore = useInstallStore();
 const vfm = useVfm();
+const showInstallModal = ref(false);
+const showVersionModal = ref(false);
+const loadingVersions = ref(false);
+const versions = ref<any[]>([]);
+const selectedVersion = ref<any>(null);
 const modalId = Symbol('modalId');
 const modalSettings = Symbol('modalSettings');
 
@@ -330,8 +431,17 @@ const isGameInstalled = ref(false);
 const destPath = ref<string>('');
 const stats = ref<{ totalLaunches: number; totalTimePlayedMs: number; lastPlayedDate: string | null } | null>(null);
 
+// Computed: Extract YouTube video ID from URL
+import { computed } from 'vue';
+const youtubeVideoId = computed(() => {
+    const url = game.value?.video;
+    if (!url) return null;
+    // Match youtube.com/watch?v=ID or youtu.be/ID
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+    return match ? match[1] : null;
+});
+
 // Popup State
-const showInstallModal = ref(false);
 const libraries = ref<any[]>([]);
 const selectedLibraryId = ref<string>('');
 
@@ -350,6 +460,7 @@ onMounted(async () => {
   await fetchData(route.params.id);
   await checkFavoriteStatus();
   updateInstallationStatus();
+  registerView(); // Register view (no login required)
 });
 
 // --- ACTIONS ---
@@ -385,7 +496,7 @@ function handleInstallClick() {
     showInstallModal.value = true;
 }
 
-function confirmInstall() {
+async function confirmInstall() {
     const lib = libraries.value.find(l => l.id === selectedLibraryId.value);
     if (!lib) {
         notify({ type: 'error', text: 'Veuillez sélectionner une bibliothèque' });
@@ -398,7 +509,7 @@ function confirmInstall() {
     destPath.value = (lib.path + '/' + sanitizedTitle).replace(/\\/g, '/');
     
     showInstallModal.value = false;
-    startDownload();
+    await fetchVersionsAndShowModal();
 }
 
 async function fetchLibraries() {
@@ -418,65 +529,116 @@ async function addLibrary() {
             const path = await window.electronAPI.invoke('open-dialog', { properties: ['openDirectory'] });
             if (path) {
                 const updated = await window.electronAPI.invoke('add-library', path);
-                if (updated) {
-                    libraries.value = updated;
-                    // Auto select the new one (it's the last one usually, or find by path)
-                    const newLib = updated.find((l:any) => l.path === path);
-                    if (newLib) selectedLibraryId.value = newLib.id;
+                
+                // Check if directory is empty or suitable (optional check)
+                const files = await window.electronAPI.invoke('get-files', path);
+                if (files && files.length > 0) {
+                     // Warn user but proceed
                 }
+                destPath.value = path;
+                showInstallModal.value = false;
+                
+                // NEW: Fetch versions and show selection
+                await fetchVersionsAndShowModal();
             }
         }
     } catch (e) { console.error(e); }
 }
 
-// ... existing logic ...
-async function checkFavoriteStatus() {
-  if (!game.value?.id) return;
-  // Use store source of truth
-  isFavorite.value = store.favorites.some(fid => String(fid) === String(game.value.id));
-}
+async function fetchVersionsAndShowModal() {
+    loadingVersions.value = true;
+    showVersionModal.value = true;
+    versions.value = [];
+    
+    try {
+        if (!game.value?.id) return;
+        const res: any = await JeuxCracksAPI.getDownloadLinks(game.value.id);
+        
+        let allVersions: any[] = [];
+        
+        // Handle different API responses
+        if (Array.isArray(res)) {
+            allVersions = res; // Direct array of versions
+        } else if (res.versions && Array.isArray(res.versions)) {
+            allVersions = res.versions;
+        } else if (res.results && Array.isArray(res.results)) {
+            allVersions = res.results;
+        } else if (res.download_links) {
+            // Fallback for simple structure (rare)
+             allVersions = [{
+                id: 'default',
+                version: 'Default',
+                source: 'Unknown',
+                download_links: res.download_links,
+                is_latest: true
+             }];
+        }
 
-async function toggleFavorite() {
-  if (!game.value?.id || isLoadingFavorite.value) return;
-  if (!store.isAuthenticated) {
-    notify({ type: 'error', title: 'Erreur', text: 'Connectez-vous pour ajouter des favoris' });
-    return;
-  }
-  isLoadingFavorite.value = true;
-  try {
-    const success = await store.toggleFavorite(game.value.id);
-    if (success) {
-         isFavorite.value = !isFavorite.value;
-         notify({ type: 'success', title: 'Favoris', text: isFavorite.value ? 'Ajouté aux favoris' : 'Retiré des favoris' });
+        // Process versions: Find Magnet links
+        versions.value = allVersions.map(v => {
+            // Find magnet link
+            const magnet = v.download_links?.find((l:any) => l.type === 'magnet');
+            return {
+                ...v,
+                magnet_url: magnet?.url,
+                has_magnet: !!magnet,
+                // Assuming API sends is_latest, or we logic it here (e.g. first one)
+                // For now rely on API or sorting
+            };
+        }).filter(v => v.has_magnet); // Only keep versions with magnet
+        
+        // Sort/Flag Latest
+        // If API doesn't flag, assume first is latest or sort by ID desc/Date
+        if (versions.value.length > 0) {
+             // Simple logic: Mark first as latest if none marked
+             if (!versions.value.some(v => v.is_latest)) {
+                 versions.value[0].is_latest = true;
+             }
+        }
+
+    } catch (e) {
+        console.error("Failed to fetch download links", e);
+        notify({ type: 'error', title: 'Erreur', text: 'Impossible de récupérer les liens de téléchargement.' });
+        showVersionModal.value = false;
+    } finally {
+        loadingVersions.value = false;
     }
-  } catch (error) {
-    console.error(error);
-    notify({ type: 'error', title: 'Erreur', text: 'Action impossible' });
-  } finally {
-    isLoadingFavorite.value = false;
-  }
 }
 
-async function startDownload() {
-  let URL = game.value?.download.torrent ? game.value?.download.torrent : game.value?.download.direct;
-  if (!URL) {
-    notify({ type: 'error', title: 'Erreur', text: 'Lien introuvable' });
-    return;
+async function selectVersion(version: any) {
+    selectedVersion.value = version;
+    showVersionModal.value = false;
+    startDownload(version);
+}
+
+// ... existing logic ...
+
+
+
+// Start download with specific version
+async function startDownload(version: any) {
+  if (!version || !version.magnet_url) {
+      notify({ type: 'error', title: 'Erreur', text: 'Lien magnet invalide.' });
+      return;
   }
+  
+  let URL = version.magnet_url;
   if (URL.startsWith('/')) URL = 'https://api.jeuxcracks.fr' + URL;
   
-  let source = '';
-  if (Array.isArray(game.value?.source) && game.value?.source.length > 0) source = game.value.source;
-  else if (typeof game.value?.source === 'string') source = game.value.source;
+  // Use source from selected version if available, otherwise fallback
+  let source = version.source || 'Unknown';
+  if (!source && Array.isArray(game.value?.source) && game.value?.source.length > 0) source = game.value.source[0];
+  else if (!source && typeof game.value?.source === 'string') source = game.value.source;
   
   const gameData = {
     id: game.value?.id,
     title: game.value?.title,
-    source: JSON.parse(JSON.stringify(source)),
+    source: source,
+    version: version.version, // Add Version
     informations: { credit: game.value?.informations?.credit },
   };
   
-  downloadType.value = game.value?.download.torrent ? 'torrent' : 'direct';
+  downloadType.value = 'torrent'; // Force torrent/magnet
   window.electronAPI?.send('download', URL, destPath.value, downloadType.value, gameData);
   
   const downloadData = {
@@ -486,9 +648,15 @@ async function startDownload() {
     downloadType: downloadType.value,
     paused: false,
     data: null,
+    // Add version/source to download store too if needed
+    version: version.version,
+    source: source
   };
   downloadStore.addDownload(downloadData);
-  downloadStore.addGameData(gameData.id, game.value);
+  // Also pass version/source to gameData store
+  downloadStore.addGameData(gameData.id, { ...game.value, version: version.version, source: source });
+  
+  notify({ type: 'success', title: 'Téléchargement', text: `Démarrage de ${version.version}` });
 }
 
 async function stopDownload() {
@@ -564,56 +732,84 @@ async function updateInstallationStatus() {
 
 async function fetchData(id: string | string[]) {
   try {
-      const response: any = await useFetch(`/Cracks/api/game/?format=json&id=${id}`);
-      if (response.code) {
-        error.value = response.message;
-        notify({ type: 'error', title: 'Erreur', text: response.message });
+      const response: any = await useFetch(`/api/app/games/${id}/`);
+      if (response.detail) {
+        error.value = response.detail;
+        notify({ type: 'error', title: 'Erreur', text: response.detail });
       } else {
-        // Map response correctly based on API structure
-        const data = response.games && response.games.length > 0 ? response.games[0] : response.informations ? response : response;
+        // New API returns direct flat object
+        const data = response;
         
         if (!data || !data.id) throw new Error('Données de jeu invalides');
 
-        // Requirements Parsing
-        if (data.requirements?.minimum) configurationSystemMinimal.value = parseHTML(data.requirements.minimum);
-        if (data.requirements?.recommended) configurationSystemRecommended.value = parseHTML(data.requirements.recommended);
+        // Requirements Parsing - new format is structured object {minimum: {os, cpu, ram}, recommended: {os, cpu, ram}}
+        if (data.requirements?.minimum) {
+          if (typeof data.requirements.minimum === 'string') {
+            configurationSystemMinimal.value = parseHTML(data.requirements.minimum);
+          } else {
+            // New structured format
+            const r = data.requirements.minimum;
+            configurationSystemMinimal.value = `OS: ${r.os || 'N/A'}<br>CPU: ${r.cpu || 'N/A'}<br>RAM: ${r.ram || 'N/A'}`;
+          }
+        }
+        if (data.requirements?.recommended) {
+          if (typeof data.requirements.recommended === 'string') {
+            configurationSystemRecommended.value = parseHTML(data.requirements.recommended);
+          } else {
+            const r = data.requirements.recommended;
+            configurationSystemRecommended.value = `OS: ${r.os || 'N/A'}<br>CPU: ${r.cpu || 'N/A'}<br>RAM: ${r.ram || 'N/A'}`;
+          }
+        }
         
-        // Smart Size Extraction
-        let detectedSize = data.size || data.informations?.size || 0;
-        if (!detectedSize && data.requirements) {
-            const extract = (text: string) => {
-                if (!text) return null;
-                // Matches "Storage: 5 GB" or "Espace disque : 50 Go" etc
-                const match = text.match(/(?:Storage|Disque|Espace|Space|Hard Drive)[^0-9]*(\d+(?:[.,]\d+)?\s*(?:GB|MB|TB|Go|Mo|To))/i);
-                return match ? match[1] : null; // Returns string like "5 GB"
-            };
-            detectedSize = extract(configurationSystemMinimal.value) || extract(configurationSystemRecommended.value) || 0;
+        // Get size from versions if available
+        let detectedSize = 0;
+        if (data.versions && data.versions.length > 0) {
+          detectedSize = data.versions[0].size || 0;
         }
 
-        // Safety check for critical fields
+        // Map to game.value with new API structure
         game.value = {
             id: data.id,
-            title: data.informations?.title || data.title || '',
-            header: data.urls?.header_image || data.header || '',
-            video: data.urls?.trailer || data.video || '',
-            description: data.descriptions?.full_description || data.description || '',
-            descriptionShort: data.descriptions?.short_description || '',
-            views: data.views || 0,
-            isOnline: data.status?.is_online || false,
-            source: data.source || '',
             steam_id: data.steam_id || '',
-            download: {
-                torrent: data.urls?.torrent || null,
-                direct: data.urls?.direct || null
-            },
-            informations: {
-                developer: data.informations?.developer || 'N/A',
-                publisher: data.informations?.publisher || 'N/A',
-                release: data.status?.release_date || 'N/A'
-            },
+            title: data.title || '',
+            slug: data.slug || '',
+            header: data.header || '',
+            background: data.background || '',
+            video: data.video || '',
+            description: data.description || '',
+            descriptionShort: data.description_short || '',
+            screenshots: data.screenshots || [],
             categories: data.categories || [],
-            size: detectedSize
+            tags: data.tags || [],
+            developer: data.developer || 'N/A',
+            publisher: data.publisher || 'N/A',
+            release_date: data.release_date || 'N/A',
+            views: data.views || 0,
+            likes: data.likes || 0,
+            favorites_count: data.favorites_count || 0,
+            downloads_count: data.downloads_count || 0,
+            is_liked: data.is_liked || false,
+            is_favorited: data.is_favorited || false,
+            isOnline: data.versions?.[0]?.is_online || false,
+            source: data.source || [],
+            versions: data.versions || [],
+            size: detectedSize,
+            published_at: data.published_at || '',
+            updated_at: data.updated_at || '',
+            // Legacy compatibility
+            informations: {
+                developer: data.developer || 'N/A',
+                publisher: data.publisher || 'N/A',
+                release: data.release_date || 'N/A'
+            },
+            download: {
+                torrent: data.versions?.[0]?.download_links?.find((l: any) => l.type === 'magnet')?.url || null,
+                direct: data.versions?.[0]?.download_links?.find((l: any) => l.type === 'direct')?.url || null
+            }
         };
+        
+        // Update favorite state from API response
+        isFavorite.value = data.is_favorited;
         
         await updateInstallationStatus();
         
@@ -662,6 +858,11 @@ async function isInstalled(id: string) {
   }
 }
 
+// Open screenshot in new window for full view
+function openScreenshot(url: string) {
+    window.open(url, '_blank');
+}
+
 function prettyBites(bytes: number) {
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   if (bytes === 0) return '0 B';
@@ -681,12 +882,89 @@ function formatNumber(num: number) {
 }
 
 function getSourceName(source: any): string {
-    if (Array.isArray(source) && source.length > 0) return source[0].name || 'N/A';
+    if (Array.isArray(source) && source.length > 0) {
+      // New format: array of strings like ['onlinefix', 'steamrip']
+      if (typeof source[0] === 'string') return source[0].toUpperCase();
+      // Old format fallback: array of objects
+      return source[0].name || source[0] || 'N/A';
+    }
+    if (typeof source === 'string') return source.toUpperCase();
     return 'N/A';
 }
 
 function handleImageError(event: Event) {
   (event.target as HTMLImageElement).src = '/assets/placeholder-cover.jpg';
+}
+
+// --- LIKE / FAVORITE / VIEW API CALLS ---
+
+async function toggleFavorite() {
+    if (!store.user?.id) {
+        notify({ type: 'warn', title: 'Connexion requise', text: 'Connectez-vous pour ajouter aux favoris.' });
+        return;
+    }
+    if (!game.value?.id || isLoadingFavorite.value) return;
+    
+    isLoadingFavorite.value = true;
+    try {
+        if (isFavorite.value) {
+            await JeuxCracksAPI.removeFavorite(game.value.id);
+            isFavorite.value = false;
+            notify({ type: 'success', text: 'Retiré des favoris' });
+        } else {
+            await JeuxCracksAPI.addFavorite(game.value.id);
+            isFavorite.value = true;
+            notify({ type: 'success', text: 'Ajouté aux favoris' });
+        }
+    } catch (err) {
+        console.error('toggleFavorite error:', err);
+        notify({ type: 'error', text: 'Erreur lors de la mise à jour des favoris' });
+    } finally {
+        isLoadingFavorite.value = false;
+    }
+}
+
+async function toggleLike() {
+    if (!store.user?.id) {
+        notify({ type: 'warn', title: 'Connexion requise', text: 'Connectez-vous pour liker.' });
+        return;
+    }
+    if (!game.value?.id) return;
+    
+    try {
+        if (game.value.is_liked) {
+            await JeuxCracksAPI.unlikeGame(game.value.id);
+            game.value.is_liked = false;
+            game.value.likes = Math.max(0, (game.value.likes || 1) - 1);
+            notify({ type: 'success', text: 'Like retiré' });
+        } else {
+            await JeuxCracksAPI.likeGame(game.value.id);
+            game.value.is_liked = true;
+            game.value.likes = (game.value.likes || 0) + 1;
+            notify({ type: 'success', text: 'Jeu liké !' });
+        }
+    } catch (err) {
+        console.error('toggleLike error:', err);
+        notify({ type: 'error', text: 'Erreur lors du like' });
+    }
+}
+
+async function checkFavoriteStatus() {
+    // Already fetched from API response in fetchData
+    if (game.value?.is_favorited !== undefined) {
+        isFavorite.value = game.value.is_favorited;
+    }
+}
+
+async function registerView() {
+    // View endpoint doesn't require login
+    if (!game.value?.id) return;
+    try {
+        await JeuxCracksAPI.incrementViews(game.value.id);
+        console.log('📈 View registered for game', game.value.id);
+    } catch (err) {
+        console.error('registerView error:', err);
+    }
 }
 </script>
 

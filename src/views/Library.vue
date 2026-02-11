@@ -13,38 +13,10 @@
             </div>
         </div>
 
-        <div class="flex gap-4">
-             <!-- View Switcher -->
-             <div class="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1">
-                 <button 
-                    @click="viewMode = 'grid'" 
-                    class="p-2 rounded hover:bg-zinc-800 transition-colors"
-                    :class="viewMode === 'grid' ? 'bg-zinc-800 text-white' : 'text-zinc-500'"
-                    title="Grille"
-                >
-                    <Squares2X2Icon class="w-4 h-4" />
-                 </button>
-                 <button 
-                    @click="viewMode = 'covers'" 
-                    class="p-2 rounded hover:bg-zinc-800 transition-colors"
-                    :class="viewMode === 'covers' ? 'bg-zinc-800 text-white' : 'text-zinc-500'"
-                    title="Pochettes"
-                >
-                    <RectangleGroupIcon class="w-4 h-4" />
-                </button>
-                 <button 
-                    @click="viewMode = 'list'" 
-                    class="p-2 rounded hover:bg-zinc-800 transition-colors"
-                    :class="viewMode === 'list' ? 'bg-zinc-800 text-white' : 'text-zinc-500'"
-                    title="Liste"
-                >
-                    <ListBulletIcon class="w-4 h-4" />
-                 </button>
-             </div>
-
+        <div>
              <button 
                 @click="scanGames" 
-                class="group flex items-center gap-3 px-6 py-3 bg-zinc-900 border border-zinc-800 text-zinc-400 font-bold uppercase tracking-wider text-xs hover:bg-white hover:text-black hover:border-white transition-all rounded-lg"
+                class="group flex items-center gap-3 px-6 py-3 bg-zinc-900/50 border border-zinc-700/50 backdrop-blur-md text-zinc-300 font-bold uppercase tracking-wider text-xs hover:bg-white hover:text-black hover:border-white transition-all rounded-full shadow-lg"
             >
                  <ArrowPathIcon class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" :class="scanning ? 'animate-spin' : ''" />
                  <span>Scanner</span>
@@ -53,102 +25,92 @@
     </div>
 
     <!-- Empty State -->
-    <div v-if="enrichedGames.length === 0" class="flex-1 flex flex-col items-center justify-center text-center -mt-10 md:-mt-20">
-        <div class="relative group mb-6 md:mb-8">
-            <div class="absolute inset-0 bg-indigo-500 blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
-            <FolderIcon class="w-20 h-20 md:w-32 md:h-32 text-zinc-800 relative z-10" />
+    <div v-if="enrichedGames.length === 0" class="flex-1 flex flex-col items-center justify-center text-center -mt-10 md:-mt-20 animate-fade-in">
+        <div class="relative group mb-8">
+            <div class="absolute inset-0 bg-indigo-500 blur-[100px] opacity-10 group-hover:opacity-30 transition-opacity duration-1000"></div>
+            <div class="relative w-32 h-32 rounded-3xl bg-zinc-900/50 border border-white/5 flex items-center justify-center shadow-2xl backdrop-blur-sm group-hover:scale-110 transition-transform duration-500">
+                <FolderIcon class="w-12 h-12 text-zinc-600 group-hover:text-indigo-400 transition-colors duration-500" />
+            </div>
         </div>
-        <h3 class="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter mb-2 md:mb-4">C'est bien vide ici</h3>
-        <p class="text-zinc-500 max-w-xs md:max-w-md mx-auto mb-6 md:mb-10 font-medium text-base md:text-lg">Installez des jeux depuis le catalogue pour constituer votre collection.</p>
+        <h3 class="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter mb-4">C'est bien vide ici</h3>
+        <p class="text-zinc-500 max-w-md mx-auto mb-8 font-medium">Installez des jeux depuis le catalogue pour constituer votre collection.</p>
         <button 
             @click="router.push('/catalogue')" 
-            class="px-6 py-3 md:px-10 md:py-4 bg-white text-black font-black uppercase tracking-wider rounded-none hover:bg-indigo-500 hover:text-white transition-all shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(99,102,241,0.5)]"
+            class="px-8 py-4 bg-white text-black font-black uppercase tracking-wider rounded-full hover:bg-indigo-500 hover:text-white transition-all shadow-lg hover:shadow-indigo-500/50 transform hover:-translate-y-1"
         >
             Explorer le catalogue
         </button>
     </div>
 
-    <!-- Views -->
-    <div v-else>
-        
-        <!-- GRID VIEW (Default) -->
-        <div v-if="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 xl:gap-8">
-            <div v-for="(game, index) in enrichedGames" :key="game.id" 
-                 class="group relative aspect-video bg-zinc-900 rounded-xl overflow-hidden cursor-pointer border border-white/5 hover:border-indigo-500/50 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
-                 :style="{ animationDelay: `${index * 50}ms` }"
-            >
-                <img :src="resolveImage(game)" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:opacity-0" />
-                <video v-if="game.video" :src="game.video" class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" muted loop playsinline @mouseenter="playVideo" @mouseleave="pauseVideo"></video>
-                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 group-hover:opacity-90 transition-opacity z-20 pointer-events-none"></div>
-                <div class="absolute inset-0 p-6 flex flex-col justify-end z-30 pointer-events-none">
-                    <h4 class="text-2xl font-black text-white uppercase tracking-tight leading-none mb-2 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">{{ game.name || game.title }}</h4>
-                    <div class="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-[10px] bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded font-bold uppercase tracking-wider w-fit">Prêt à jouer</span>
-                            <div v-if="userStats[game.id]" class="flex items-center gap-2 text-[10px] text-zinc-400 font-medium">
-                                <span class="flex items-center gap-1"><ClockIcon class="w-3 h-3" /> {{ prettyMilliseconds(userStats[game.id].totalTimePlayedMs) }}</span>
-                                <span class="flex items-center gap-1"><RocketLaunchIcon class="w-3 h-3" /> {{ userStats[game.id].totalLaunches }}</span>
-                            </div>
-                        </div>
-                        <button @click.stop="launchGame(game)" class="pointer-events-auto flex items-center justify-center w-10 h-10 bg-white text-black rounded-full hover:scale-110 hover:bg-indigo-500 hover:text-white transition-all shadow-lg"><PlayIcon class="w-5 h-5 ml-0.5" /></button>
+    <!-- COVERS GRID VIEW (Default & Only) -->
+    <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-6 animate-slide-up">
+        <div v-for="(game, index) in enrichedGames" :key="game.id" 
+             class="group relative aspect-[2/3] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/20 hover:z-50"
+             :style="{ animationDelay: `${index * 50}ms` }"
+             @click="launchGame(game)"
+        >
+            <!-- Visual Content (Clipped) -->
+            <div class="absolute inset-0 bg-zinc-900 rounded-2xl group-hover:rounded-none overflow-hidden ring-1 ring-white/5 group-hover:ring-indigo-500/50 transition-all duration-300">
+                <!-- Cover Image -->
+                <img :src="resolveImage(game)" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                
+                <!-- Hover Overlay -->
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px]"></div>
+
+                <!-- Play Button (Centered) -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-90 group-hover:scale-100">
+                    <div class="w-16 h-16 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-lg group-active:scale-95 transition-transform">
+                        <PlayIcon class="w-8 h-8 text-white ml-1" />
                     </div>
                 </div>
-                <div class="absolute top-4 right-4 z-40">
-                    <button @click.stop="toggleMenu(game.id)" class="p-2 text-zinc-400 hover:text-white bg-black/50 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto" :class="{ 'opacity-100 bg-indigo-500 text-white': menuOpenId === game.id }"><EllipsisVerticalIcon class="w-5 h-5" /></button>
-                    <div v-if="menuOpenId === game.id" class="absolute top-full right-0 mt-2 w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden pointer-events-auto animate-fade-in z-50 origin-top-right" @click.stop>
-                        <button @click="openLocation(game)" class="w-full text-left px-4 py-3 text-xs font-bold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center gap-2"><FolderIcon class="w-4 h-4" />Ouvrir l'emplacement</button>
-                        <button @click="uninstallGame(game)" class="w-full text-left px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2 border-t border-zinc-800"><ArrowPathIcon class="w-4 h-4" />Désinstaller</button>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- COVERS VIEW (Dense Posters) -->
-        <div v-else-if="viewMode === 'covers'" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 animate-fade-in">
-             <div v-for="(game, index) in enrichedGames" :key="game.id" 
-                 class="group relative aspect-[2/3] bg-zinc-900 rounded-lg overflow-hidden cursor-pointer border border-white/5 hover:border-indigo-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                 @click="launchGame(game)"
-            >
-                <img :src="resolveImage(game)" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <PlayIcon class="w-12 h-12 text-white drop-shadow-lg scale-90 group-hover:scale-100 transition-transform" />
-                </div>
-                <div class="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
-                     <h4 class="text-xs font-bold text-white uppercase truncate">{{ game.name || game.title }}</h4>
-                     <div v-if="userStats[game.id]" class="flex items-center gap-2 text-[9px] text-zinc-400 mt-0.5">
-                        <ClockIcon class="w-3 h-3" /> {{ prettyMilliseconds(userStats[game.id].totalTimePlayedMs) }}
+                <!-- Bottom Info Gradient -->
+                <div class="absolute bottom-0 inset-x-0 pt-16 pb-4 px-4 bg-gradient-to-t from-black/95 via-black/60 to-transparent translate-y-2 group-hover:translate-y-0 transition-transform duration-500 pointer-events-none">
+                     <h4 class="text-sm font-bold text-white uppercase tracking-condensed truncate leading-tight mb-1 shadow-black drop-shadow-md">{{ game.name || game.title }}</h4>
+                     
+                     <!-- Stats Pill -->
+                     <div v-if="userStats[game.id]" class="flex items-center gap-3 text-[10px] text-zinc-400 font-medium">
+                        <span class="flex items-center gap-1"><ClockIcon class="w-3 h-3 text-indigo-400" /> {{ prettyMilliseconds(userStats[game.id].totalTimePlayedMs) }}</span>
                      </div>
+                     <div v-else class="text-[10px] text-zinc-500 font-medium italic">Jamais joué</div>
                 </div>
             </div>
-        </div>
 
-        <!-- LIST VIEW -->
-        <div v-else-if="viewMode === 'list'" class="flex flex-col gap-2 animate-fade-in">
-             <div v-for="(game, index) in enrichedGames" :key="game.id" 
-                 class="group flex items-center gap-4 p-2 bg-zinc-900/30 border border-white/5 rounded-lg hover:bg-zinc-900 hover:border-indigo-500/30 transition-all cursor-pointer"
-                 @click="launchGame(game)"
-            >
-                <div class="w-16 h-10 rounded overflow-hidden flex-shrink-0 bg-black">
-                     <img :src="resolveImage(game)" class="w-full h-full object-cover" />
-                </div>
-                <div class="flex-1 min-w-0">
-                     <h4 class="text-sm font-bold text-white uppercase truncate">{{ game.name || game.title }}</h4>
-                     <div class="flex items-center gap-3 mt-0.5">
-                        <p class="text-[10px] text-zinc-500 font-medium">Installé</p>
-                        <div v-if="userStats[game.id]" class="flex items-center gap-2 text-[10px] text-zinc-500">
-                             <span class="flex items-center gap-1"><ClockIcon class="w-3 h-3" /> {{ prettyMilliseconds(userStats[game.id].totalTimePlayedMs) }}</span>
-                             <span class="flex items-center gap-1 border-l border-zinc-700 pl-2"><RocketLaunchIcon class="w-3 h-3" /> {{ userStats[game.id].totalLaunches }}</span>
+            <!-- Options Menu Trigger (Above everything, unclipped) -->
+            <div class="absolute top-2 right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                 <button @click.stop="toggleMenu(game.id)" class="p-2 rounded-full bg-black/50 hover:bg-indigo-500 text-white backdrop-blur-md transition-colors shadow-lg border border-white/10">
+                     <EllipsisVerticalIcon class="w-5 h-5" />
+                 </button>
+                 <!-- Context Menu -->
+                 <div v-if="menuOpenId === game.id" class="absolute top-full right-0 mt-2 w-64 bg-zinc-900/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl animate-fade-in origin-top-right z-50 cursor-default" @click.stop>
+                    
+                    <!-- Game Info Header -->
+                    <div class="p-4 border-b border-white/5 bg-white/5">
+                        <h4 class="font-bold text-white text-sm truncate mb-1">{{ game.title || game.name }}</h4>
+                        <div class="flex flex-wrap gap-1">
+                            <span v-if="game.version" class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/30">{{ game.version }}</span>
+                            <span v-if="game.source" class="px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-400 text-[10px] font-mono border border-zinc-600/30 truncate max-w-[100px]">{{ typeof game.source === 'string' ? game.source : (game.source[0]?.name || 'Inconnu') }}</span>
                         </div>
-                     </div>
-                </div>
-                <div class="flex items-center gap-2 pr-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                     <button @click.stop="openLocation(game)" class="p-2 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white" title="Dossier"><FolderIcon class="w-4 h-4" /></button>
-                     <button @click.stop="uninstallGame(game)" class="p-2 hover:bg-red-500/20 rounded-full text-zinc-400 hover:text-red-500" title="Désinstaller"><ArrowPathIcon class="w-4 h-4" /></button>
-                     <button @click.stop="launchGame(game)" class="px-4 py-1.5 bg-white text-black text-xs font-bold uppercase rounded hover:bg-indigo-500 hover:text-white transition-colors">Jouer</button>
-                </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="p-1">
+                        <button @click.stop="openLocation(game)" class="w-full text-left px-3 py-2 text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-colors rounded-lg flex items-center gap-3">
+                            <FolderIcon class="w-4 h-4 text-zinc-500" />Emplacement
+                        </button>
+                        <button @click.stop="uninstallGame(game)" class="w-full text-left px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors rounded-lg flex items-center gap-3">
+                            <ArrowPathIcon class="w-4 h-4" />Désinstaller
+                        </button>
+                    </div>
+
+                    <!-- Footer: Install Date -->
+                    <div v-if="game.installDate" class="px-4 py-2 bg-black/20 text-[10px] text-zinc-500 font-mono text-center border-t border-white/5">
+                        Installé le {{ new Date(game.installDate).toLocaleDateString() }}
+                    </div>
+
+                 </div>
             </div>
         </div>
-
     </div>
 
   </div>
@@ -186,9 +148,9 @@ const enrichLibrary = async () => {
     for (const game of enrichedGames.value) {
         if (!game.header && !game.icon && game.id) {
             try {
-                // Fetch full game details
-                const data: any = await useFetch(`/Cracks/api/game/?format=json&id=${game.id}`);
-                if (data && data.status) { // Assuming data structure
+                // Fetch full game details from new API
+                const data: any = await useFetch(`/api/app/games/${game.id}/`);
+                if (data && data.id) { // New API returns direct object
                      // Update local object reactive
                      Object.assign(game, {
                          header: data.header || data.urls?.header_image || data.urls?.image || data.informations?.image,

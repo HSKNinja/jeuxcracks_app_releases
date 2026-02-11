@@ -18,74 +18,89 @@
             </h3>
         </div>
         
-        <div v-if="downloadStore.downloads.length === 0" class="p-12 border border-dashed border-zinc-800/50 rounded-2xl flex flex-col items-center justify-center text-center bg-zinc-900/20 backdrop-blur-sm">
-            <div class="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mb-4 shadow-inner">
-                <ArrowDownTrayIcon class="w-6 h-6 text-zinc-600" />
+        <div v-if="downloadStore.downloads.length === 0" class="p-12 border border-dashed border-zinc-800/50 rounded-3xl flex flex-col items-center justify-center text-center bg-zinc-900/20 backdrop-blur-sm shadow-inner group transition-colors hover:border-zinc-700/50">
+            <div class="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-500">
+                <ArrowDownTrayIcon class="w-6 h-6 text-zinc-600 group-hover:text-indigo-500 transition-colors duration-500" />
             </div>
             <p class="text-zinc-500 font-medium">Aucun téléchargement actif</p>
             <p class="text-xs text-zinc-600 mt-1">Vos téléchargements apparaîtront ici.</p>
         </div>
 
-        <div v-else class="grid grid-cols-1 gap-4">
+        <div v-else class="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div v-for="dl in downloadStore.downloads" :key="dl.gameID" 
-                 class="group relative bg-[#0a0a0a] border border-zinc-800 hover:border-indigo-500/30 rounded-2xl p-4 md:p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/5 overflow-hidden">
+                 class="group relative overflow-hidden rounded-3xl bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 backdrop-blur-md">
                  
-                 <!-- Background Beam -->
-                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-50"></div>
+                 <!-- Background Gradient (Subtle) -->
+                 <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-                 <div class="flex flex-col md:flex-row gap-6 items-center">
-                     
-                     <!-- Icon -->
-                     <div class="relative w-24 h-32 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 shadow-lg">
-                         <img :src="resolveImage(dl.game)" class="w-full h-full object-cover" />
+                 <div class="relative flex h-full">
+                     <!-- Cover Art (Left) -->
+                     <div class="w-32 sm:w-40 flex-shrink-0 relative">
+                         <img :src="resolveImage(dl.game)" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                         <div class="absolute inset-0 bg-gradient-to-r from-transparent to-[#0a0a0a]/90"></div>
                      </div>
 
-                     <!-- Info -->
-                     <div class="flex-1 min-w-0 w-full space-y-4">
+                     <!-- Content (Right) -->
+                     <div class="flex-1 p-5 md:p-6 flex flex-col justify-between min-w-0">
                          
-                         <div class="flex justify-between items-start">
+                         <!-- Top: Header -->
+                         <div class="flex justify-between items-start gap-4">
                              <div>
-                                 <h4 class="text-xl font-bold text-white mb-1 truncate">{{ dl.title }}</h4>
-                                 <div class="flex items-center gap-4 text-xs font-mono text-zinc-400">
-                                     <span class="flex items-center gap-1.5">
-                                         <BoltIcon class="w-3 h-3 text-yellow-500" />
-                                         {{ formatSpeed(dl.data?.downloadSpeed) }}
-                                     </span>
-                                     <span class="w-1 h-1 rounded-full bg-zinc-700"></span>
-                                     <span>{{ formatSize(dl.data?.downloaded) }} / {{ formatTotalSize(dl) }}</span> <!-- Assuming size avail -->
+                                 <div class="flex items-center gap-2 mb-1">
+                                    <span v-if="dl.paused" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">En Pause</span>
+                                    <span v-else class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse">Téléchargement</span>
                                  </div>
+                                 <h4 class="text-xl md:text-2xl font-black text-white leading-tight truncate group-hover:text-indigo-400 transition-colors duration-300">{{ dl.title }}</h4>
                              </div>
                              
                              <!-- Actions -->
-                             <div class="flex items-center gap-2">
-                                 <button @click="togglePause(dl)" class="p-2 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors" :title="dl.paused ? 'Reprendre' : 'Pause'">
+                             <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                 <button @click="togglePause(dl)" class="p-2 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all active:scale-95" :title="dl.paused ? 'Reprendre' : 'Pause'">
                                      <PlayIcon v-if="dl.paused" class="w-5 h-5" />
                                      <PauseIcon v-else class="w-5 h-5" />
                                  </button>
-                                 <button @click="cancelDownload(dl)" class="p-2 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/10 transition-colors" title="Annuler">
+                                 <button @click="cancelDownload(dl)" class="p-2 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-all active:scale-95" title="Annuler">
                                      <XMarkIcon class="w-5 h-5" />
                                  </button>
                              </div>
                          </div>
 
-                         <!-- Progress -->
-                         <div class="space-y-2">
-                             <div class="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
-                                 <div 
-                                    class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 relative overflow-hidden transition-all duration-300 ease-out"
-                                    :style="`width: ${Math.round(dl.data?.progress * 100) || 0}%`"
-                                 >
-                                    <div class="absolute inset-0 bg-white/20 animate-pulse-fast"></div>
-                                 </div>
+                         <!-- Middle: Stats Grid -->
+                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 my-4">
+                             <div class="flex flex-col">
+                                 <span class="text-[10px] uppercase text-zinc-500 font-bold tracking-wider mb-0.5">Vitesse</span>
+                                 <span class="text-sm font-mono text-white flex items-center gap-1.5">
+                                     <BoltIcon class="w-3.5 h-3.5 text-indigo-500" />
+                                     {{ formatSpeed(dl.data?.downloadSpeed) }}
+                                 </span>
                              </div>
-                             <div class="flex justify-between text-[10px] font-black uppercase tracking-wider text-zinc-500">
-                                 <span>{{ Math.round((dl.data?.progress * 100) || 0) }}% COMPLÉTÉ</span>
-                                 <span>ETA: {{ formatTime(dl.data?.timeRemaining) }}</span>
+                             <div class="flex flex-col">
+                                 <span class="text-[10px] uppercase text-zinc-500 font-bold tracking-wider mb-0.5">Avancement</span>
+                                 <span class="text-sm font-mono text-zinc-300">
+                                     {{ formatSize(dl.data?.downloaded) }} <span class="text-zinc-600">/</span> {{ formatTotalSize(dl) }}
+                                 </span>
+                             </div>
+                             <div class="hidden sm:flex flex-col">
+                                 <span class="text-[10px] uppercase text-zinc-500 font-bold tracking-wider mb-0.5">Temps Restant</span>
+                                 <span class="text-sm font-mono text-zinc-300">{{ formatTime(dl.data?.timeRemaining) }}</span>
+                             </div>
+                         </div>
+
+                         <!-- Bottom: Progress Bar -->
+                         <div class="space-y-2">
+                             <div class="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                 <div 
+                                    class="h-full bg-gradient-to-r from-indigo-600 via-indigo-400 to-indigo-600 relative overflow-hidden transition-all duration-300 ease-linear shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                                    :style="`width: ${Math.round(dl.data?.progress * 100) || 0}%`"
+                                 ></div>
+                             </div>
+                             <div class="flex justify-between items-end">
+                                 <span class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500">{{ Math.round((dl.data?.progress * 100) || 0) }}<span class="text-sm text-zinc-600 ml-0.5">%</span></span>
+                                 <span class="sm:hidden text-xs font-mono text-zinc-500">{{ formatTime(dl.data?.timeRemaining) }}</span>
                              </div>
                          </div>
 
                      </div>
-
                  </div>
             </div>
         </div>
@@ -98,26 +113,42 @@
              Installations en cours
         </h3>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
              <div v-for="install in installStore.getInstallsPending" :key="install.id" 
-                  class="bg-[#0a0a0a] border border-zinc-800 rounded-xl p-4 flex items-center gap-4 animate-pulse border-l-4 border-l-green-500">
-                  <div class="w-12 h-12 rounded bg-zinc-900 flex items-center justify-center">
-                      <Cog6ToothIcon class="w-6 h-6 text-green-500 animate-spin-slow" />
-                  </div>
-                  <div>
-                      <h4 class="font-bold text-white text-sm">{{ install.title }}</h4>
-                      <div class="mt-1">
-                          <div class="flex justify-between items-center gap-4">
-                              <p class="text-xs text-green-500 font-bold uppercase tracking-wider truncate max-w-[150px]">
-                                  {{ install.message || 'En attente...' }}
-                              </p>
-                              <span v-if="install.progress !== undefined" class="text-[10px] font-mono text-zinc-400 min-w-[30px] text-right">
-                                  {{ Math.round(install.progress) }}%
-                              </span>
+                  class="group relative overflow-hidden rounded-3xl bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-all duration-500 hover:shadow-2xl hover:shadow-green-500/10 backdrop-blur-md">
+                  
+                  <!-- Background Gradient -->
+                  <div class="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                  <div class="relative flex items-center p-5 md:p-6 gap-6">
+                      <!-- Icon (Left) -->
+                      <div class="w-20 h-20 rounded-2xl bg-zinc-900/80 flex items-center justify-center border border-white/5 shadow-inner flex-shrink-0 group-hover:scale-105 transition-transform duration-500">
+                          <Cog6ToothIcon class="w-10 h-10 text-green-500 animate-spin-slow" />
+                      </div>
+
+                      <!-- Content (Right) -->
+                      <div class="flex-1 min-w-0 flex flex-col justify-center space-y-3">
+                          
+                          <div class="flex justify-between items-start">
+                              <div>
+                                  <div class="flex items-center gap-2 mb-1">
+                                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-green-500/10 text-green-400 border border-green-500/20 animate-pulse">Installation</span>
+                                  </div>
+                                  <h4 class="text-lg md:text-xl font-black text-white truncate">{{ install.title }}</h4>
+                              </div>
+                              <span class="text-xs font-mono text-zinc-400">{{ Math.round(install.progress) }}%</span>
                           </div>
-                          <div v-if="install.progress !== undefined" class="h-1 w-full bg-zinc-900 rounded-full overflow-hidden mt-1">
-                                <div class="h-full bg-green-500 transition-all duration-300" :style="`width: ${install.progress}%`"></div>
+
+                          <!-- Progress Bar -->
+                          <div class="space-y-1.5">
+                              <div class="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider text-green-400/80">
+                                  <span class="truncate">{{ install.message || 'En cours...' }}</span>
+                              </div>
+                              <div class="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                  <div class="h-full bg-gradient-to-r from-green-600 to-green-400 relative overflow-hidden transition-all duration-300 shadow-[0_0_10px_rgba(74,222,128,0.4)]" :style="`width: ${install.progress}%`"></div>
+                              </div>
                           </div>
+
                       </div>
                   </div>
              </div>
