@@ -1,4 +1,5 @@
 import { useSocialStore } from '@/store/social';
+import { useMainStore } from '@/store/index';
 
 const WS_URL = 'wss://api.jeuxcracks.fr/ws/gateway/';
 
@@ -17,8 +18,19 @@ export class WebSocketService {
         return WebSocketService.instance;
     }
 
-    connect(token: string) {
+    connect(token?: string | null) {
         if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
+        
+        // Use provided token OR fetch from store
+        if (!token) {
+            const mainStore = useMainStore();
+            token = mainStore.tokens?.access;
+        }
+
+        if (!token) {
+            console.warn('⚠️ Cannot connect to WS: No token available');
+            return;
+        }
         
         this.token = token;
         this.isUserInitiatedDisconnect = false;
@@ -48,17 +60,17 @@ export class WebSocketService {
             this.stopHeartbeat();
             
             if (!this.isUserInitiatedDisconnect) {
-                // Auto reconnect in 5s
+                // Auto reconnect in 5s with FRESH token from store
                 if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
                 this.reconnectTimeout = setTimeout(() => {
-                    console.log('🔄 Reconnecting WS...');
-                    this.connect(token);
+                    console.log('🔄 Reconnecting WS with fresh token...');
+                    this.connect(); // No arg = fetch from store
                 }, 5000);
             }
         };
 
         this.ws.onerror = (e) => {
-            console.error('WebSocket Error:', e);
+            // console.error('WebSocket Error:', e);
         };
     }
 

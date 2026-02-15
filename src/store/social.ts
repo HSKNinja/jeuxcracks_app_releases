@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { WebSocketService } from '@/services/WebSocketService';
 import { useMainStore } from './index';
+import { useNotificationStore } from './notifications';
 
 // Types
 interface Friend {
@@ -369,12 +370,16 @@ export const useSocialStore = defineStore('social', {
         this.markAsRead(friendId); // Sync with server
     },
 
-    closeChat() {
-        this.activeChatId = null;
+    togglePanel() {
+        const notificationStore = useNotificationStore();
+        if (!this.isPanelOpen) {
+            notificationStore.closePanel();
+        }
+        this.isPanelOpen = !this.isPanelOpen;
     },
 
-    togglePanel() {
-        this.isPanelOpen = !this.isPanelOpen;
+    closePanel() {
+        this.isPanelOpen = false;
     }
   }
 });

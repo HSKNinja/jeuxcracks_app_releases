@@ -76,42 +76,50 @@
                 </div>
             </div>
 
-            <!-- Options Menu Trigger (Above everything, unclipped) -->
+            <!-- Options Menu Trigger -->
             <div class="absolute top-2 right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                 <button @click.stop="toggleMenu(game.id)" class="p-2 rounded-full bg-black/50 hover:bg-indigo-500 text-white backdrop-blur-md transition-colors shadow-lg border border-white/10">
+                 <button @click.stop="toggleMenu($event, game)" class="p-2 rounded-full bg-black/50 hover:bg-indigo-500 text-white backdrop-blur-md transition-colors shadow-lg border border-white/10">
                      <EllipsisVerticalIcon class="w-5 h-5" />
                  </button>
-                 <!-- Context Menu -->
-                 <div v-if="menuOpenId === game.id" class="absolute top-full right-0 mt-2 w-64 bg-zinc-900/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl animate-fade-in origin-top-right z-50 cursor-default" @click.stop>
-                    
-                    <!-- Game Info Header -->
-                    <div class="p-4 border-b border-white/5 bg-white/5">
-                        <h4 class="font-bold text-white text-sm truncate mb-1">{{ game.title || game.name }}</h4>
-                        <div class="flex flex-wrap gap-1">
-                            <span v-if="game.version" class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/30">{{ game.version }}</span>
-                            <span v-if="game.source" class="px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-400 text-[10px] font-mono border border-zinc-600/30 truncate max-w-[100px]">{{ typeof game.source === 'string' ? game.source : (game.source[0]?.name || 'Inconnu') }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="p-1">
-                        <button @click.stop="openLocation(game)" class="w-full text-left px-3 py-2 text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-colors rounded-lg flex items-center gap-3">
-                            <FolderIcon class="w-4 h-4 text-zinc-500" />Emplacement
-                        </button>
-                        <button @click.stop="uninstallGame(game)" class="w-full text-left px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors rounded-lg flex items-center gap-3">
-                            <ArrowPathIcon class="w-4 h-4" />Désinstaller
-                        </button>
-                    </div>
-
-                    <!-- Footer: Install Date -->
-                    <div v-if="game.installDate" class="px-4 py-2 bg-black/20 text-[10px] text-zinc-500 font-mono text-center border-t border-white/5">
-                        Installé le {{ new Date(game.installDate).toLocaleDateString() }}
-                    </div>
-
-                 </div>
             </div>
         </div>
     </div>
+
+    <!-- GLOBAL CONTEXT MENU (Fixed Position) -->
+    <Teleport to="body">
+        <div v-if="activeGame && menuOpenId" 
+             class="fixed w-64 bg-zinc-900/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl animate-fade-in z-[9999]"
+             :style="{ top: menuPosition.top + 'px', left: menuPosition.left + 'px' }"
+             @click.stop
+        >
+            <!-- Game Info Header -->
+            <div class="p-4 border-b border-white/5 bg-white/5">
+                <h4 class="font-bold text-white text-sm truncate mb-1">{{ activeGame.title || activeGame.name }}</h4>
+                <div class="flex flex-wrap gap-1">
+                    <span v-if="activeGame.version" class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/30">{{ activeGame.version }}</span>
+                    <span v-if="activeGame.source" class="px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-400 text-[10px] font-mono border border-zinc-600/30 truncate max-w-[100px]">{{ typeof activeGame.source === 'string' ? activeGame.source : (activeGame.source[0]?.name || 'Inconnu') }}</span>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="p-1">
+                <button @click.stop="openLocation(activeGame)" class="w-full text-left px-3 py-2 text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-colors rounded-lg flex items-center gap-3">
+                    <FolderIcon class="w-4 h-4 text-zinc-500" />Emplacement
+                </button>
+                <button @click.stop="uninstallGame(activeGame)" class="w-full text-left px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors rounded-lg flex items-center gap-3">
+                    <ArrowPathIcon class="w-4 h-4" />Désinstaller
+                </button>
+            </div>
+
+            <!-- Footer: Install Date -->
+            <div v-if="activeGame.installDate" class="px-4 py-2 bg-black/20 text-[10px] text-zinc-500 font-mono text-center border-t border-white/5">
+                Installé le {{ new Date(activeGame.installDate).toLocaleDateString() }}
+            </div>
+        </div>
+
+        <!-- Backdrop for closing menu -->
+        <div v-if="menuOpenId" @click="closeMenu" class="fixed inset-0 z-[9998] bg-transparent"></div>
+    </Teleport>
 
   </div>
 </template>
@@ -235,10 +243,41 @@ const launchGame = async (game: any) => {
     }
 };
 
-const menuOpenId = ref<string | null>(null);
+const menuOpenId = ref<string | number | null>(null);
+const activeGame = ref<any>(null);
+const menuPosition = ref({ top: 0, left: 0 });
 
-const toggleMenu = (gameId: string) => {
-    menuOpenId.value = menuOpenId.value === gameId ? null : gameId;
+const toggleMenu = (event: MouseEvent, game: any) => {
+    if (menuOpenId.value === game.id) {
+        closeMenu();
+        return;
+    }
+
+    activeGame.value = game;
+    menuOpenId.value = game.id;
+
+    // Calculate position
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    
+    // Default: Align right edge of menu with right edge of button
+    const menuWidth = 256; // w-64
+    let left = rect.right - menuWidth;
+    let top = rect.bottom + 8;
+
+    // console.log('📍 Menu Position Calc:', { rect, left, top, windowHeight: window.innerHeight });
+
+    // Prevent going off-screen left
+    if (left < 16) left = 16; 
+    
+    // Check bottom overflow
+    const windowHeight = window.innerHeight;
+    if (top + 300 > windowHeight) {
+        top = rect.top - 300; 
+    }
+
+    menuPosition.value = { top, left };
+    // console.log('✅ Menu Opened:', activeGame.value?.title, menuPosition.value);
 };
 
 // Close menu when clicking outside

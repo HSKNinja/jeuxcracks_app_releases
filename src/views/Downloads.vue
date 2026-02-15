@@ -26,7 +26,7 @@
             <p class="text-xs text-zinc-600 mt-1">Vos téléchargements apparaîtront ici.</p>
         </div>
 
-        <div v-else class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div v-else class="grid grid-cols-1 gap-6">
             <div v-for="dl in downloadStore.downloads" :key="dl.gameID" 
                  class="group relative overflow-hidden rounded-3xl bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 backdrop-blur-md">
                  
@@ -45,16 +45,16 @@
                          
                          <!-- Top: Header -->
                          <div class="flex justify-between items-start gap-4">
-                             <div>
+                             <div class="flex-1 min-w-0 pr-4">
                                  <div class="flex items-center gap-2 mb-1">
                                     <span v-if="dl.paused" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">En Pause</span>
                                     <span v-else class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse">Téléchargement</span>
                                  </div>
-                                 <h4 class="text-xl md:text-2xl font-black text-white leading-tight truncate group-hover:text-indigo-400 transition-colors duration-300">{{ dl.title }}</h4>
+                                 <h4 class="text-xl md:text-2xl font-black text-white leading-tight truncate group-hover:text-indigo-400 transition-colors duration-300" :title="dl.title">{{ dl.title }}</h4>
                              </div>
                              
                              <!-- Actions -->
-                             <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
+                             <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-shrink-0">
                                  <button @click="togglePause(dl)" class="p-2 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all active:scale-95" :title="dl.paused ? 'Reprendre' : 'Pause'">
                                      <PlayIcon v-if="dl.paused" class="w-5 h-5" />
                                      <PauseIcon v-else class="w-5 h-5" />

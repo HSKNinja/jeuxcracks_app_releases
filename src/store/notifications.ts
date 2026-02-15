@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { useMainStore } from './index';
+import { useSocialStore } from './social';
 
 const API_BASE_URL = 'https://api.jeuxcracks.fr';
 const API_INBOX_URL = `${API_BASE_URL}/api/social/inbox`;
@@ -141,6 +142,10 @@ export const useNotificationStore = defineStore('notifications', {
     },
 
     togglePanel() {
+      const socialStore = useSocialStore();
+      if (!this.isPanelOpen) {
+        socialStore.closePanel();
+      }
       this.isPanelOpen = !this.isPanelOpen;
       if (this.isPanelOpen) {
         this.fetchAll(); // Load all when opening panel
