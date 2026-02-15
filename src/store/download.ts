@@ -65,17 +65,42 @@ export const useDownloadStore = defineStore('download', {
       this.downloads = [];
     },
     updateDownload(download: any, idOrTitle: string) {
-      console.log('🔄 updateDownload appelé avec:', download, idOrTitle);
-      let index = this.downloads.findIndex((dl: Download) => dl.gameID === idOrTitle);
+      // console.log('🔄 updateDownload appelé avec:', download, idOrTitle);
+      
+      // Preferred: Match by ID if available in payload
+      let index = -1;
+      if (download.gameID) {
+          index = this.downloads.findIndex((dl: Download) => dl.gameID === download.gameID);
+      }
+      
+      // Fallback: Match by ID/Title argument
+      if (index === -1) {
+          index = this.downloads.findIndex((dl: Download) => dl.gameID === idOrTitle);
+      }
       if (index === -1) {
         index = this.downloads.findIndex((dl: Download) => dl.title === idOrTitle);
       }
+      
+      // Auto-Create if missing (Resurrected from backend)
       if (index === -1) {
-        console.log('⚠️ Download non trouvé pour:', idOrTitle);
+        // console.log('⚠️ Download non trouvé (Ghost?), Création automatique:', idOrTitle);
+        if (download && download.name) {
+             const newDl: Download = {
+                 gameID: download.gameID || idOrTitle, // Use specific ID from payload if available
+                 title: download.title || idOrTitle, 
+                 path: download.path || '', 
+                 downloadType: download.downloadType || 'torrent',
+                 paused: download.paused || false,
+                 data: download,
+                 game: undefined, 
+                 chartData: null
+             };
+             this.addDownload(newDl);
+             return; 
+        }
         return;
       }
-      console.log('✅ Download trouvé à l\'index:', index);
-      console.log('📊 infoHash reçu:', download.infoHash);
+      
       this.downloads[index].data = download;
       this.updateChartData(this.downloads[index].title, download.downloadSpeed);
     },

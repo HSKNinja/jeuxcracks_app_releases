@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { app, BrowserWindow, shell, ipcMain, dialog, Menu, Tray, nativeImage } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, dialog, Menu, Tray, nativeImage, session } from 'electron';
 import { release } from 'os';
 import { join, dirname } from 'path';
 import { rootPath } from 'electron-root-path';
@@ -61,7 +61,7 @@ async function createWindow() {
     movable: true,
     hasShadow: true,
     resizable: true,
-    icon: join(dirname(''), 'assets', 'logo.ico'),
+    icon: join(process.env.VITE_PUBLIC, 'logo.ico'),
     webPreferences: {
       preload,
       nodeIntegration: false,
@@ -133,7 +133,7 @@ app.whenReady().then(async () => {
 
   // Initialize Tray
   try {
-      const iconPath = join(dirname(''), 'assets', 'logo.ico');
+      const iconPath = join(process.env.VITE_PUBLIC, 'logo.ico');
       tray = new Tray(nativeImage.createFromPath(iconPath));
       tray.setToolTip('JeuxCracks Launcher');
       
@@ -166,6 +166,21 @@ app.whenReady().then(async () => {
     }
     originalConsoleError(...args);
   };
+
+  // Fix YouTube Embed Error 153/101 in Production
+  session.defaultSession.webRequest.onBeforeSendHeaders({
+    urls: ['*://*.youtube.com/*', '*://*.googlevideo.com/*']
+  }, (details, callback) => {
+    // Strategy: Remove Referer/Origin completely for the embed iframe.
+    // This makes the request look like a direct navigation (browser tab), bypassing embedding restrictions.
+    // Works reliably in both Dev (localhost) and Prod (file://).
+    if (details.resourceType === 'subFrame' || details.url.includes('/embed/')) {
+        if (!details.requestHeaders) details.requestHeaders = {};
+        delete details.requestHeaders['Referer'];
+        delete details.requestHeaders['Origin'];
+    }
+    callback({ cancel: false, requestHeaders: details.requestHeaders });
+  });
 
   createWindow();
 
@@ -428,6 +443,11 @@ ipcMain.on('restart-app', () => {
 ipcMain.on('auth-success', async (event, token) => {
     console.log('👤 User logged in, starting Telemetry...');
     TelemetryService.getInstance().sendStartup(token);
+});
+
+ipcMain.on('auth-token-refresh', (event, token) => {
+    // console.log('🔄 Telemetry: Token updated');
+    TelemetryService.getInstance().updateToken(token);
 });
 
 let isQuitting = false;

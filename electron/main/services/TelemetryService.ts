@@ -136,10 +136,18 @@ export class TelemetryService {
     private startHeartbeat() {
         if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
         
-        console.log('💓 Heartbeat started (every 5min)');
+        console.log('Heartbeat started (every 1min)');
         this.heartbeatInterval = setInterval(() => {
             this.sendHeartbeat();
-        }, 5 * 60 * 1000); 
+        }, 60 * 1000); 
+    }
+
+    /**
+     * UPDATE TOKEN (Called via IPC from Renderer on refresh)
+     */
+    updateToken(newToken: string) {
+        this.authToken = newToken;
+        // console.log('🔄 Telemetry: Token updated internally');
     }
 
     async sendHeartbeat() {

@@ -251,12 +251,24 @@ const togglePause = (dl: any) => {
 const cancelDownload = (dl: any) => {
     if (confirm(`Annuler le téléchargement de ${dl.title} ?`)) {
         if ((window as any).electronAPI) {
-            if (dl.downloadType === 'torrent' && dl.data?.infoHash) {
-                 const path = dl.path ? `${dl.path}/${dl.title}` : '';
-                 (window as any).electronAPI.send('stop-torrent', dl.data.infoHash, path);
+            if (dl.downloadType === 'torrent') {
+                 // Try by Hash first
+                 if (dl.data?.infoHash) {
+                     const path = dl.path ? `${dl.path}/${dl.title}` : '';
+                     // Also try removing by ID just to be sure it cleans metadata
+                     (window as any).electronAPI.send('stop-torrent', dl.data.infoHash, path);
+                 } else {
+                     // Fallback by ID if hash missing (Starting...)
+                     // We need gameID. dl.gameID should be there.
+                     if (dl.gameID) {
+                         (window as any).electronAPI.send('stop-torrent-by-id', dl.gameID);
+                     }
+                 }
             } else {
                  (window as any).electronAPI.send('cancel-download', dl.gameID);
             }
+            
+            // Remove from UI immediately
             downloadStore.removeDownloadByTitle(dl.title);
             notify({ type: 'info', title: 'Téléchargement', text: 'Téléchargement annulé.' });
         }

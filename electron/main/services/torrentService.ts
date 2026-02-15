@@ -32,9 +32,44 @@ class TorrentService {
       console.log('🛑 Événement stop-torrent reçu:', infoHash, savePath);
       this.stopTorrent(event, infoHash, savePath);
     });
+    ipcMain.on('stop-torrent-by-id', (event, gameID) => {
+      console.log('🛑 Événement stop-torrent-by-id reçu:', gameID);
+      this.stopTorrentByGameId(event, gameID);
+    });
     
     // Load persisted torrents on startup
     this.loadState();
+  }
+
+  private stopTorrentByGameId = (event, gameID: string) => {
+      // Find infoHash from metadata
+      let infoHashToStop = null;
+      let savePathToStop = null;
+
+      for (const [hash, meta] of this.torrentsMetadata.entries()) {
+          if (meta.gameData && String(meta.gameData.id) === String(gameID)) {
+              infoHashToStop = hash;
+              savePathToStop = meta.savePath; // We might need to append title if that's how it was saved
+              // Check if savePath already includes title or not. 
+              // In startTorrent, we do: client.add(torrentFile, { path: savePath })
+              // Usually savePath comes from UI as "Downloads/GameTitle"
+              break;
+          }
+      }
+
+      if (infoHashToStop) {
+          console.log(`🎯 Torrent trouvé par ID ${gameID} -> ${infoHashToStop}`);
+          this.stopTorrent(event, infoHashToStop, savePathToStop);
+      } else {
+          console.log(`⚠️ Aucun torrent trouvé pour l'ID ${gameID}`);
+          // Fallback: If not in metadata but in activeTorrents? Unlikely if they stay synced.
+          // But maybe it's a magnet link pending metadata?
+          // WebTorrent doesn't easily map magnet -> gameID unless we stored it.
+          // We stored it in activeTorrents via 'gameData' property attached? No, we don't attach yet.
+          
+          // Try to cancel from cancelledTorrents set just in case
+          this.cancelledTorrents.add(gameID);
+      }
   }
   
   private saveState() {
@@ -72,15 +107,21 @@ class TorrentService {
     try {
       console.log('🚀 Démarrage du torrent:', gameData.title);
       
-      // Vérifier si le torrent a été annulé
+      // Si on redémarre explicitement un torrent, on doit le retirer de la liste des annulés
       if (this.cancelledTorrents.has(gameData.id)) {
-        console.log('🚫 Torrent annulé, pas de redémarrage:', gameData.title);
+        console.log('🔄 Retrait de la liste des torrents annulés pour redémarrage:', gameData.title);
         this.cancelledTorrents.delete(gameData.id);
-        return;
       }
+
       
-    client.add(torrentFile, { path: savePath }, (torrent) => {
-        console.log('📦 Torrent ajouté:', torrent.name);
+      console.log('🚀 Appel de client.add pour:', gameData.title);
+      console.log('📂 SavePath:', savePath);
+      // console.log('📄 TorrentFile:', typeof torrentFile === 'string' ? torrentFile : 'Buffer');
+
+      client.add(torrentFile, { path: savePath }, (torrent) => {
+        console.log('📦 Callback client.add déclenché !');
+        console.log('📦 Torrent ajouté avec succès:', torrent.name);
+        console.log('🔑 InfoHash:', torrent.infoHash);
         
         // Ajouter le torrent à la liste des torrents actifs
         this.activeTorrents.set(torrent.infoHash, torrent);
@@ -97,14 +138,17 @@ class TorrentService {
         
       const interval = setInterval(() => {
           try {
-        const torrentData = {
+             // console.log('Progress:', torrent.progress); // Too verbose
+         const torrentData = {
+          gameID: gameData.id,
+          title: gameData.title,
           name: torrent.name,
           infoHash: torrent.infoHash,
           progress: torrent.progress,
           downloaded: torrent.downloaded,
           received: torrent.received,
           total: torrent.length,
-          timeRemaining: torrent.timeRemaining,
+          timeRemaining: torrent.timeRemaining, // ms
           uploaded: torrent.uploaded,
           downloadSpeed: torrent.downloadSpeed,
           uploadSpeed: torrent.uploadSpeed,
@@ -113,6 +157,7 @@ class TorrentService {
           ready: torrent.ready,
           paused: torrent.paused,
           done: torrent.done,
+          downloadType: 'torrent'
         };
             
         const win = getMainWindow();
@@ -206,6 +251,20 @@ class TorrentService {
 
   private resumeTorrent = (event, infoHash: string, savePath: string, gameData: Game) => {
     try {
+        console.log('🔄 Demande de reprise du torrent:', infoHash);
+        
+        // If gameData is missing (e.g. from Downloads.vue), try to recover it from persistence
+        if (!gameData || !gameData.title) {
+            const meta = this.torrentsMetadata.get(infoHash);
+            if (meta && meta.gameData) {
+                console.log('♻️ Récupération des données de jeu depuis la persistance pour:', meta.gameData.title);
+                gameData = meta.gameData;
+            } else {
+                console.error('❌ Impossible de reprendre : données de jeu manquantes pour le hash', infoHash);
+                return;
+            }
+        }
+        
     const win = getMainWindow();
     win?.webContents.send('download-pending');
     this.startTorrent(event, infoHash, savePath, gameData);

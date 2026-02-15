@@ -100,6 +100,10 @@ const close = () => { window.electronAPI?.close(); };
 const handleRegister = async () => {
     if (passwordMismatch.value) return;
 
+    // Clear any existing session to prevent "Session Expired" error (401)
+    // caused by sending invalid/stale tokens with the register request.
+    store.logout();
+
     loading.value = true;
     error.value = '';
     

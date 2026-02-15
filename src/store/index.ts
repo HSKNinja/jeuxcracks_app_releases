@@ -31,6 +31,7 @@ export const useMainStore = defineStore('main', {
   actions: {
     setTokens(tokens: { access: string; refresh: string }) {
       this.tokens = tokens;
+      window.electronAPI?.send('auth-token-refresh', tokens.access);
     },
     login(data: { user: any; tokens: any }) {
       this.user = data.user;

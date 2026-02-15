@@ -14,7 +14,7 @@ export class JeuxCracksAPI {
     const tokens = await useFetch(API_CONFIG.ENDPOINTS.AUTH.TOKEN, 'POST', { email, password });
     
     // Ensuite obtenir les infos utilisateur
-    const user = await this.getUserProfile();
+    const user = await this.getUserProfile(tokens.access);
     
     return { user, tokens };
   }
@@ -59,8 +59,9 @@ export class JeuxCracksAPI {
   /**
    * Obtenir les informations de l'utilisateur connecté
    */
-  static async getUserProfile(): Promise<DjangoUser> {
-    return useFetch(API_CONFIG.ENDPOINTS.AUTH.USER_ME);
+  static async getUserProfile(token?: string): Promise<DjangoUser> {
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+    return useFetch(API_CONFIG.ENDPOINTS.AUTH.USER_ME, 'GET', null, headers);
   }
   
   /**

@@ -24,29 +24,13 @@
             <!-- 1. BACKGROUND LAYERS -->
             <div class="absolute inset-0 bg-black">
                 
-                <!-- YouTube Video Embed (silent, loop, no branding) -->
-                <div v-if="youtubeVideoId" class="absolute inset-0 overflow-hidden">
-                    <iframe 
-                        :src="`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=1&loop=1&playlist=${youtubeVideoId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&vq=hd1080&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0`"
-                        class="absolute w-[120%] h-[120%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                        frameborder="0"
-                        allow="autoplay; encrypted-media"
-                    ></iframe>
+                <!-- Background Image (Replaces Video) -->
+                <div class="absolute inset-0">
+                    <img 
+                        :src="currentGame.header" 
+                        class="w-full h-full object-cover animate-pan-zoom" 
+                    />
                 </div>
-                <!-- Direct Video File -->
-                <video 
-                    v-else-if="currentGame.video && !currentGame.video.includes('youtube')"
-                    :src="currentGame.video" 
-                    :poster="currentGame.header"
-                    class="w-full h-full object-cover"
-                    autoplay loop muted playsinline
-                ></video>
-                <!-- Image Fallback -->
-                <img 
-                    v-else
-                    :src="currentGame.header" 
-                    class="w-full h-full object-cover" 
-                />
 
                 <!-- Subtle Overlays (reduced intensity for clarity) -->
                 <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent"></div>
@@ -174,13 +158,7 @@ const SLIDE_DURATION = 8000; // 8 seconds per slide
 
 const currentGame = computed(() => games.value[activeIndex.value]);
 
-// Extract YouTube video ID from URL
-const youtubeVideoId = computed(() => {
-    const url = currentGame.value?.video;
-    if (!url) return null;
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-    return match ? match[1] : null;
-});
+
 
 function goToPage(path: string) {
   router.push(path);

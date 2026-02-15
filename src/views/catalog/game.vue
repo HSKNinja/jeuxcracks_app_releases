@@ -45,33 +45,14 @@
         <!-- HERO SECTION (Video Background behind Title) -->
         <div class="relative w-full h-[85vh] overflow-hidden group">
             
-            <!-- Video/Image Background -->
-            <div class="absolute inset-0 bg-black select-none pointer-events-none">
-                <!-- YouTube Video Embed (silent, loop, no branding) -->
-                <div v-if="youtubeVideoId" class="absolute inset-0 overflow-hidden">
-                    <iframe 
-                        :src="`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=1&loop=1&playlist=${youtubeVideoId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&vq=hd1080&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0`"
-                        class="absolute w-[120%] h-[120%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                        frameborder="0"
-                        allow="autoplay; encrypted-media"
-                    ></iframe>
-                </div>
-                <!-- Direct Video File -->
-                <video 
-                    v-else-if="game?.video && !game.video.includes('youtube')" 
-                    :src="game?.video" 
-                    :poster="game?.header || game?.background"
-                    class="w-full h-full object-cover"
-                    autoplay loop muted playsinline
-                ></video>
-                <!-- Fallback Image -->
+            <!-- Background Image (Replaces Video) -->
+            <div class="absolute inset-0 select-none pointer-events-none">
                 <img 
-                    v-else 
                     :src="game?.background || game?.header" 
-                    class="w-full h-full object-cover"
+                    class="w-full h-full object-cover animate-pan-zoom"
                 />
                 
-                <!-- Gradient Vignettes (reduced for clarity) -->
+                <!-- Gradient Vignettes -->
                 <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-black/20"></div>
                 <div class="absolute inset-0 bg-gradient-to-r from-[#050505]/60 via-transparent to-[#050505]/60"></div>
             </div>
@@ -132,10 +113,10 @@
                         <div v-if="downloadStore.isDownloadExist(game?.id)" class="max-w-md bg-black/60 backdrop-blur border border-white/10 p-4 rounded-xl mt-4">
                             <div class="flex justify-between items-center text-xs font-bold uppercase text-zinc-400 mb-2">
                                 <span class="text-indigo-400 animate-pulse">Téléchargement...</span>
-                                <span>{{ Math.round(downloadStore.downloads[downloadStore.getIndexDownloadByTitle(game?.title)].data.progress * 100) }}%</span>
+                                <span>{{ Math.round((downloadStore.downloads[downloadStore.getIndexDownloadByTitle(game?.title)]?.data?.progress || 0) * 100) }}%</span>
                             </div>
                             <div class="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                                 <div class="h-full bg-indigo-500 transition-all duration-300" :style="{ width: (downloadStore.downloads[downloadStore.getIndexDownloadByTitle(game?.title)]?.data?.progress * 100) + '%' }"></div>
+                                 <div class="h-full bg-indigo-500 transition-all duration-300" :style="{ width: ((downloadStore.downloads[downloadStore.getIndexDownloadByTitle(game?.title)]?.data?.progress || 0) * 100) + '%' }"></div>
                             </div>
                         </div>
 
@@ -431,15 +412,7 @@ const isGameInstalled = ref(false);
 const destPath = ref<string>('');
 const stats = ref<{ totalLaunches: number; totalTimePlayedMs: number; lastPlayedDate: string | null } | null>(null);
 
-// Computed: Extract YouTube video ID from URL
-import { computed } from 'vue';
-const youtubeVideoId = computed(() => {
-    const url = game.value?.video;
-    if (!url) return null;
-    // Match youtube.com/watch?v=ID or youtu.be/ID
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-    return match ? match[1] : null;
-});
+
 
 // Popup State
 const libraries = ref<any[]>([]);
