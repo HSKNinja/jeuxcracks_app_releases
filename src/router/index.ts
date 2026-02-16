@@ -145,4 +145,17 @@ router.beforeEach((to, from, next) => {
     next()
 })
 
+// Offline Guard
+router.beforeResolve((to, from, next) => {
+    const store = useMainStore();
+    const onlinePages = ['Shop', 'Premium', 'Magasin', 'ThemeShop']; // Pages strictly requiring online
+    // Catalogue is debatable - maybe cached? But generally online.
+    if (store.isOfflineMode && (onlinePages.includes(to.name as string) || to.path.startsWith('/catalogue') || to.path.startsWith('/shop'))) {
+        if (to.name !== 'Bibliothèque') next({ name: 'Bibliothèque' });
+        else next();
+    } else {
+        next();
+    }
+});
+
 export default router;

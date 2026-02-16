@@ -23,6 +23,10 @@ class TorrentService {
   private activeTorrents = new Map<string, any>(); // Pour tracker les torrents actifs
   private torrentsMetadata = new Map<string, any>(); // Metadata for persistence
   private persistenceFile = join(app.getPath('userData'), 'downloads', 'active_torrents.json');
+  
+  // Speed Limits
+  private downloadLimit = -1;
+  private uploadLimit = -1;
 
   constructor() {
     ipcMain.handle('start-torrent', this.startTorrent);
@@ -39,6 +43,26 @@ class TorrentService {
     
     // Load persisted torrents on startup
     this.loadState();
+  }
+
+  public setDownloadLimit(bytes: number) {
+      this.downloadLimit = bytes;
+      if (client) {
+          client.throttleDownload(bytes <= 0 ? -1 : bytes);
+          console.log('📉 Limite téléchargement définie:', bytes <= 0 ? 'Illimité' : bytes + ' o/s');
+      }
+  }
+
+  public setUploadLimit(bytes: number) {
+      this.uploadLimit = bytes;
+      if (client) {
+          client.throttleUpload(bytes <= 0 ? -1 : bytes);
+          console.log('📈 Limite envoi définie:', bytes <= 0 ? 'Illimité' : bytes + ' o/s');
+      }
+  }
+
+  public getLimits() {
+      return { download: this.downloadLimit, upload: this.uploadLimit };
   }
 
   private stopTorrentByGameId = (event, gameID: string) => {

@@ -4,7 +4,7 @@ import { release } from 'os';
 import { join, dirname } from 'path';
 import { rootPath } from 'electron-root-path';
 import * as fs from 'fs/promises';
-import { client } from './services/torrentService';
+import { client, torrentService } from './services/torrentService';
 import { libraryService } from './services/libraryService';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
@@ -186,6 +186,16 @@ app.whenReady().then(async () => {
 
   // Configuration des logs pour electron-updater
   autoUpdater.logger = log;
+
+  // Restore Download Limits
+  if(store) {
+      const limits = store.get('downloadLimits');
+      if (limits) {
+          if(limits.download !== undefined) torrentService.setDownloadLimit(limits.download);
+          if(limits.upload !== undefined) torrentService.setUploadLimit(limits.upload);
+          console.log('📉 Limites de téléchargement restaurées:', limits);
+      }
+  }
 
   // Check via IPC
   ipcMain.on('check-for-update', () => {
@@ -435,6 +445,48 @@ ipcMain.handle('force-library-sync', async () => {
     return '[]';
   }
 });
+
+// --- SETTINGS & DOWNLOAD LIMITS ---
+ipcMain.handle('get-settings', async () => {
+   if(!store) return {};
+   return store.get('settings') || {};
+});
+
+ipcMain.on('update-setting', (e, key, value) => {
+   if(!store) return;
+   const settings = store.get('settings') || {};
+   settings[key] = value;
+   store.set('settings', settings);
+});
+
+ipcMain.handle('get-app-version', () => app.getVersion());
+
+// ... (in ipcMain handlers)
+ipcMain.on('set-download-limit', (e, bytes) => {
+    torrentService.setDownloadLimit(bytes);
+    
+    // Persist
+    if(store) {
+        const limits = store.get('downloadLimits') || {};
+        limits.download = bytes;
+        store.set('downloadLimits', limits);
+    }
+});
+
+ipcMain.on('set-upload-limit', (e, bytes) => {
+    torrentService.setUploadLimit(bytes);
+    
+    if(store) {
+        const limits = store.get('downloadLimits') || {};
+        limits.upload = bytes;
+        store.set('downloadLimits', limits);
+    }
+});
+
+ipcMain.handle('get-download-limits', () => {
+    return torrentService.getLimits();
+});
+// ----------------------------------
 
 ipcMain.on('restart-app', () => {
   autoUpdater.quitAndInstall();

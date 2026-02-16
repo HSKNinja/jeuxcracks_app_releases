@@ -193,74 +193,7 @@
         
         <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl overflow-hidden divide-y divide-white/5">
             
-            <!-- Storage Libraries Manager -->
-            <div class="p-4 md:p-6 flex flex-col gap-4 hover:bg-white/[0.02] transition-colors">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <FolderOpenIcon class="w-6 h-6 text-indigo-500" />
-                        <div>
-                            <div class="font-medium text-zinc-200">Bibliothèques de Jeux</div>
-                            <div class="text-xs text-zinc-500">Gérez vos emplacements d'installation</div>
-                        </div>
-                    </div>
-                    <button @click="addLibrary" class="px-3 py-1.5 text-xs font-bold bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 rounded-lg hover:bg-indigo-600 hover:text-white transition-colors">
-                        + Ajouter
-                    </button>
-                </div>
 
-                <!-- Library List -->
-                <div class="space-y-2 mt-2">
-                    <div v-for="lib in libraries" :key="lib.id" class="flex items-center justify-between p-3 bg-zinc-900/50 rounded-xl border border-white/5 group relative">
-                         <!-- Default Badge -->
-                         <div v-if="lib.isDefault" class="absolute -top-2 -right-2 px-2 py-0.5 bg-indigo-600 text-white text-[9px] font-bold uppercase tracking-wider rounded-full shadow-lg">
-                             Défaut
-                         </div>
-
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0 font-bold text-zinc-500 text-xs">
-                                {{ lib.path.charAt(0).toUpperCase() }}
-                            </div>
-                            <div class="min-w-0">
-                                <div class="text-sm font-bold text-zinc-300 truncate">{{ lib.label }}</div>
-                                <div class="text-xs text-zinc-500 font-mono truncate" :title="lib.path">{{ lib.path }}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center gap-2">
-                            <button v-if="!lib.isDefault" @click="setAsDefault(lib.id)" class="p-1.5 rounded-lg hover:bg-indigo-500/20 text-zinc-600 hover:text-indigo-400 transition-colors" title="Définir par défaut">
-                                <StarIcon class="w-4 h-4" />
-                            </button>
-                            <button v-if="!lib.isDefault" @click="removeLibrary(lib.id)" class="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-600 hover:text-red-500 transition-colors" title="Retirer">
-                                <TrashIcon class="w-4 h-4" />
-                            </button>
-                             <div v-else class="p-1.5 text-indigo-500">
-                                <StarIcon class="w-4 h-4 fill-current" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notifications -->
-            <div class="p-4 md:p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
-                <div class="flex items-center gap-4">
-                    <BellIcon class="w-6 h-6 text-zinc-600" />
-                    <div>
-                        <div class="font-medium text-zinc-200">Notifications</div>
-                        <div class="text-xs text-zinc-500">Être notifié à la fin d'un téléchargement</div>
-                    </div>
-                </div>
-                <button 
-                  @click="notificationsEnabled = !notificationsEnabled"
-                  class="w-11 h-6 rounded-full relative transition-colors duration-300 focus:outline-none"
-                  :class="notificationsEnabled ? 'bg-indigo-600' : 'bg-zinc-700'"
-                >
-                    <div 
-                      class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm"
-                      :class="notificationsEnabled ? 'translate-x-5' : 'translate-x-0'"
-                    ></div>
-                </button>
-            </div>
 
             <!-- DMCA -->
             <div class="p-4 md:p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
@@ -469,11 +402,8 @@ import {
     HeartIcon,
     ChatBubbleLeftRightIcon,
     Cog6ToothIcon,
-    FolderOpenIcon,
-    BellIcon,
     TrashIcon,
     XMarkIcon,
-    StarIcon,
     ScaleIcon,
     ClockIcon
 } from '@heroicons/vue/24/solid';
@@ -486,8 +416,6 @@ const libraryCount = computed(() => store.library.length);
 const favoritesCount = computed(() => store.favorites.length);
 
 // State
-const notificationsEnabled = ref(true);
-const libraries = ref<any[]>([]);
 const isEditing = ref(false);
 const isSuggestionOpen = ref(false);
 const fileInput = ref<HTMLInputElement|null>(null);
@@ -561,37 +489,7 @@ const handleImageUpload = async (e: Event) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if(file) await store.uploadProfilePicture(file); 
 };
-const fetchLibraries = async () => {
-    if (window.electronAPI) {
-        libraries.value = await window.electronAPI.invoke('get-libraries');
-    }
-};
 
-const addLibrary = async () => {
-     try {
-        if (window.electronAPI) {
-            const path = await window.electronAPI.invoke('open-dialog', { properties: ['openDirectory'] });
-            if (path) {
-                const updated = await window.electronAPI.invoke('add-library', path);
-                if (updated) libraries.value = updated;
-            }
-        }
-    } catch (e) { console.error(e); }
-};
-
-const removeLibrary = async (id: string) => {
-    if (window.electronAPI) {
-        const updated = await window.electronAPI.invoke('remove-library', id);
-        if (updated) libraries.value = updated;
-    }
-};
-
-const setAsDefault = async (id: string) => {
-    if (window.electronAPI) {
-        const updated = await window.electronAPI.invoke('set-default-library', id);
-        if (updated) libraries.value = updated;
-    }
-};
 
 const fetchTotalStats = async () => {
     const userId = store.user?.id || 'anonymous';
@@ -617,7 +515,6 @@ function prettyMilliseconds(ms: number) {
 
 onMounted(async () => { 
     await store.fetchFavorites();
-    await fetchLibraries();
     await fetchTotalStats();
 });
 </script>

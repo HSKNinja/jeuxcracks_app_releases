@@ -45,9 +45,11 @@ export function useFetch(url: string, method?: string, body?: any, customHeaders
         }
 
         try {
+            const isGetOrHead = ['GET', 'HEAD'].includes((method || 'GET').toUpperCase());
+            
             const response = await fetch(`${API_CONFIG.BASE_URL}${url}`, {
                 method: method || 'GET',
-                body: body instanceof FormData ? body : JSON.stringify(body),
+                body: (isGetOrHead || body === null || body === undefined) ? undefined : (body instanceof FormData ? body : JSON.stringify(body)),
                 headers,
             });
 
@@ -127,11 +129,20 @@ export function useFetch(url: string, method?: string, body?: any, customHeaders
                         isRefreshing = false;
                         return doRequest(newTokens.access);
                     } else {
-                        throw new Error('Refresh failed');
+                        // Server responded with error (e.g. 401 invalid refresh token)
+                        store.logout();
+                        throw new Error('Session expirée (Refresh failed)');
                     }
-                } catch (refreshErr) {
+                } catch (refreshErr: any) {
                     isRefreshing = false;
-                    store.logout();
+                    // Only logout if it was a server error we explicitly threw above
+                    // If it's a network error (TypeError), do NOT logout to allow offline mode
+                    if (refreshErr.message === 'Session expirée (Refresh failed)') {
+                         store.logout();
+                    } else {
+                         console.warn('⚠️ Network error during refresh - Entering potentially offline state');
+                    }
+                    
                     processQueue(refreshErr, null);
                     throw refreshErr;
                 }

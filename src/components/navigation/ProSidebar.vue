@@ -58,6 +58,13 @@
                 <SparklesIcon class="w-5 h-5 group-hover/premium:text-amber-500 transition-colors" />
                 <span class="group-hover/premium:text-amber-400 transition-colors">Premium</span>
             </router-link>
+            
+            <div class="h-px bg-zinc-800 my-2"></div>
+
+            <router-link to="/settings" class="nav-item">
+                <Cog6ToothIcon class="w-5 h-5" />
+                <span>Paramètres</span>
+            </router-link>
         </div>
       </div>
 
@@ -82,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { HomeIcon, RectangleStackIcon, FolderIcon, ArrowDownTrayIcon, UserCircleIcon, HeartIcon, ShoppingBagIcon, SparklesIcon, ScaleIcon, StarIcon } from '@heroicons/vue/24/outline';
+import { HomeIcon, RectangleStackIcon, FolderIcon, ArrowDownTrayIcon, UserCircleIcon, HeartIcon, ShoppingBagIcon, SparklesIcon, ScaleIcon, StarIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline';
 import { API_CONFIG } from '../../config/api';
 import { useDownloadStore } from '../../store/download';
 import { useMainStore } from '../../store';

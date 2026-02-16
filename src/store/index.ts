@@ -17,6 +17,7 @@ export const useMainStore = defineStore('main', {
     favorites: [] as string[],
     library: [] as GameInstalled[],
     _isSyncing: false,
+    isOfflineMode: false,
   }),
   persist: {
     paths: ['user', 'tokens', 'favorites'],
@@ -36,17 +37,20 @@ export const useMainStore = defineStore('main', {
     login(data: { user: any; tokens: any }) {
       this.user = data.user;
       this.tokens = data.tokens;
+      this.isOfflineMode = false;
       window.electronAPI?.send('auth-success', data.tokens.access);
     },
     logout() {
       this.user = null;
       this.tokens = null;
       this.favorites = [];
+      this.isOfflineMode = false;
     },
     async verifyToken() {
       if (!this.tokens) return false;
       try {
         await useFetch('/auth/api/token/verify/', 'POST', { token: this.tokens.access });
+        this.isOfflineMode = false;
         return true;
       } catch (e) {
         // Token invalide, mais peut-être refreshable ailleurs
@@ -69,9 +73,16 @@ export const useMainStore = defineStore('main', {
         }
         
         this.user = user;
+        this.isOfflineMode = false;
         return user;
       } catch (e) {
         console.error('Failed to fetch user', e);
+        // If we have a user and this is a network error, assume offline mode
+        if (this.user) {
+            console.warn('⚠️ Unable to fetch user, falling back to cached user (Offline Mode)');
+            this.isOfflineMode = true;
+            return this.user;
+        }
         throw e;
       }
     },
