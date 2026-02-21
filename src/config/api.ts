@@ -42,6 +42,22 @@ export const API_CONFIG = {
       LIST: '/api/liste_multilinks/',
       CREATE: '/api/multilinks/create/',
       DETAIL: '/api/multilinks/',
+    },
+
+    // Subscriptions & Donations
+    SUBSCRIPTIONS: {
+      PLANS: '/api/subscriptions/plans/',
+      CHECKOUT: '/api/subscriptions/checkout/',
+      STATUS: '/api/subscriptions/status/',
+      CANCEL: '/api/subscriptions/cancel/',
+      REACTIVATE: '/api/subscriptions/reactivate/',
+      UPGRADE: '/api/subscriptions/upgrade/',
+      DOWNGRADE: '/api/subscriptions/downgrade/',
+      CHANGE_BILLING: '/api/subscriptions/change-billing/',
+      INVOICES: '/api/subscriptions/invoices/',
+      DONATE: '/api/subscriptions/donate/',
+      DONATIONS: '/api/subscriptions/donations/',
+      REVENUE_MONTHLY: '/api/subscriptions/revenue/monthly/',
     }
   },
   

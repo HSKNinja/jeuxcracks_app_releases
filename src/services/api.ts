@@ -235,4 +235,66 @@ export class JeuxCracksAPI {
   static async getMultiLink(slug: string): Promise<any> {
     return useFetch(`${API_CONFIG.ENDPOINTS.MULTILINKS.DETAIL}${slug}/`);
   }
+
+  // ===== SUBSCRIPTIONS & DONATIONS =====
+
+  /** Lister les plans disponibles (public) */
+  static async getPlans(): Promise<any[]> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.PLANS);
+  }
+
+  /** Créer une session Stripe Checkout pour un abonnement */
+  static async checkout(priceId: string): Promise<{ checkout_url: string; session_id: string }> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.CHECKOUT, 'POST', { price_id: priceId });
+  }
+
+  /** État de l'abonnement de l'utilisateur */
+  static async getSubscriptionStatus(): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.STATUS);
+  }
+
+  /** Annuler l'abonnement */
+  static async cancelSubscription(immediately = false): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.CANCEL, 'POST', { immediately });
+  }
+
+  /** Réactiver un abonnement marqué pour annulation */
+  static async reactivateSubscription(): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.REACTIVATE, 'POST');
+  }
+
+  /** Upgrade de plan (proratisé) */
+  static async upgradeSubscription(priceId: string): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.UPGRADE, 'POST', { price_id: priceId });
+  }
+
+  /** Downgrade de plan (fin de période) */
+  static async downgradeSubscription(priceId: string): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.DOWNGRADE, 'POST', { price_id: priceId });
+  }
+
+  /** Changer la période de facturation (mensuel ↔ annuel) */
+  static async changeBilling(priceId: string): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.CHANGE_BILLING, 'POST', { price_id: priceId });
+  }
+
+  /** Historique des factures */
+  static async getInvoices(): Promise<any[]> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.INVOICES);
+  }
+
+  /** Faire un don libre (montant en centimes, min 100 = 1€) */
+  static async donate(amount: number, message?: string): Promise<{ checkout_url: string; session_id: string }> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.DONATE, 'POST', { amount, message });
+  }
+
+  /** Historique des dons */
+  static async getDonations(): Promise<any[]> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.DONATIONS);
+  }
+
+  /** Revenus du mois (public) */
+  static async getMonthlyRevenue(): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.REVENUE_MONTHLY);
+  }
 } 

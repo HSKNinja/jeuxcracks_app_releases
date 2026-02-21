@@ -492,6 +492,14 @@ ipcMain.on('restart-app', () => {
   autoUpdater.quitAndInstall();
 });
 
+// Open URL in default browser (Stripe checkout, invoices, etc.)
+ipcMain.on('open-external', (_e, url: string) => {
+    if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
+        const { shell } = require('electron');
+        shell.openExternal(url);
+    }
+});
+
 ipcMain.on('auth-success', async (event, token) => {
     console.log('👤 User logged in, starting Telemetry...');
     TelemetryService.getInstance().sendStartup(token);
