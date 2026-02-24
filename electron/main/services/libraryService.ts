@@ -77,6 +77,7 @@ class LibraryService {
         ipcMain.handle('add-library', (_, path) => this.addLibrary(path));
         ipcMain.handle('remove-library', (_, id) => this.removeLibrary(id));
         ipcMain.handle('set-default-library', (_, id) => this.setDefaultLibrary(id));
+        ipcMain.handle('rename-library', (_, id, name) => this.renameLibrary(id, name));
         
         ipcMain.handle('get-installed-games', () => this.config.games);
         ipcMain.handle('get-game-install-info', (_, gameId) => this.getGameInfo(gameId));
@@ -124,6 +125,15 @@ class LibraryService {
     public setDefaultLibrary(id: string) {
         this.config.libraries.forEach(l => l.isDefault = (l.id === id));
         this.saveConfig();
+        return this.config.libraries;
+    }
+
+    public renameLibrary(id: string, name: string) {
+        const lib = this.config.libraries.find(l => l.id === id);
+        if (lib) {
+            lib.label = name;
+            this.saveConfig();
+        }
         return this.config.libraries;
     }
 

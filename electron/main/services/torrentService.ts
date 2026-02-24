@@ -219,6 +219,17 @@ class TorrentService {
         const win = getMainWindow();
           win?.webContents.send('download-done', gameData.title);
           
+          // Native OS notification (if enabled)
+          try {
+              const { default: Store } = await import('electron-store');
+              const storeInst: any = new Store();
+              const settings = storeInst.get('settings') || {};
+              if (settings.notifications !== false) {
+                  const { Notification } = require('electron') as typeof import('electron');
+                  new Notification({ title: 'Téléchargement terminé', body: `${gameData.title} est prêt à jouer !` }).show();
+              }
+          } catch(e) { /* silent */ }
+          
           try {
             // Supprimer le fichier torrent
         const torrentName = fs.readdirSync(torrent.path).find((file) => file.endsWith('.torrent'));

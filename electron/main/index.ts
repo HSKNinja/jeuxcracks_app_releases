@@ -79,7 +79,19 @@ async function createWindow() {
   };
   win.on('resize', saveState);
   win.on('move', saveState);
-  win.on('close', saveState);
+
+  // Minimize-to-tray: intercept close
+  win.on('close', (e) => {
+      saveState();
+      if (!isQuitting) {
+          const settings = store ? store.get('settings') || {} : {};
+          if (settings.minimizeToTray) {
+              e.preventDefault();
+              win?.hide();
+              return;
+          }
+      }
+  });
 
   win.once('ready-to-show', () => {
     win?.show();
@@ -195,6 +207,15 @@ app.whenReady().then(async () => {
           if(limits.upload !== undefined) torrentService.setUploadLimit(limits.upload);
           console.log('📉 Limites de téléchargement restaurées:', limits);
       }
+  }
+
+  // Restore auto-launch setting
+  if(store) {
+      const settings = store.get('settings') || {};
+      if (app.isPackaged) {
+          app.setLoginItemSettings({ openAtLogin: !!settings.autoLaunch });
+      }
+      console.log('⚙️ Paramètres restaurés:', settings);
   }
 
   // Check via IPC
@@ -457,6 +478,20 @@ ipcMain.on('update-setting', (e, key, value) => {
    const settings = store.get('settings') || {};
    settings[key] = value;
    store.set('settings', settings);
+
+   // Apply setting immediately
+   if (key === 'autoLaunch' && app.isPackaged) {
+       app.setLoginItemSettings({ openAtLogin: !!value });
+       console.log('🚀 Auto-launch:', value ? 'activé' : 'désactivé');
+   }
+   if (key === 'minimizeToTray') {
+       console.log('🔽 Minimize to tray:', value ? 'activé' : 'désactivé');
+   }
+   if (key === 'notifications') {
+       // Forward to renderer so it can enable/disable vue-notification
+       win?.webContents.send('setting-changed', key, value);
+       console.log('🔔 Notifications:', value ? 'activées' : 'désactivées');
+   }
 });
 
 ipcMain.handle('get-app-version', () => app.getVersion());
@@ -485,6 +520,217 @@ ipcMain.on('set-upload-limit', (e, bytes) => {
 
 ipcMain.handle('get-download-limits', () => {
     return torrentService.getLimits();
+});
+
+ipcMain.handle('open-data-folder', async () => {
+    const { shell } = require('electron');
+    shell.openPath(app.getPath('userData'));
+});
+
+ipcMain.handle('get-electron-version', () => {
+    return process.versions.electron;
+});
+
+// --- LIBRARY STATS & CACHE MANAGEMENT ---
+ipcMain.handle('get-library-stats', async () => {
+    const configPath = join(app.getPath('userData'), 'library_config.json');
+    let libraries: any[] = [];
+    try {
+        const { readFileSync, existsSync } = require('fs');
+        if (existsSync(configPath)) {
+            const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
+            libraries = cfg.libraries || [];
+        }
+    } catch { return { folders: [], disks: [] }; }
+    
+    if (libraries.length === 0) return { folders: [], disks: [] };
+    
+    const formatB = (bytes: number) => {
+        if (!bytes) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'Ko', 'Mo', 'Go', 'To'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    };
+
+    // Unique disk saturation
+    const drivesSeen = new Set<string>();
+    const disks: any[] = [];
+    
+    for (const lib of libraries) {
+        const drive = lib.path.charAt(0).toUpperCase() + ':';
+        if (drivesSeen.has(drive)) continue;
+        drivesSeen.add(drive);
+        
+        let free = 0, total = 0;
+        try {
+            const { execSync } = require('child_process');
+            const output = execSync(`wmic logicaldisk where "DeviceID='${drive}'" get FreeSpace,Size /format:csv`, { encoding: 'utf8' });
+            const lines = output.trim().split('\n').filter((l: string) => l.trim());
+            if (lines.length > 1) {
+                const parts = lines[lines.length - 1].split(',');
+                free = parseInt(parts[1]) || 0;
+                total = parseInt(parts[2]) || 0;
+            }
+        } catch { /* silent */ }
+        
+        const used = total - free;
+        const percent = total > 0 ? Math.round((used / total) * 100) : 0;
+
+        disks.push({
+            drive,
+            usedFormatted: formatB(used),
+            freeFormatted: formatB(free),
+            totalFormatted: formatB(total),
+            percent,
+        });
+    }
+
+    return { folders: [], disks };
+});
+
+ipcMain.handle('get-cache-sizes', async () => {
+    const { readdirSync, statSync, readFileSync, existsSync } = require('fs');
+    const cachePath = join(app.getPath('userData'), 'Cache');
+    
+    const TEMP_EXTENSIONS = ['.rar', '.torrent', '.tmp', '.part', '.zip', '.7z', '.gz', '.tar'];
+    
+    // Get all library paths
+    const configPath = join(app.getPath('userData'), 'library_config.json');
+    let libraryPaths: string[] = [];
+    try {
+        if (existsSync(configPath)) {
+            const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
+            libraryPaths = (cfg.libraries || []).map((l: any) => l.path);
+        }
+    } catch {}
+    
+    // Count temp files across all libraries
+    const getTempSize = (dir: string): number => {
+        try {
+            let size = 0;
+            const items = readdirSync(dir, { withFileTypes: true });
+            for (const item of items) {
+                if (item.isFile()) {
+                    const ext = item.name.substring(item.name.lastIndexOf('.')).toLowerCase();
+                    if (TEMP_EXTENSIONS.includes(ext)) {
+                        try { size += statSync(join(dir, item.name)).size; } catch {}
+                    }
+                }
+                if (item.isDirectory()) {
+                    size += getTempSize(join(dir, item.name));
+                }
+            }
+            return size;
+        } catch { return 0; }
+    };
+
+    const getDirSize = (dir: string): number => {
+        try {
+            let size = 0;
+            const items = readdirSync(dir, { withFileTypes: true });
+            for (const item of items) {
+                const fullPath = join(dir, item.name);
+                if (item.isDirectory()) size += getDirSize(fullPath);
+                else try { size += statSync(fullPath).size; } catch {}
+            }
+            return size;
+        } catch { return 0; }
+    };
+
+    let totalTemp = 0;
+    for (const libPath of libraryPaths) {
+        totalTemp += getTempSize(libPath);
+    }
+
+    return {
+        temp: totalTemp,
+        imageCache: getDirSize(cachePath),
+    };
+});
+
+ipcMain.handle('open-temp-folder', async () => {
+    const { shell } = require('electron');
+    const downloadsPath = join(app.getPath('userData'), 'downloads');
+    shell.openPath(downloadsPath);
+});
+
+ipcMain.handle('clear-temp-files', async () => {
+    const TEMP_EXTENSIONS = ['.rar', '.torrent', '.tmp', '.part', '.zip', '.7z', '.gz', '.tar'];
+    
+    // Get all library paths
+    const configPath = join(app.getPath('userData'), 'library_config.json');
+    let libraryPaths: string[] = [];
+    try {
+        const { readFileSync, existsSync } = require('fs');
+        if (existsSync(configPath)) {
+            const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
+            libraryPaths = (cfg.libraries || []).map((l: any) => l.path);
+        }
+    } catch {}
+    
+    const cleanDir = (dir: string) => {
+        const { readdirSync, rmSync } = require('fs');
+        try {
+            const items = readdirSync(dir, { withFileTypes: true });
+            for (const item of items) {
+                const fullPath = join(dir, item.name);
+                if (item.isFile()) {
+                    const ext = item.name.substring(item.name.lastIndexOf('.')).toLowerCase();
+                    if (TEMP_EXTENSIONS.includes(ext)) {
+                        try { rmSync(fullPath, { force: true }); } catch {}
+                    }
+                }
+                if (item.isDirectory()) {
+                    cleanDir(fullPath);
+                }
+            }
+        } catch {}
+    };
+    
+    for (const libPath of libraryPaths) {
+        cleanDir(libPath);
+    }
+    console.log(`🗑️ Temp files cleared across ${libraryPaths.length} libraries`);
+    return true;
+});
+
+ipcMain.handle('clear-image-cache', async () => {
+    const cachePath = join(app.getPath('userData'), 'Cache');
+    try {
+        const { rmSync, mkdirSync } = require('fs');
+        rmSync(cachePath, { recursive: true, force: true });
+        mkdirSync(cachePath, { recursive: true });
+        console.log('🗑️ Image cache cleared');
+    } catch (e) { console.error('Failed to clear image cache', e); }
+    return true;
+});
+
+ipcMain.handle('verify-library-integrity', async () => {
+    const configPath = join(app.getPath('userData'), 'library_config.json');
+    let libraries: any[] = [];
+    try {
+        const { readFileSync, existsSync } = require('fs');
+        if (existsSync(configPath)) {
+            const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
+            libraries = cfg.libraries || [];
+        }
+    } catch { return { ok: true, totalFiles: 0, missingFiles: 0 }; }
+    
+    let totalFiles = 0, missingFiles = 0;
+    const { existsSync, readdirSync } = require('fs');
+    for (const lib of libraries) {
+        try {
+            if (!existsSync(lib.path)) { missingFiles++; continue; }
+            const games = readdirSync(lib.path, { withFileTypes: true });
+            for (const game of games) {
+                if (game.isDirectory()) totalFiles++;
+            }
+        } catch { /* silent */ }
+    }
+    
+    console.log(`✅ Library integrity: ${totalFiles} games found, ${missingFiles} paths missing`);
+    return { ok: missingFiles === 0, totalFiles, missingFiles };
 });
 // ----------------------------------
 

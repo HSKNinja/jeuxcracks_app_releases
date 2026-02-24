@@ -22,17 +22,35 @@
                             Défaut
                         </div>
 
-                    <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
                         <div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0 font-bold text-zinc-500 text-xs">
                             {{ lib.path.charAt(0).toUpperCase() }}
                         </div>
-                        <div class="min-w-0">
-                            <div class="text-sm font-bold text-zinc-300 truncate">{{ lib.label }}</div>
+                        <div class="min-w-0 flex-1">
+                            <!-- Rename mode -->
+                            <div v-if="renamingId === lib.id" class="flex items-center gap-2">
+                                <input 
+                                    ref="renameInput"
+                                    v-model="renameValue"
+                                    @keydown.enter="confirmRename(lib.id)"
+                                    @keydown.escape="cancelRename"
+                                    @blur="confirmRename(lib.id)"
+                                    class="text-sm font-bold text-white bg-zinc-800 border border-indigo-500/50 rounded-lg px-2 py-1 w-full focus:outline-none focus:border-indigo-500"
+                                    autofocus
+                                />
+                            </div>
+                            <!-- Normal display -->
+                            <div v-else @dblclick="startRename(lib)" class="cursor-pointer" title="Double-cliquez pour renommer">
+                                <div class="text-sm font-bold text-zinc-300 truncate">{{ lib.label }}</div>
+                            </div>
                             <div class="text-xs text-zinc-500 font-mono truncate" :title="lib.path">{{ lib.path }}</div>
                         </div>
                     </div>
                     
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1 shrink-0 ml-2">
+                        <button @click="startRename(lib)" class="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-600 hover:text-zinc-300 transition-colors" title="Renommer">
+                            <PencilIcon class="w-4 h-4" />
+                        </button>
                         <button v-if="!lib.isDefault" @click="setAsDefault(lib.id)" class="p-1.5 rounded-lg hover:bg-indigo-500/20 text-zinc-600 hover:text-indigo-400 transition-colors" title="Définir par défaut">
                             <StarIcon class="w-4 h-4" />
                         </button>
@@ -50,10 +68,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { FolderOpenIcon, StarIcon, TrashIcon } from '@heroicons/vue/24/solid';
+import { ref, nextTick, onMounted } from 'vue';
+import { FolderOpenIcon, StarIcon, TrashIcon, PencilIcon } from '@heroicons/vue/24/solid';
 
 const libraries = ref<any[]>([]);
+const renamingId = ref<string | null>(null);
+const renameValue = ref('');
+const renameInput = ref<HTMLInputElement | null>(null);
 
 const fetchLibraries = async () => {
     if (window.electronAPI) {
@@ -85,6 +106,29 @@ const setAsDefault = async (id: string) => {
         const updated = await window.electronAPI.invoke('set-default-library', id);
         if (updated) libraries.value = updated;
     }
+};
+
+const startRename = (lib: any) => {
+    renamingId.value = lib.id;
+    renameValue.value = lib.label;
+    nextTick(() => {
+        const input = document.querySelector('input[autofocus]') as HTMLInputElement;
+        if (input) { input.focus(); input.select(); }
+    });
+};
+
+const confirmRename = async (id: string) => {
+    if (!renamingId.value) return;
+    const trimmed = renameValue.value.trim();
+    if (trimmed && window.electronAPI) {
+        const updated = await window.electronAPI.invoke('rename-library', id, trimmed);
+        if (updated) libraries.value = updated;
+    }
+    renamingId.value = null;
+};
+
+const cancelRename = () => {
+    renamingId.value = null;
 };
 
 onMounted(() => {
