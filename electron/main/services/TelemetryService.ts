@@ -2,8 +2,6 @@ import si from 'systeminformation';
 import { machineId } from 'node-machine-id';
 import { app } from 'electron';
 
-// URL de ton API Backend
-// Note: À remplacer par la vraie URL de prod ou via .env
 const API_URL = 'https://api.jeuxcracks.fr/api/telemetry';
 
 export class TelemetryService {
@@ -13,8 +11,8 @@ export class TelemetryService {
     
     private authToken: string | null = null;
     private heartbeatInterval: NodeJS.Timeout | null = null;
+    public startupSent: boolean = false;
 
-    // Singleton
     static getInstance(): TelemetryService {
         if (!TelemetryService.instance) {
             TelemetryService.instance = new TelemetryService();
@@ -22,9 +20,6 @@ export class TelemetryService {
         return TelemetryService.instance;
     }
 
-    /**
-     * Génère un UUID v4 simple pour la session
-     */
     private generateUUID(): string {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -33,70 +28,107 @@ export class TelemetryService {
     }
 
     /**
-     * COLLECTE TOTALE DES INFOS
+     * COLLECTE DES INFOS — chaque appel est wrappé individuellement
+     * pour qu'un échec partiel n'empêche pas l'envoi
      */
     async gatherHardwareInfo() {
+        // 1. Hardware ID — fallback to random UUID
+        let hwid = 'unknown';
         try {
-            // 1. Hardware ID Unique
-            const hwid = await machineId();
-
-            // 2. CPU
-            const cpu = await si.cpu();
-            
-            // 3. GPU (Graphics)
-            const graphics = await si.graphics();
-            const mainGpu = graphics.controllers.find(g => !g.name.toLowerCase().includes('intel')) || graphics.controllers[0];
-
-            // 4. Memory/OS
-            const mem = await si.mem();
-            const os = await si.osInfo();
-
-            // 5. Disk (Physical) - Better for Hardware Ops
-            const disks = await si.diskLayout();
-            const mainDisk = disks[0]; // Primary physical disk
-
-            return {
-                session_uuid: this.sessionUuid,
-                app_version: app.getVersion(),
-                startup_time_ms: Date.now() - this.startTime, // Temps depuis le lancement de l'instance JS
-                device: {
-                    hwid: hwid,
-                    hostname: os.hostname,
-                    os_name: os.distro,      // ex: "Windows 10 Pro"
-                    os_version: os.release,  // ex: "10.0.19045"
-                    os_arch: os.arch,        // ex: "x64"
-                    cpu: {
-                        name: cpu.brand,     // ex: "Core i9-9900K"
-                        cores: cpu.physicalCores,
-                        threads: cpu.cores,
-                        clock_speed: cpu.speedMax * 1000 // Convertir GHz -> MHz si besoin
-                    },
-                    gpu: {
-                        name: mainGpu?.model || 'Unknown GPU',
-                        vram: mainGpu?.vram || 0, // En MB normalement
-                        driver: mainGpu?.driverVersion || 'unknown'
-                    },
-                    ram: {
-                        total_mb: Math.round(mem.total / 1024 / 1024)
-                    },
-                    disk: {
-                        total_gb: Math.round((mainDisk?.size || 0) / 1024 / 1024 / 1024),
-                        type: mainDisk?.type || 'SSD' // Souvent 'SSD' ou 'HD'
-                    }
-                }
-            };
+            hwid = await machineId();
         } catch (e) {
-            console.error('Failed to gather hardware info', e);
-            throw e;
+            console.warn('⚠️ Telemetry: machineId failed, using fallback');
+            hwid = `fallback-${this.generateUUID()}`;
         }
+
+        // 2. CPU
+        let cpuInfo = { brand: 'Unknown', physicalCores: 0, cores: 0, speedMax: 0 };
+        try {
+            cpuInfo = await si.cpu();
+        } catch (e) {
+            console.warn('⚠️ Telemetry: CPU info failed');
+        }
+
+        // 3. GPU
+        let gpuName = 'Unknown GPU', gpuVram = 0, gpuDriver = 'unknown';
+        try {
+            const graphics = await si.graphics();
+            const mainGpu = graphics.controllers?.find(g => g.model && !g.model.toLowerCase().includes('basic')) 
+                         || graphics.controllers?.[0];
+            if (mainGpu) {
+                gpuName = mainGpu.model || 'Unknown GPU';
+                gpuVram = mainGpu.vram || 0;
+                gpuDriver = mainGpu.driverVersion || 'unknown';
+            }
+        } catch (e) {
+            console.warn('⚠️ Telemetry: GPU info failed');
+        }
+
+        // 4. RAM
+        let totalRamMb = 0;
+        try {
+            const mem = await si.mem();
+            totalRamMb = Math.round(mem.total / 1024 / 1024);
+        } catch (e) {
+            console.warn('⚠️ Telemetry: Memory info failed');
+        }
+
+        // 5. OS
+        let osHostname = 'unknown', osDistro = 'Unknown OS', osRelease = '', osArch = 'x64';
+        try {
+            const osInfo = await si.osInfo();
+            osHostname = osInfo.hostname;
+            osDistro = osInfo.distro;
+            osRelease = osInfo.release;
+            osArch = osInfo.arch;
+        } catch (e) {
+            console.warn('⚠️ Telemetry: OS info failed');
+        }
+
+        // 6. Disk
+        let diskTotalGb = 0, diskType = 'SSD';
+        try {
+            const disks = await si.diskLayout();
+            if (disks?.[0]) {
+                diskTotalGb = Math.round(disks[0].size / 1024 / 1024 / 1024);
+                diskType = disks[0].type || 'SSD';
+            }
+        } catch (e) {
+            console.warn('⚠️ Telemetry: Disk info failed');
+        }
+
+        return {
+            session_uuid: this.sessionUuid,
+            app_version: app.getVersion(),
+            startup_time_ms: Date.now() - this.startTime,
+            device: {
+                hwid,
+                hostname: osHostname,
+                os_name: osDistro,
+                os_version: osRelease,
+                os_arch: osArch,
+                cpu: {
+                    name: cpuInfo.brand,
+                    cores: cpuInfo.physicalCores,
+                    threads: cpuInfo.cores,
+                    clock_speed: cpuInfo.speedMax * 1000
+                },
+                gpu: { name: gpuName, vram: gpuVram, driver: gpuDriver },
+                ram: { total_mb: totalRamMb },
+                disk: { total_gb: diskTotalGb, type: diskType }
+            }
+        };
     }
 
     /**
-     * ENVOI AU DÉMARRAGE (STARTUP)
+     * ENVOI AU DÉMARRAGE — avec retry sur 401 (token expiré)
      */
-    async sendStartup(token: string) {
+    async sendStartup(token: string, retryCount = 0) {
+        // Éviter double-envoi si déjà fait dans cette session
+        if (this.startupSent) return;
+
         this.authToken = token;
-        this.sessionUuid = this.generateUUID();
+        if (!this.sessionUuid) this.sessionUuid = this.generateUUID();
         
         try {
             console.log('📊 Gathering hardware info...');
@@ -104,7 +136,6 @@ export class TelemetryService {
             
             console.log(`🚀 Sending Telemetry Startup to ${API_URL}...`);
             
-            // Utilisation de fetch natif (Node 18+)
             const response = await fetch(`${API_URL}/startup/`, {
                 method: 'POST',
                 headers: { 
@@ -114,24 +145,36 @@ export class TelemetryService {
                 body: JSON.stringify(payload)
             });
 
+            if (response.status === 401 && retryCount < 2) {
+                // Token expired — wait and retry (renderer will refresh token)
+                console.warn('⚠️ Telemetry 401 — waiting for token refresh, retry', retryCount + 1);
+                await new Promise(r => setTimeout(r, 3000));
+                if (this.authToken && this.authToken !== token) {
+                    return this.sendStartup(this.authToken, retryCount + 1);
+                }
+                return;
+            }
+
             if (!response.ok) {
-                // Log but don't crash
                 const text = await response.text();
                 console.warn(`⚠️ Telemetry endpoint returned ${response.status}:`, text.substring(0, 200));
             } else {
                 const data = await response.json();
                 console.log('✅ Telemetry sent successfully:', data);
-                
-                // Start Heartbeat only if startup succeeded
+                this.startupSent = true;
                 this.startHeartbeat();
             }
         } catch (error) {
-            console.error('❌ Telemetry Error (Check your API URL/Network):', error);
+            console.error('❌ Telemetry Error:', error);
+            // Retry once after 5s on network error
+            if (retryCount < 1) {
+                setTimeout(() => this.sendStartup(this.authToken || token, retryCount + 1), 5000);
+            }
         }
     }
 
     /**
-     * Start Heartbeat (every 5 minutes)
+     * Heartbeat (every 1 min)
      */
     private startHeartbeat() {
         if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
@@ -147,7 +190,6 @@ export class TelemetryService {
      */
     updateToken(newToken: string) {
         this.authToken = newToken;
-        // console.log('🔄 Telemetry: Token updated internally');
     }
 
     async sendHeartbeat() {
@@ -156,7 +198,7 @@ export class TelemetryService {
         const durationSeconds = Math.floor((Date.now() - this.startTime) / 1000);
         
         try {
-             await fetch(`${API_URL}/heartbeat/`, {
+             const res = await fetch(`${API_URL}/heartbeat/`, {
                  method: 'POST',
                  headers: { 
                      'Authorization': `Bearer ${this.authToken}`,
@@ -167,7 +209,10 @@ export class TelemetryService {
                      duration_session: durationSeconds
                  })
             });
-            // console.log('💓 Telemetry Heartbeat sent, duration:', durationSeconds);
+            // If 401, token may have expired — don't crash
+            if (res.status === 401) {
+                console.warn('⚠️ Heartbeat 401 — waiting for token refresh');
+            }
         } catch(e) { /* ignore silent fail */ }
     }
 
@@ -184,22 +229,17 @@ export class TelemetryService {
 
         try {
             console.log(`🛑 Sending Shutdown Telemetry (Duration: ${durationSeconds}s)...`);
-            const payload = {
-                session_uuid: this.sessionUuid,
-                closed_cleanly: true,
-                duration_session: durationSeconds
-            };
-            
-            // Note: On shutdown, we need to be fast. 
-            // Often fetch might be cancelled if the process exits too fast.
-            // But we await it in before-quit handler.
             await fetch(`${API_URL}/shutdown/`, {
                  method: 'POST',
                  headers: { 
                      'Authorization': `Bearer ${this.authToken}`,
                      'Content-Type': 'application/json'
                  },
-                 body: JSON.stringify(payload)
+                 body: JSON.stringify({
+                     session_uuid: this.sessionUuid,
+                     closed_cleanly: true,
+                     duration_session: durationSeconds
+                 })
             });
             console.log('✅ Shutdown telemetry sent.');
         } catch (e) {

@@ -752,8 +752,13 @@ ipcMain.on('auth-success', async (event, token) => {
 });
 
 ipcMain.on('auth-token-refresh', (event, token) => {
-    // console.log('🔄 Telemetry: Token updated');
-    TelemetryService.getInstance().updateToken(token);
+    const telemetry = TelemetryService.getInstance();
+    telemetry.updateToken(token);
+    // If startup telemetry never succeeded, retry with the fresh token
+    if (!telemetry.startupSent) {
+        console.log('🔄 Token refreshed — retrying telemetry startup...');
+        telemetry.sendStartup(token);
+    }
 });
 
 let isQuitting = false;
