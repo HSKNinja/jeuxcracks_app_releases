@@ -97,16 +97,13 @@ class LibraryService {
     }
 
     public getLibraries() {
-        // Here we could update free space info if needed
         return this.config.libraries;
     }
 
     public addLibrary(path: string) {
         if (this.config.libraries.some(l => l.path === path)) return false;
         
-        // Generate a simple ID or label
         const id = Date.now().toString();
-        // Check disk stats (mocked or using exact-fs if available, for now simple)
         this.config.libraries.push({
             id,
             path,
@@ -119,7 +116,7 @@ class LibraryService {
     }
 
     public removeLibrary(id: string) {
-        if (id === 'default') return false; // Prevent removing default
+        if (id === 'default') return false;
         this.config.libraries = this.config.libraries.filter(l => l.id !== id);
         this.saveConfig();
         return this.config.libraries;
@@ -146,7 +143,6 @@ class LibraryService {
     }
 
     public registerInstalledGame(game: InstalledGameRegistry) {
-        // Remove existing entry if re-installing
         this.config.games = this.config.games.filter(g => g.id !== game.id);
         this.config.games.push(game);
         this.saveConfig();
@@ -159,8 +155,6 @@ class LibraryService {
             this.saveConfig();
             return true;
         }
-        // Fallback: if game not in registry (legacy import), try to add it
-        // We'll need the install path, which we might infer from exe path
         return false;
     }
 
@@ -182,26 +176,40 @@ class LibraryService {
     }
 
     /**
-     * Add all library paths as Windows Defender exclusions.
-     * Triggers a UAC prompt to get admin rights for adding exclusions.
+     * Add library paths as Windows Defender exclusions.
+     * Caches synced paths locally — UAC only triggers for NEW paths.
      */
     private syncDefenderExclusions() {
         try {
             const paths = this.config.libraries.map(l => l.path).filter(p => fs.existsSync(p));
             if (paths.length === 0) return;
 
-            // Build the inner script that checks existing exclusions and adds missing ones
-            const pathsArg = paths.map(p => `''${p.replace(/'/g, "'''''")}''`).join(',');
-            const innerScript = `$paths = @(${pathsArg}); $ex = (Get-MpPreference).ExclusionPath; foreach($p in $paths){ if($ex -notcontains $p){ Add-MpPreference -ExclusionPath $p } }`;
+            // Read local cache of already-synced paths
+            const cachePath = join(app.getPath('userData'), '.defender_cache.json');
+            let cached: string[] = [];
+            try {
+                if (fs.existsSync(cachePath)) cached = JSON.parse(fs.readFileSync(cachePath, 'utf-8'));
+            } catch { /* ignore */ }
 
-            // Use Start-Process -Verb RunAs to request elevation (UAC prompt)
-            const cmd = `powershell -WindowStyle Hidden -NoProfile -Command "Start-Process powershell -ArgumentList '-WindowStyle Hidden -NoProfile -Command ${innerScript.replace(/"/g, '\\"')}' -Verb RunAs -Wait"`;
+            const newPaths = paths.filter(p => !cached.includes(p));
+            if (newPaths.length === 0) {
+                console.log('🛡️ Defender — all paths already synced, skipping');
+                return;
+            }
+
+            // Build elevated PowerShell command for only the new paths
+            const pathsArg = newPaths.map(p => "'" + p.replace(/'/g, "''") + "'").join(',');
+            const innerScript = `$paths = @(${pathsArg}); foreach($p in $paths){ Add-MpPreference -ExclusionPath $p -ErrorAction SilentlyContinue }`;
+            const escapedScript = innerScript.replace(/"/g, '\\"');
+            const cmd = `powershell -WindowStyle Hidden -NoProfile -Command "Start-Process powershell -ArgumentList '-WindowStyle Hidden -NoProfile -Command ${escapedScript}' -Verb RunAs -Wait"`;
 
             exec(cmd, { windowsHide: true }, (err) => {
                 if (err) {
-                    console.warn('⚠️ Defender exclusions — user declined UAC or error');
+                    console.warn('⚠️ Defender — user declined UAC or error');
                 } else {
-                    console.log(`🛡️ Defender exclusions added for ${paths.length} library path(s)`);
+                    const all = [...new Set([...cached, ...newPaths])];
+                    try { fs.writeFileSync(cachePath, JSON.stringify(all)); } catch { /* ignore */ }
+                    console.log(`🛡️ Defender exclusions added for ${newPaths.length} new path(s)`);
                 }
             });
         } catch (e) {

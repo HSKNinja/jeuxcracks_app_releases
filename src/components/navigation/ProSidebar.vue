@@ -7,6 +7,7 @@
           J
        </div>
        <h1 class="text-base font-bold text-white tracking-wide">JeuxCracks</h1>
+       <span class="px-1.5 py-0.5 bg-indigo-600/80 text-[8px] font-black text-white uppercase rounded tracking-widest leading-none">Bêta</span>
     </div>
 
     <!-- Navigation -->
