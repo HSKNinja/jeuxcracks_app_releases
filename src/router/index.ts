@@ -16,6 +16,7 @@ import DMCA from "../views/DMCA.vue";
 import { useMainStore } from '../store'
 
 import ThemeShop from "../views/ThemeShop.vue";
+import Support from "../views/Support.vue";
 
 const routes = [
     {
@@ -46,6 +47,12 @@ const routes = [
         path: "/contact",
         name: "Contact",
         component: Contact,
+    },
+    {
+        path: "/support",
+        name: "Support",
+        component: Support,
+        meta: { requiresAuth: true }
     },
     {
         path: "/favorites",

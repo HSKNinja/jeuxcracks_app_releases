@@ -58,10 +58,11 @@
     <!-- HERO SECTION -->
     <div class="relative z-10 text-center space-y-4 max-w-4xl mx-auto mb-10 md:mb-16">
       <h1 class="text-4xl md:text-6xl font-black text-white tracking-tight">
-        Passez au niveau <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-500 to-amber-600">Supérieur</span>
+        Soutenez le projet,<br>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-500 to-amber-500">débloquez l'expérience</span>
       </h1>
       <p class="text-lg text-zinc-400 max-w-2xl mx-auto">
-        Choisissez le plan qui correspond à vos besoins. Annulable à tout moment.
+        JeuxCracks est gratuit et le restera. Votre soutien finance les serveurs et les nouveautés.
       </p>
 
       <!-- Billing Toggle -->
@@ -80,33 +81,50 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto relative z-10 w-full">
         
         <!-- PLAN 1: GRATUIT -->
-        <div class="relative p-8 rounded-3xl bg-[#0a0a0a] border border-zinc-800 flex flex-col transition-transform duration-300 hover:-translate-y-2">
-            <h3 class="text-xl font-bold text-zinc-400 mb-2">Gratuit</h3>
-            <div class="flex items-baseline gap-1 mb-6">
+        <div class="relative p-8 rounded-3xl bg-[#0a0a0a] border border-zinc-800 flex flex-col transition-transform duration-300 hover:-translate-y-1">
+            <h3 class="text-xl font-bold text-zinc-400 mb-2">Joueur</h3>
+            <div class="flex items-baseline gap-1 mb-2">
                 <span class="text-4xl font-black text-white">0€</span>
-                <span class="text-sm text-zinc-500">/mois</span>
+                <span class="text-sm text-zinc-500">/pour toujours</span>
             </div>
+            <p class="text-xs text-zinc-500 mb-6">Accès complet, sans limitation</p>
             
-            <ul class="space-y-4 mb-8 flex-1">
+            <ul class="space-y-3.5 mb-8 flex-1">
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
                     <CheckIcon class="w-5 h-5 text-zinc-600 shrink-0" />
-                    Accès au catalogue
+                    Catalogue complet
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
                     <CheckIcon class="w-5 h-5 text-zinc-600 shrink-0" />
-                    3 jeux dans la bibliothèque
+                    Téléchargements illimités
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
                     <CheckIcon class="w-5 h-5 text-zinc-600 shrink-0" />
-                    Vitesse 5 MB/s
+                    Bibliothèque illimitée
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-zinc-600 shrink-0" />
+                    Vitesse standard
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-500">
                     <XMarkIcon class="w-5 h-5 text-zinc-700 shrink-0" />
-                    Sauvegarde Cloud
+                    Badge profil
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-500">
                     <XMarkIcon class="w-5 h-5 text-zinc-700 shrink-0" />
-                    Support Prioritaire
+                    Accès anticipé
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-500">
+                    <XMarkIcon class="w-5 h-5 text-zinc-700 shrink-0" />
+                    Cloud Save
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-500">
+                    <XMarkIcon class="w-5 h-5 text-zinc-700 shrink-0" />
+                    Thèmes launcher
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-500">
+                    <XMarkIcon class="w-5 h-5 text-zinc-700 shrink-0" />
+                    Demande de jeux
                 </li>
             </ul>
 
@@ -121,95 +139,144 @@
             </button>
         </div>
 
-        <!-- PLAN 2: BASIC (POPULAIRE) -->
+        <!-- PLAN 2: SUPPORTER (POPULAIRE) -->
         <div class="relative p-8 rounded-3xl bg-[#0f0f0f] border border-indigo-500/50 flex flex-col transform md:-translate-y-4 shadow-2xl shadow-indigo-900/10">
             <!-- Badge -->
-            <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold uppercase tracking-widest rounded-full shadow-lg">
-                Populaire
+            <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold uppercase tracking-widest rounded-full shadow-lg shadow-indigo-500/30">
+                ☕ Le prix d'un café
             </div>
 
-            <h3 class="text-xl font-bold text-indigo-400 mb-2">Premium Basic</h3>
-            <div class="flex items-baseline gap-1 mb-6">
-                <span class="text-5xl font-black text-white">{{ prices.basic[billingPeriod] }}€</span>
+            <h3 class="text-xl font-bold text-indigo-400 mb-2 flex items-center gap-2">
+                Supporter
+                <span class="text-base">🟣</span>
+            </h3>
+            <div class="flex items-baseline gap-1 mb-2">
+                <span class="text-5xl font-black text-white">{{ prices.supporter[billingPeriod] }}€</span>
                 <span class="text-sm text-zinc-500">{{ periodLabel }}</span>
             </div>
+            <p class="text-xs text-zinc-500 mb-6">Soutenez le projet + avantages exclusifs</p>
             
-            <ul class="space-y-4 mb-8 flex-1">
+            <ul class="space-y-3.5 mb-8 flex-1">
                 <li class="flex items-start gap-3 text-sm text-white font-medium">
                     <CheckCircleIcon class="w-5 h-5 text-indigo-500 shrink-0" />
-                    Tout du plan Gratuit
+                    Tout du plan Joueur
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
-                    <CheckIcon class="w-5 h-5 text-white shrink-0" />
-                    15 jeux dans la bibliothèque
+                    <CheckIcon class="w-5 h-5 text-indigo-400 shrink-0" />
+                    Zéro publicité
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
-                    <CheckIcon class="w-5 h-5 text-white shrink-0" />
-                    Vitesse 25 MB/s
+                    <CheckIcon class="w-5 h-5 text-indigo-400 shrink-0" />
+                    <span>Badge <span class="text-indigo-400 font-bold">Supporter</span> sur le profil</span>
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
-                    <CheckIcon class="w-5 h-5 text-white shrink-0" />
-                    Pas de publicités
+                    <CheckIcon class="w-5 h-5 text-indigo-400 shrink-0" />
+                    Accès anticipé <span class="text-white font-bold">24h</span> aux nouveautés
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
-                    <CheckIcon class="w-5 h-5 text-white shrink-0" />
-                    Accès aux nouveautés
+                    <CheckIcon class="w-5 h-5 text-indigo-400 shrink-0" />
+                    Vitesse de DL prioritaire
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-indigo-400 shrink-0" />
+                    Cloud Save <span class="text-white font-bold">3 jeux</span>
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-indigo-400 shrink-0" />
+                    3 thèmes exclusifs
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-indigo-400 shrink-0" />
+                    1 demande de jeu / mois
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-indigo-400 shrink-0" />
+                    Rôle Discord Supporter
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-indigo-400 shrink-0" />
+                    Support prioritaire
                 </li>
             </ul>
 
-            <button @click="handlePlanAction('basic')" 
+            <button @click="handlePlanAction('supporter')" 
                     :disabled="actionLoading"
                     class="w-full py-3 rounded-xl font-bold text-sm transition-all shadow-lg disabled:opacity-50"
-                    :class="getButtonClass('basic')">
-                {{ getButtonLabel('basic') }}
+                    :class="getButtonClass('supporter')">
+                {{ getButtonLabel('supporter') }}
             </button>
         </div>
 
-        <!-- PLAN 3: PRO -->
-        <div class="relative p-8 rounded-3xl bg-[#0a0a0a] border border-amber-500/30 flex flex-col transition-transform duration-300 hover:-translate-y-2 group">
-            <h3 class="text-xl font-bold text-amber-500 mb-2 group-hover:text-amber-400 transition-colors">Premium Pro</h3>
-            <div class="flex items-baseline gap-1 mb-6">
-                <span class="text-4xl font-black text-white">{{ prices.pro[billingPeriod] }}€</span>
+        <!-- PLAN 3: VIP -->
+        <div class="relative p-8 rounded-3xl bg-[#0a0a0a] border border-amber-500/30 flex flex-col transition-transform duration-300 hover:-translate-y-1 group">
+            <h3 class="text-xl font-bold text-amber-500 mb-2 group-hover:text-amber-400 transition-colors flex items-center gap-2">
+                VIP
+                <span class="text-base">🟡</span>
+            </h3>
+            <div class="flex items-baseline gap-1 mb-2">
+                <span class="text-4xl font-black text-white">{{ prices.vip[billingPeriod] }}€</span>
                 <span class="text-sm text-zinc-500">{{ periodLabel }}</span>
             </div>
+            <p class="text-xs text-zinc-500 mb-6">L'expérience ultime pour les vrais</p>
             
-            <ul class="space-y-4 mb-8 flex-1">
+            <ul class="space-y-3.5 mb-8 flex-1">
                 <li class="flex items-start gap-3 text-sm text-white font-medium">
                     <CheckCircleIcon class="w-5 h-5 text-amber-500 shrink-0" />
-                    Tout du plan Basic
+                    Tout du plan Supporter
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
-                    <CheckIcon class="w-5 h-5 text-amber-500 shrink-0" />
-                    Bibliothèque <span class="text-white font-bold">Illimitée</span>
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    <span>Badge <span class="text-amber-400 font-bold">VIP doré</span> animé</span>
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
-                    <CheckIcon class="w-5 h-5 text-amber-500 shrink-0" />
-                    Vitesse <span class="text-white font-bold">Illimitée</span>
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    Accès anticipé <span class="text-white font-bold">48h</span>
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
-                    <CheckIcon class="w-5 h-5 text-amber-500 shrink-0" />
-                    Support VIP 24/7
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    Vitesse <span class="text-white font-bold">maximale</span>
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
-                    <CheckIcon class="w-5 h-5 text-amber-500 shrink-0" />
-                    Sauvegarde Cloud
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    Cloud Save <span class="text-white font-bold">illimité</span>
                 </li>
                 <li class="flex items-start gap-3 text-sm text-zinc-300">
-                    <CheckIcon class="w-5 h-5 text-amber-500 shrink-0" />
-                    Contenu Exclusif
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    <span class="text-white font-bold">Tous</span> les thèmes (actuels + futurs)
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    3 demandes de jeux / mois (prioritaires)
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    Salon Discord VIP privé
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    Support VIP — réponse &lt; 24h
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    Vote prochain jeu à ajouter
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-300">
+                    <CheckIcon class="w-5 h-5 text-amber-400 shrink-0" />
+                    Nom dans les crédits
                 </li>
             </ul>
 
-            <button @click="handlePlanAction('pro')" 
+            <button @click="handlePlanAction('vip')" 
                     :disabled="actionLoading"
                     class="w-full py-3 rounded-xl font-bold text-sm transition-all shadow-lg disabled:opacity-50"
-                    :class="getButtonClass('pro')">
-                {{ getButtonLabel('pro') }}
+                    :class="getButtonClass('vip')">
+                {{ getButtonLabel('vip') }}
             </button>
         </div>
 
     </div>
     <!-- End Grid -->
+
 
     <!-- ===== MONTHLY GOAL + DONATIONS ===== -->
     <div class="w-full max-w-7xl mx-auto mt-20 relative z-10 grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -423,13 +490,13 @@ const billingPeriod = ref<'monthly' | 'quarterly' | 'yearly'>('monthly');
 
 const billingOptions = [
     { id: 'monthly' as const, label: 'Mensuel' },
-    { id: 'quarterly' as const, label: 'Trimestriel', badge: '-5%' },
-    { id: 'yearly' as const, label: 'Annuel', badge: '-7%' },
+    { id: 'quarterly' as const, label: 'Trimestriel', badge: '-17%' },
+    { id: 'yearly' as const, label: 'Annuel', badge: '-30%' },
 ];
 
 const prices: Record<string, Record<string, string>> = {
-    basic: { monthly: '2,99', quarterly: '8,50', yearly: '33,50' },
-    pro:   { monthly: '4,99', quarterly: '13,50', yearly: '58,50' },
+    supporter: { monthly: '2,99', quarterly: '7,49', yearly: '24,99' },
+    vip:       { monthly: '4,99', quarterly: '12,49', yearly: '41,99' },
 };
 
 const periodLabel = computed(() => {
@@ -455,6 +522,62 @@ const showInvoices = ref(false);
 
 // Monthly goal (configurable)
 const monthlyGoal = ref(150);
+
+// --- Boutique ---
+const activeShopTab = ref('cosmetics');
+
+const shopCategories = [
+    { id: 'cosmetics', label: 'Cosmétiques', icon: '🎨' },
+    { id: 'boosters', label: 'Boosters', icon: '⚡' },
+    { id: 'cloud', label: 'Cloud Save', icon: '💾' },
+    { id: 'gifts', label: 'Offrir', icon: '🎁' },
+];
+
+const shopThemes = [
+    { id: 'midnight', name: 'Midnight', desc: 'Bleu nuit intense avec reflets lunaires', price: '1,99€', preview: 'linear-gradient(135deg, #0c1445, #1a237e, #0d47a1)', tag: null },
+    { id: 'forest', name: 'Forest', desc: 'Vert profond inspiré de la nature', price: '1,99€', preview: 'linear-gradient(135deg, #071a0e, #1b5e20, #2e7d32)', tag: null },
+    { id: 'crimson', name: 'Crimson', desc: 'Rouge sombre, style agressif', price: '1,99€', preview: 'linear-gradient(135deg, #1a0000, #b71c1c, #d32f2f)', tag: 'Nouveau' },
+    { id: 'aurora', name: 'Aurora Borealis', desc: 'Dégradé nordique animé', price: '2,99€', preview: 'linear-gradient(135deg, #0d1b2a, #1b4332, #2d6a4f, #40916c, #52b788)', tag: 'Premium' },
+];
+
+const shopFrames = [
+    { id: 'neon', name: 'Néon', icon: '💜', price: '0,99€', preview: 'linear-gradient(135deg, #7c3aed, #a855f7)', glow: '0 0 15px rgba(168,85,247,0.4)' },
+    { id: 'fire', name: 'Flamme', icon: '🔥', price: '0,99€', preview: 'linear-gradient(135deg, #dc2626, #f97316)', glow: '0 0 15px rgba(249,115,22,0.4)' },
+    { id: 'ice', name: 'Givre', icon: '❄️', price: '0,99€', preview: 'linear-gradient(135deg, #06b6d4, #3b82f6)', glow: '0 0 15px rgba(59,130,246,0.4)' },
+    { id: 'gold', name: 'Or Massif', icon: '👑', price: '1,99€', preview: 'linear-gradient(135deg, #b45309, #f59e0b, #fbbf24)', glow: '0 0 20px rgba(245,158,11,0.5)' },
+];
+
+const shopBoosters = [
+    { id: 'speed24', name: 'Speed Boost', icon: '🚀', duration: '24 heures', price: '0,99€', desc: 'Vitesse de téléchargement maximale pendant 24h. Idéal pour les gros jeux.', bgClass: 'bg-cyan-500/10', tagClass: 'bg-cyan-500/10 text-cyan-400' },
+    { id: 'speed7d', name: 'Speed Boost Pro', icon: '⚡', duration: '7 jours', price: '2,49€', desc: 'Une semaine entière de vitesse maximale. Le meilleur rapport qualité/prix.', bgClass: 'bg-amber-500/10', tagClass: 'bg-amber-500/10 text-amber-400' },
+    { id: 'request3', name: 'Pack Demandes', icon: '📝', duration: 'Permanent', price: '1,99€', desc: '3 demandes de jeux supplémentaires. Demandez les jeux que vous voulez voir sur la plateforme.', bgClass: 'bg-violet-500/10', tagClass: 'bg-violet-500/10 text-violet-400' },
+];
+
+const cloudSlots = [
+    { id: 'cloud1', qty: 1, label: '1 slot supplémentaire', sub: 'Sauvegardez 1 jeu de plus', price: '0,49€' },
+    { id: 'cloud5', qty: 5, label: '5 slots', sub: 'Idéal pour les joueurs réguliers', price: '1,99€' },
+    { id: 'cloud_unlimited', qty: '∞', label: 'Illimité', sub: 'Cloud Save pour tous vos jeux, à vie', price: '4,99€' },
+];
+
+const giftCards = [
+    { id: 'gift_supporter_1m', name: '1 Mois Supporter', desc: 'Offrez le plan Supporter à un ami pour 1 mois', price: '2,99€', icon: '🟣', bgClass: 'bg-indigo-500/10' },
+    { id: 'gift_vip_1m', name: '1 Mois VIP', desc: 'Offrez l\'expérience VIP complète à un ami', price: '4,99€', icon: '🟡', bgClass: 'bg-amber-500/10' },
+    { id: 'gift_custom', name: 'Montant Libre', desc: 'Offrez un crédit boutique du montant de votre choix', price: 'À partir de 1€', icon: '🎁', bgClass: 'bg-pink-500/10' },
+];
+
+const buyShopItem = async (category: string, itemId: string) => {
+    actionLoading.value = true;
+    try {
+        // All shop purchases go through Stripe checkout
+        const { checkout_url } = await JeuxCracksAPI.shopCheckout(category, itemId);
+        openCheckout(checkout_url);
+        notify({ type: 'success', title: 'Redirection Stripe', text: 'Finalisez votre achat dans le navigateur.' });
+    } catch (err: any) {
+        notify({ type: 'error', title: 'Erreur', text: err.message || 'Impossible de créer le paiement.' });
+    } finally {
+        actionLoading.value = false;
+    }
+};
 
 // --- Computed ---
 const revenueProgress = computed(() => {
@@ -495,10 +618,10 @@ const currentPlanType = computed(() => subscription.value?.plan?.plan_type || nu
 const isSubscribed = computed(() => subscription.value && subscription.value.status !== 'none' && subscription.value.is_active_subscription);
 
 const getButtonLabel = (planType: string) => {
-    if (!isSubscribed.value) return planType === 'basic' ? 'Choisir Basic' : 'Devenir PRO';
+    if (!isSubscribed.value) return planType === 'supporter' ? 'Devenir Supporter ☕' : 'Devenir VIP 👑';
     if (currentPlanType.value === planType) return 'Plan Actuel';
     
-    const rank: Record<string, number> = { basic: 1, pro: 2 };
+    const rank: Record<string, number> = { supporter: 1, vip: 2 };
     const currentRank = rank[currentPlanType.value || ''] || 0;
     const targetRank = rank[planType] || 0;
     
@@ -509,7 +632,7 @@ const getButtonClass = (planType: string) => {
     if (isSubscribed.value && currentPlanType.value === planType) {
         return 'bg-zinc-800 text-zinc-500 cursor-default border border-zinc-700';
     }
-    if (planType === 'pro') {
+    if (planType === 'vip') {
         return 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black shadow-amber-500/20';
     }
     return 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20';
@@ -542,7 +665,7 @@ const handlePlanAction = async (planType: string) => {
             openCheckout(checkout_url);
             notify({ type: 'success', title: 'Redirection Stripe', text: 'Finalisez le paiement dans votre navigateur.' });
         } else {
-            const rank: Record<string, number> = { basic: 1, pro: 2 };
+            const rank: Record<string, number> = { supporter: 1, vip: 2 };
             const currentRank = rank[currentPlanType.value || ''] || 0;
             const targetRank = rank[planType] || 0;
 

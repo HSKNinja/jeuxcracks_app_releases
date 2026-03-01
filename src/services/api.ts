@@ -297,4 +297,73 @@ export class JeuxCracksAPI {
   static async getMonthlyRevenue(): Promise<any> {
     return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.REVENUE_MONTHLY);
   }
+
+  /** Boutique — acheter un item (thème, booster, slot, cadeau) */
+  static async shopCheckout(category: string, itemId: string): Promise<{ checkout_url: string; session_id: string }> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.SHOP_CHECKOUT, 'POST', { category, item_id: itemId });
+  }
+
+  // ==================== SUPPORT (TICKETS) ====================
+
+  /** Lister mes tickets */
+  static async getTickets(status?: string, q?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (q) params.set('q', q);
+    const qs = params.toString();
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.TICKETS}${qs ? '?' + qs : ''}`);
+  }
+
+  /** Créer un ticket */
+  static async createTicket(data: { subject: string; category: string; priority: string; description: string }): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SUPPORT.CREATE, 'POST', data);
+  }
+
+  /** Détail d'un ticket avec messages */
+  static async getTicketDetail(id: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.TICKETS}${id}/`);
+  }
+
+  /** Répondre à un ticket (user) */
+  static async replyTicket(id: number, content: string): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.TICKETS}${id}/reply/`, 'POST', { content });
+  }
+
+  /** Fermer un ticket */
+  static async closeTicket(id: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.TICKETS}${id}/close/`, 'POST');
+  }
+
+  /** Rouvrir un ticket */
+  static async reopenTicket(id: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.TICKETS}${id}/reopen/`, 'POST');
+  }
+
+  // ==================== SUPPORT STAFF ====================
+
+  /** [Staff] Lister tous les tickets */
+  static async getStaffTickets(filters?: { status?: string; category?: string; priority?: string; q?: string }): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.category) params.set('category', filters.category);
+    if (filters?.priority) params.set('priority', filters.priority);
+    if (filters?.q) params.set('q', filters.q);
+    const qs = params.toString();
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.STAFF_TICKETS}${qs ? '?' + qs : ''}`);
+  }
+
+  /** [Staff] Détail d'un ticket */
+  static async getStaffTicketDetail(id: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.STAFF_TICKETS}${id}/`);
+  }
+
+  /** [Staff] Répondre en tant que staff (is_staff=true) */
+  static async staffReply(id: number, content: string): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.STAFF_TICKETS}${id}/reply/`, 'POST', { content });
+  }
+
+  /** [Staff] Changer le statut d'un ticket */
+  static async staffChangeStatus(id: number, status: string): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.STAFF_TICKETS}${id}/status/`, 'POST', { status });
+  }
 } 
