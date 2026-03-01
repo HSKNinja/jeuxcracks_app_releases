@@ -298,9 +298,36 @@ export class JeuxCracksAPI {
     return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.REVENUE_MONTHLY);
   }
 
-  /** Boutique — acheter un item (thème, booster, slot, cadeau) */
-  static async shopCheckout(category: string, itemId: string): Promise<{ checkout_url: string; session_id: string }> {
-    return useFetch(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.SHOP_CHECKOUT, 'POST', { category, item_id: itemId });
+  // ==================== BOUTIQUE (SHOP) ====================
+
+  /** Liste des items de la boutique */
+  static async getShopItems(): Promise<any[]> {
+    return useFetch(API_CONFIG.ENDPOINTS.SHOP.ITEMS);
+  }
+
+  /** Inventaire de l'utilisateur */
+  static async getInventory(): Promise<any[]> {
+    return useFetch(API_CONFIG.ENDPOINTS.SHOP.INVENTORY);
+  }
+
+  /** Équipement actuel */
+  static async getEquipment(): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SHOP.EQUIPMENT);
+  }
+
+  /** Équiper un item possédé */
+  static async shopEquipItem(slug: string): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SHOP.EQUIP, 'POST', { slug });
+  }
+
+  /** Retirer un item */
+  static async shopUnequipItem(type: string): Promise<any> {
+    return useFetch(API_CONFIG.ENDPOINTS.SHOP.UNEQUIP, 'POST', { type });
+  }
+
+  /** Acheter un item (crée une session Stripe Checkout) */
+  static async shopBuyItem(slug: string): Promise<{ checkout_url: string; session_id: string }> {
+    return useFetch(API_CONFIG.ENDPOINTS.SHOP.CHECKOUT, 'POST', { slug });
   }
 
   // ==================== SUPPORT (TICKETS) ====================

@@ -58,7 +58,6 @@ export const API_CONFIG = {
       DONATE: '/api/subscriptions/donate/',
       DONATIONS: '/api/subscriptions/donations/',
       REVENUE_MONTHLY: '/api/subscriptions/revenue/monthly/',
-      SHOP_CHECKOUT: '/api/subscriptions/shop/checkout/',
     },
 
     // Support (Tickets)
@@ -66,6 +65,16 @@ export const API_CONFIG = {
       TICKETS: '/api/support/tickets/',
       CREATE: '/api/support/tickets/create/',
       STAFF_TICKETS: '/api/support/staff/tickets/',
+    },
+
+    // Boutique (Shop)
+    SHOP: {
+      ITEMS: '/api/shop/items/',
+      INVENTORY: '/api/shop/inventory/',
+      EQUIPMENT: '/api/shop/equipment/',
+      EQUIP: '/api/shop/equip/',
+      UNEQUIP: '/api/shop/unequip/',
+      CHECKOUT: '/api/shop/checkout/',
     }
   },
   

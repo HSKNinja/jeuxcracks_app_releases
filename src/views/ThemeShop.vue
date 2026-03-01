@@ -75,7 +75,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
           <div 
               v-for="item in displayedItems" 
-              :key="item.id"
+              :key="item.slug"
               class="group relative bg-zinc-900/40 border border-white/[0.04] rounded-2xl overflow-hidden transition-all duration-300 hover:border-white/10 hover:bg-zinc-900/60"
               :class="{ 'ring-1 ring-green-500/30': isEquipped(item) }"
           >
@@ -88,6 +88,9 @@
                   <div v-if="isEquipped(item)" class="absolute top-2 left-2 z-10 px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-green-500/20 text-green-400 border border-green-500/20 backdrop-blur-sm">
                     Équipé
                   </div>
+                  <div v-if="item.is_new" class="absolute top-2 left-2 z-10 px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/20 backdrop-blur-sm" :class="{ 'left-14': isEquipped(item) }">
+                    New
+                  </div>
                   
                   <!-- Rarity tag -->
                   <div class="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide backdrop-blur-sm" :class="getRarityColor(item.rarity)">
@@ -96,8 +99,8 @@
 
                   <!-- Avatar Frame Preview -->
                   <div v-if="item.type === 'avatar_frame'" class="relative w-20 h-20 flex items-center justify-center">
-                      <div v-if="item.isCssOnly" class="absolute inset-0 z-20 pointer-events-none" :class="item.cssClass"></div>
-                      <img v-else :src="item.image" class="absolute inset-0 w-full h-full object-contain drop-shadow-lg z-20" />
+                      <div v-if="item.is_css_only" class="absolute inset-0 z-20 pointer-events-none" :class="item.css_class"></div>
+                      <img v-else :src="item.image_url" class="absolute inset-0 w-full h-full object-contain drop-shadow-lg z-20" />
                       <div class="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700/50">
                           <span class="text-sm font-bold text-zinc-600">You</span>
                       </div>
@@ -105,18 +108,18 @@
 
                   <!-- Banner Preview -->
                   <div v-if="item.type === 'banner'" class="absolute inset-0 overflow-hidden">
-                      <div v-if="item.isCssOnly" class="absolute inset-0 transition-transform duration-700 group-hover:scale-110" :class="item.cssClass"></div>
-                      <img v-else :src="item.image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                      <div v-if="item.is_css_only" class="absolute inset-0 transition-transform duration-700 group-hover:scale-110" :class="item.css_class"></div>
+                      <img v-else :src="item.image_url" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
                       <div class="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-transparent to-transparent"></div>
                   </div>
                   
                   <!-- Pseudo Effect Preview -->
                   <div v-if="item.type === 'pseudo_effect'" class="flex items-center justify-center w-full h-full">
-                      <span class="text-xl font-black" :class="item.cssClass">Pseudo</span>
+                      <span class="text-xl font-black" :class="item.css_class">Pseudo</span>
                   </div>
 
                   <!-- Theme Preview -->
-                  <div v-if="item.type === 'global_theme'" class="w-full h-full relative" :class="item.cssClass">
+                  <div v-if="item.type === 'global_theme'" class="w-full h-full relative" :class="item.css_class">
                       <div class="absolute inset-0 flex items-center justify-center p-4">
                           <div class="w-full h-full bg-black/30 border border-white/5 rounded-lg flex flex-col overflow-hidden shadow-xl">
                                <div class="h-4 border-b border-white/5 flex items-center px-1.5 gap-0.5 bg-white/5">
@@ -139,11 +142,12 @@
                   
                   <div class="mt-2.5">
                       <button 
-                          v-if="!themeStore.isOwned(item.id)"
+                          v-if="!themeStore.isOwned(item.slug)"
                           @click="purchase(item)"
-                          class="w-full py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black font-bold text-[11px] transition-colors"
+                          :disabled="buyingSlug === item.slug"
+                          class="w-full py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black font-bold text-[11px] transition-colors disabled:opacity-50 disabled:cursor-wait"
                       >
-                          Obtenir
+                          {{ buyingSlug === item.slug ? '⏳' : item.price }}
                       </button>
                       <button 
                           v-else-if="isEquipped(item)"
@@ -265,17 +269,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useThemeStore, type ShopItem } from '../store/theme';
 import { ShoppingBagIcon } from '@heroicons/vue/24/outline';
 import { useNotification } from '@kyvg/vue3-notification';
-import { JeuxCracksAPI } from '../services/api';
 
 const themeStore = useThemeStore();
 const { notify } = useNotification();
 
 const activeTab = ref<string>('all');
 const activeRarity = ref<string | null>(null);
+const buyingSlug = ref<string | null>(null);
+
+// ─── Load data from API on mount ───
+onMounted(async () => {
+    await themeStore.fetchItems();
+    // These may fail if not logged in — that's ok
+    themeStore.fetchInventory();
+    themeStore.fetchEquipment();
+});
 
 // ---- Tabs ----
 const cosmeticTabIds = ['all', 'avatar_frame', 'banner', 'pseudo_effect', 'global_theme'];
@@ -317,25 +329,13 @@ const filteredItems = computed(() => {
 const displayedItems = computed(() => filteredItems.value);
 
 // ---- Boosters ----
-const shopBoosters = [
-    { id: 'speed24', name: 'Speed Boost', icon: '🚀', duration: '24 heures', price: '0,99€', desc: 'Vitesse de téléchargement maximale pendant 24h.', bgClass: 'bg-cyan-500/10', tagClass: 'bg-cyan-500/10 text-cyan-400' },
-    { id: 'speed7d', name: 'Speed Boost Pro', icon: '⚡', duration: '7 jours', price: '2,49€', desc: 'Une semaine entière de vitesse maximale.', bgClass: 'bg-amber-500/10', tagClass: 'bg-amber-500/10 text-amber-400' },
-    { id: 'request3', name: 'Pack Demandes', icon: '📝', duration: 'Permanent', price: '1,99€', desc: '3 demandes de jeux supplémentaires.', bgClass: 'bg-violet-500/10', tagClass: 'bg-violet-500/10 text-violet-400' },
-];
+const shopBoosters: any[] = [];
 
 // ---- Cloud Save ----
-const cloudSlots = [
-    { id: 'cloud1', qty: 1, label: '1 slot', sub: 'Sauvegardez 1 jeu de plus', price: '0,49€' },
-    { id: 'cloud5', qty: 5, label: '5 slots', sub: 'Pour les joueurs réguliers', price: '1,99€' },
-    { id: 'cloud_unlimited', qty: '∞', label: 'Illimité', sub: 'Tous vos jeux, à vie', price: '4,99€' },
-];
+const cloudSlots: any[] = [];
 
 // ---- Gift Cards ----
-const giftCards = [
-    { id: 'gift_supporter_1m', name: '1 Mois Supporter', desc: 'Offrez Supporter à un ami', price: '2,99€', icon: '🟣', bgClass: 'bg-indigo-500/10' },
-    { id: 'gift_vip_1m', name: '1 Mois VIP', desc: "Offrez l'expérience VIP", price: '4,99€', icon: '🟡', bgClass: 'bg-amber-500/10' },
-    { id: 'gift_custom', name: 'Montant Libre', desc: 'Crédit boutique à votre choix', price: 'Dès 1€', icon: '🎁', bgClass: 'bg-pink-500/10' },
-];
+const giftCards: any[] = [];
 
 // ---- Helpers ----
 function getRarityColor(rarity: string) {
@@ -376,42 +376,48 @@ function getTypeLabel(type: string) {
 }
 
 function isEquipped(item: ShopItem) {
-    if (item.type === 'avatar_frame') return themeStore.equipped.avatar_frame === item.id;
-    if (item.type === 'banner') return themeStore.equipped.banner === item.id;
-    if (item.type === 'pseudo_effect') return themeStore.equipped.pseudo_effect === item.id;
-    if (item.type === 'global_theme') return themeStore.equipped.global_theme === item.id;
+    if (item.type === 'avatar_frame') return themeStore.equipped.avatar_frame === item.slug;
+    if (item.type === 'banner') return themeStore.equipped.banner === item.slug;
+    if (item.type === 'pseudo_effect') return themeStore.equipped.pseudo_effect === item.slug;
+    if (item.type === 'global_theme') return themeStore.equipped.global_theme === item.slug;
     return false;
 }
 
-function purchase(item: ShopItem) {
-    if (themeStore.purchaseItem(item.id)) {
-        notify({ type: 'success', title: 'Obtenu !', text: `${item.name} ajouté à votre inventaire.` });
-    }
-}
-
-function equip(item: ShopItem) {
-    if (themeStore.equipItem(item.id)) {
-        notify({ type: 'success', title: 'Équipé', text: `${item.name} est maintenant actif.` });
-    }
-}
-
-function unequip(item: ShopItem) {
-    if (item.type === 'global_theme') return; // Can't unequip theme
-    themeStore.unequipItem(item.type as 'avatar_frame' | 'banner' | 'pseudo_effect');
-    notify({ type: 'info', title: 'Retiré', text: `${item.name} a été retiré.` });
-}
-
-async function buyItem(category: string, itemId: string) {
+async function purchase(item: ShopItem) {
+    buyingSlug.value = item.slug;
     try {
-        const { checkout_url } = await JeuxCracksAPI.shopCheckout(category, itemId);
-        if (window.electronAPI) {
-            window.electronAPI.send('open-external', checkout_url);
+        const checkoutUrl = await themeStore.buyItem(item.slug);
+        if (checkoutUrl) {
+            if ((window as any).electronAPI) {
+                (window as any).electronAPI.send('open-external', checkoutUrl);
+            } else {
+                window.open(checkoutUrl, '_blank');
+            }
+            notify({ type: 'success', title: 'Redirection', text: 'Finalisez votre achat dans le navigateur.' });
         } else {
-            window.open(checkout_url, '_blank');
+            notify({ type: 'error', title: 'Erreur', text: themeStore.error || 'Impossible de créer le paiement.' });
         }
-        notify({ type: 'success', title: 'Redirection', text: 'Finalisez dans le navigateur.' });
     } catch (err: any) {
         notify({ type: 'error', title: 'Erreur', text: err.message || 'Impossible de créer le paiement.' });
+    } finally {
+        buyingSlug.value = null;
+    }
+}
+
+async function equip(item: ShopItem) {
+    const ok = await themeStore.equipItem(item.slug);
+    if (ok) {
+        notify({ type: 'success', title: 'Équipé', text: `${item.name} est maintenant actif.` });
+    } else {
+        notify({ type: 'error', title: 'Erreur', text: "Impossible d'équiper cet item." });
+    }
+}
+
+async function unequip(item: ShopItem) {
+    if (item.type === 'global_theme') return;
+    const ok = await themeStore.unequipItem(item.type as 'avatar_frame' | 'banner' | 'pseudo_effect');
+    if (ok) {
+        notify({ type: 'info', title: 'Retiré', text: `${item.name} a été retiré.` });
     }
 }
 </script>

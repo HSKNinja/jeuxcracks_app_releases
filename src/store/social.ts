@@ -75,7 +75,7 @@ export const useSocialStore = defineStore('social', {
       const mainStore = useMainStore();
       if (!mainStore.isAuthenticated || !mainStore.tokens?.access) return;
 
-      console.log('🔌 Initializing Social System...');
+
       
       // 1. Connect WS
       WebSocketService.getInstance().connect(mainStore.tokens.access);
@@ -336,7 +336,7 @@ export const useSocialStore = defineStore('social', {
         // payload: { content: "...", temp_id: "..." }
         // For now, we trust the optimistic update. 
         // We could use this to mark the message as "sent" (check mark).
-        console.log('✅ Message sent confirmed by server');
+
     },
 
     // --- Client Actions ---

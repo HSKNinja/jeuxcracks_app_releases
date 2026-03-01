@@ -138,7 +138,7 @@ const resolveImage = (game: any) => {
 onMounted(async () => {
     // If favorites are empty, try fetching them from the server first
     if (store.favorites.length === 0) {
-        console.log('Store favorites empty, fetching from server...');
+
         await store.fetchFavorites();
     }
     

@@ -71,9 +71,9 @@ const form = ref({ username: '', password: '' });
 const loading = ref(false);
 const error = ref('');
 
-const minimize = () => { console.log('min'); window.electronAPI?.minimize(); };
-const maximize = () => { console.log('max'); window.electronAPI?.maximize(); };
-const close = () => { console.log('close'); window.electronAPI?.close(); };
+const minimize = () => { window.electronAPI?.minimize(); };
+const maximize = () => { window.electronAPI?.maximize(); };
+const close = () => { window.electronAPI?.close(); };
 
 const handleLogin = async () => {
     loading.value = true;
@@ -83,7 +83,7 @@ const handleLogin = async () => {
     store.logout();
 
     try {
-        console.log('Attempting login with:', form.value.username);
+
         // 1. Get Tokens (Using TOKEN endpoint instead of LOGIN)
         // This is usually safer for JWT authentication
         // Fix: Server expects 'email', not 'username'
@@ -92,14 +92,14 @@ const handleLogin = async () => {
             password: form.value.password
         });
         
-        console.log('Tokens received:', tokens);
+
 
         if (tokens && tokens.access) {
             store.setTokens(tokens);
             
             // 2. Get User Profile
             const user = await useFetch(API_CONFIG.ENDPOINTS.AUTH.USER_ME);
-            console.log('User received:', user);
+
             
             // 3. Save to Store
             store.login({ user, tokens });

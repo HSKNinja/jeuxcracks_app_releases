@@ -12,8 +12,8 @@ import Notifications from '@kyvg/vue3-notification'
 
 const vfm = createVfm()
 
-console.log("main.ts chargé");
-console.log("router chargé");
+
+
 
 import { notify } from '@kyvg/vue3-notification'
 

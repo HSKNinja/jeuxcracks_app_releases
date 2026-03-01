@@ -57,7 +57,8 @@ const notificationStore = useNotificationStore();
 const searchQuery = ref('');
 
 const handleSearch = () => {
-  console.log('🔍 Global Search Triggered:', searchQuery.value);
+
+
   if (searchQuery.value.trim()) {
     router.push(`/catalogue?q=${encodeURIComponent(searchQuery.value)}`);
     // Optional: Clear search after navigating? 

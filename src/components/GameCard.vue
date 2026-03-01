@@ -142,7 +142,8 @@ async function toggleFavorite() {
   
   isLoading.value = true;
   try {
-    console.log('🔄 Toggle favori pour le jeu:', props.game.id);
+
+
     await JeuxCracksAPI.toggleFavorite(Number(props.game.id));
     isFavorite.value = !isFavorite.value;
     

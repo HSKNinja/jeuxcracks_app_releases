@@ -569,7 +569,7 @@ const buyShopItem = async (category: string, itemId: string) => {
     actionLoading.value = true;
     try {
         // All shop purchases go through Stripe checkout
-        const { checkout_url } = await JeuxCracksAPI.shopCheckout(category, itemId);
+        const { checkout_url } = await JeuxCracksAPI.shopBuyItem(itemId);
         openCheckout(checkout_url);
         notify({ type: 'success', title: 'Redirection Stripe', text: 'Finalisez votre achat dans le navigateur.' });
     } catch (err: any) {

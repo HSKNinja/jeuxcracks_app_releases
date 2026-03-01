@@ -176,12 +176,11 @@ const enrichLibrary = async () => {
 
 const fetchStats = async () => {
     const userId = store.user?.id || 'anonymous';
-    console.log('📊 Fetching stats for user:', userId, 'Store User:', store.user);
+
     
     if ((window as any).electronAPI) {
         try {
             userStats.value = await (window as any).electronAPI.invoke('get-all-user-stats', userId);
-            console.log('✅ Stats received:', userStats.value);
         } catch (e) {
             console.error('Failed to fetch stats', e);
         }
@@ -220,17 +219,17 @@ const scanGames = async () => {
 };
 
 const launchGame = async (game: any) => {
-    console.log('Launch', game);
+
     if ((window as any).electronAPI) {
          let userId = store.user?.id;
          
          // Try to recover user ID if missing but we have tokens
          if (!userId && store.tokens) {
-             console.log('⚠️ Missing User ID on launch, attempting to fetch...');
+
              try {
                  await store.fetchUser();
                  userId = store.user?.id;
-                 console.log('✅ User ID recovered:', userId);
+
              } catch (e) {
                  console.error('Failed to recover user ID', e);
              }

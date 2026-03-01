@@ -108,7 +108,7 @@ const handleRegister = async () => {
     error.value = '';
     
     try {
-        console.log('Attempting register with:', form.value.email);
+
         
         // Call the API service
         const { user, tokens } = await JeuxCracksAPI.register(

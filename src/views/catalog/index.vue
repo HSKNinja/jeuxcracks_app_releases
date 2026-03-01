@@ -414,7 +414,7 @@ const scrollToTop = () => {
 // Search Debounce 
 let searchTimeout: any = null;
 const handleSearch = () => {
-    console.log('🔍 Sidebar Search Input:', searchQuery.value);
+
     if (searchTimeout) clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         pagination.value.page = 1;
@@ -488,7 +488,7 @@ const fetchGames = async () => {
         }
 
         const url = `/api/app/games/search/?${params.toString()}`;
-        console.log('🔍 Fetching Games via Search API:', url);
+
         
         const res: any = await useFetch(url);
         

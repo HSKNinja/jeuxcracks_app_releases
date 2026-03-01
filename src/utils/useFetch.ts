@@ -114,7 +114,7 @@ export function useFetch(url: string, method?: string, body?: any, customHeaders
                 isRefreshing = true;
 
                 try {
-                    console.log('🔄 Rafraîchissement du token...');
+
                     const refreshResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -124,7 +124,7 @@ export function useFetch(url: string, method?: string, body?: any, customHeaders
                     if (refreshResponse.ok) {
                         const newTokens = await refreshResponse.json();
                         store.setTokens(newTokens);
-                        console.log('✅ Token rafraîchi.');
+
                         processQueue(null, newTokens.access);
                         isRefreshing = false;
                         return doRequest(newTokens.access);

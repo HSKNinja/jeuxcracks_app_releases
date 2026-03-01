@@ -53,7 +53,7 @@ const isAuthPage = computed(() => {
 const themeClass = computed(() => {
     const defaultTheme = 'bg-gradient-to-br from-[#050505] to-[#151515]';
     // Use the getter 'items' implicitly available on store instance
-    const theme = themeStore.items.find((i: any) => i.id === themeStore.equipped.global_theme);
-    return theme?.cssClass || defaultTheme;
+    const theme = themeStore.items.find((i: any) => i.slug === themeStore.equipped.global_theme);
+    return theme?.css_class || defaultTheme;
 });
 </script>

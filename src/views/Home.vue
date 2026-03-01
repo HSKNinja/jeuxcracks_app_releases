@@ -225,7 +225,7 @@ onMounted(async () => {
         try {
           // Fetch game details to get video and background
           const detail: any = await useFetch(`/api/app/games/${g.id}/`);
-          console.log('🎬 Game Detail:', detail?.title, 'Video:', detail?.video, 'Background:', detail?.background);
+
           
           const background = detail?.background || null;
           const video = detail?.video || null;

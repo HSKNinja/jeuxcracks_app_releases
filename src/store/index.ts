@@ -62,14 +62,12 @@ export const useMainStore = defineStore('main', {
       try {
         // Force fresh fetch
         const user = await useFetch('/auth/api/user/me');
-        console.log('👤 fetchUser raw response:', user); 
         if (user) {
             // Normalize ID: API might return pk, _id
             if (!user.id && user.pk) user.id = user.pk;
             if (!user.id && user._id) user.id = user._id;
 
             if (!user.id) console.error('❌ CRITICAL: User object still missing ID after API fix', user);
-            else console.log('✅ User ID received:', user.id);
         }
         
         this.user = user;
@@ -129,11 +127,50 @@ export const useMainStore = defineStore('main', {
             return false;
         }
     },
+    async changePassword(data: { old_password: string; new_password: string }) {
+        try {
+            const response = await useFetch('/auth/api/user/me/reset_password', 'POST', data);
+            return { success: true, message: response?.message || "Mot de passe mis à jour." };
+        } catch (error: any) {
+            console.error('Change password failed', error);
+            // useFetch returns { data: { error: "..." } } on 400
+            const errorMessage = error?.data?.error || error?.data?.detail || "Ancien mot de passe incorrect.";
+            return { success: false, message: errorMessage };
+        }
+    },
+    async submitSuggestion(title: string, details: string) {
+        try {
+            const response = await useFetch('/auth/api/user/me/suggestion', 'POST', { title, details });
+            return { success: true, message: response?.message || "Suggestion envoyée avec succès." };
+        } catch (error: any) {
+            console.error('Submit suggestion failed', error);
+            
+            // Extract DRF validation errors
+            // DRF often returns { "field": ["error message"] } or { "details": ["..."] }
+            let errorMessage = "Détails manquants ou erreur serveur.";
+            const data = error?.data;
+            if (data) {
+                 if (Array.isArray(data.details) && data.details.length > 0) {
+                     errorMessage = data.details[0];
+                 } else if (data.detail) {
+                     errorMessage = data.detail;
+                 } else if (typeof data === 'object') {
+                     // Get the first error message from the object keys
+                     const firstKey = Object.keys(data)[0];
+                     if (firstKey && Array.isArray(data[firstKey]) && data[firstKey].length > 0) {
+                         errorMessage = data[firstKey][0];
+                     }
+                 }
+            }
+
+            return { success: false, message: errorMessage };
+        }
+    },
     async fetchFavorites() {
         if (!this.tokens) return;
         try {
             const result = await useFetch('/auth/api/user/me/fav');
-            console.log('Favorites from API:', result);
+
             // Assuming result is a list of games or IDs. 
             // If it's a list of objects with 'id', map it.
             if (Array.isArray(result)) {
@@ -149,15 +186,7 @@ export const useMainStore = defineStore('main', {
             console.error('Failed to fetch favorites', e);
         }
     },
-    async submitSuggestion(title: string, content: string) {
-        try {
-            await useFetch('/auth/api/user/me/sug', 'POST', { title, content });
-            return true;
-        } catch (e) {
-            console.error('Failed to submit suggestion', e);
-            return false;
-        }
-    },
+
     async toggleFavorite(gameID: string | number) {
       if (!this.isAuthenticated) return false;
       try {
@@ -204,7 +233,7 @@ export const useMainStore = defineStore('main', {
             games.forEach((game: GameInstalled) => {
               this.addLibrary(game);
             });
-            console.log('📚 Bibliothèque synchronisée avec', games.length, 'jeux');
+
           }
         }
       } catch (error) {
@@ -214,7 +243,7 @@ export const useMainStore = defineStore('main', {
     async forceLibrarySync() {
       // Protection contre les appels multiples
       if (this._isSyncing) {
-        console.log('📚 Synchronisation déjà en cours, attente...');
+
         return false;
       }
       
@@ -230,7 +259,7 @@ export const useMainStore = defineStore('main', {
             games.forEach((game: GameInstalled) => {
               this.addLibrary(game);
             });
-            console.log('📚 Bibliothèque synchronisée forcément avec', games.length, 'jeux');
+
             return true;
           }
         }

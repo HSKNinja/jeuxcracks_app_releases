@@ -934,7 +934,6 @@ async function registerView() {
     if (!game.value?.id) return;
     try {
         await JeuxCracksAPI.incrementViews(game.value.id);
-        console.log('📈 View registered for game', game.value.id);
     } catch (err) {
         console.error('registerView error:', err);
     }

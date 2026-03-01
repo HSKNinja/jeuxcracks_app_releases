@@ -35,13 +35,13 @@ export class WebSocketService {
         this.token = token;
         this.isUserInitiatedDisconnect = false;
         
-        console.log('🔌 Connecting to WebSocket Gateway...');
+
         const fullUrl = `${WS_URL}?token=${token}`;
-        console.log('🔗 WS URL:', fullUrl.replace(token, 'REDACTED_TOKEN'));
+
         this.ws = new WebSocket(fullUrl);
 
         this.ws.onopen = () => {
-            console.log('✅ WebSocket Connected');
+
             const socialStore = useSocialStore();
             socialStore.handleWsConnect();
             this.startHeartbeat();
@@ -55,7 +55,7 @@ export class WebSocketService {
         };
 
         this.ws.onclose = () => {
-            console.log('🔌 WebSocket Disconnected');
+
             useSocialStore().handleWsDisconnect();
             this.stopHeartbeat();
             
@@ -63,7 +63,7 @@ export class WebSocketService {
                 // Auto reconnect in 5s with FRESH token from store
                 if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
                 this.reconnectTimeout = setTimeout(() => {
-                    console.log('🔄 Reconnecting WS with fresh token...');
+
                     this.connect(); // No arg = fetch from store
                 }, 5000);
             }

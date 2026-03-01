@@ -573,7 +573,7 @@ const tempSizeFormatted = computed(() => formatBytes(tempSize.value));
 const imageCacheSizeFormatted = computed(() => formatBytes(imageCacheSize.value));
 
 const updateSetting = (key: string, value: boolean) => {
-    console.log('Setting updated', key, value);
+
     if (window.electronAPI) {
         window.electronAPI.send('update-setting', key, value);
     }

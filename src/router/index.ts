@@ -112,7 +112,13 @@ const routes = [
         path: "/dmca",
         name: "DMCA",
         component: DMCA,
-        meta: { requiresAuth: true, title: "Politique DMCA" }
+        meta: { title: "Politique DMCA" }
+    },
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: () => import('../views/NotFound.vue'),
+        meta: { title: '404' }
     }
 ];
 

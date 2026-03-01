@@ -108,7 +108,6 @@
 
 <script setup lang="ts">
 import { ref, provide, onMounted } from 'vue';
-provide('API_URL', 'https://nodejc.chouette.cc/v1');
 
 import { useRouter } from 'vue-router';
 const router = useRouter();
@@ -290,14 +289,14 @@ async function chooseEXE(exe: string) {
   setTimeout(async () => {
     let userId = store.user?.id;
     if (!userId && store.tokens) {
-         console.log('🔄 Recovery: Fetching user before launch in chooseEXE...');
+
          try { 
             await store.fetchUser(); 
             userId = store.user?.id; 
          } catch (e) { console.error(e); }
     }
     userId = userId || 'anonymous';
-    console.log('🚀 Lancement avec User:', userId);
+
     window.electronAPI?.send('launch-game', gameIDExe.value, userId);
   }, 500);
 }
@@ -318,10 +317,8 @@ onMounted(async () => {
   
   // Verify User ID presence
   if (store.isAuthenticated && !store.user?.id) {
-    console.log('🔄 User ID missing in store, refetching user profile...');
     try {
         await store.fetchUser();
-        console.log('✅ User profile refreshed:', store.user);
     } catch (e) {
         console.error('❌ Failed to refresh user profile:', e);
     }
@@ -329,7 +326,7 @@ onMounted(async () => {
 
   // Trigger Telemetry Startup if already logged in
   if (store.isAuthenticated && store.tokens) {
-      console.log('📡 Auto-Triggering Telemetry startup (App Mount)...');
+
       window.electronAPI?.send('auth-success', store.tokens.access);
       
       // Init Social System
