@@ -521,7 +521,7 @@ const cancelImmediately = ref(false);
 const showInvoices = ref(false);
 
 // Monthly goal (configurable)
-const monthlyGoal = ref(150);
+const monthlyGoal = ref(50);
 
 // --- Boutique ---
 const activeShopTab = ref('cosmetics');
@@ -611,7 +611,9 @@ const formatDate = (dateStr: string | undefined) => {
 };
 
 const getPlanByType = (type: string) => {
-    return plans.value.find(p => p.plan_type === type && p.billing_period === billingPeriod.value);
+    // Map frontend types to backend types
+    const backendType = type === 'supporter' ? 'basic' : (type === 'vip' ? 'pro' : type);
+    return plans.value.find(p => p.plan_type === backendType && p.billing_period === billingPeriod.value);
 };
 
 const currentPlanType = computed(() => subscription.value?.plan?.plan_type || null);
@@ -619,17 +621,23 @@ const isSubscribed = computed(() => subscription.value && subscription.value.sta
 
 const getButtonLabel = (planType: string) => {
     if (!isSubscribed.value) return planType === 'supporter' ? 'Devenir Supporter ☕' : 'Devenir VIP 👑';
-    if (currentPlanType.value === planType) return 'Plan Actuel';
+    
+    // Convert current plan_type ('basic', 'pro') to frontend logic format ('supporter', 'vip')
+    const currentFrontendType = currentPlanType.value === 'basic' ? 'supporter' : (currentPlanType.value === 'pro' ? 'vip' : currentPlanType.value);
+    
+    if (currentFrontendType === planType) return 'Plan Actuel';
     
     const rank: Record<string, number> = { supporter: 1, vip: 2 };
-    const currentRank = rank[currentPlanType.value || ''] || 0;
+    const currentRank = rank[currentFrontendType || ''] || 0;
     const targetRank = rank[planType] || 0;
     
     return targetRank > currentRank ? 'Upgrader' : 'Downgrader';
 };
 
 const getButtonClass = (planType: string) => {
-    if (isSubscribed.value && currentPlanType.value === planType) {
+    const currentFrontendType = currentPlanType.value === 'basic' ? 'supporter' : (currentPlanType.value === 'pro' ? 'vip' : currentPlanType.value);
+    
+    if (isSubscribed.value && currentFrontendType === planType) {
         return 'bg-zinc-800 text-zinc-500 cursor-default border border-zinc-700';
     }
     if (planType === 'vip') {
@@ -649,7 +657,9 @@ const openCheckout = async (checkoutUrl: string) => {
 };
 
 const handlePlanAction = async (planType: string) => {
-    if (isSubscribed.value && currentPlanType.value === planType) return; // Already on this plan
+    const currentFrontendType = currentPlanType.value === 'basic' ? 'supporter' : (currentPlanType.value === 'pro' ? 'vip' : currentPlanType.value);
+    
+    if (isSubscribed.value && currentFrontendType === planType) return; // Already on this plan
     
     const plan = getPlanByType(planType);
     if (!plan) {
@@ -666,7 +676,7 @@ const handlePlanAction = async (planType: string) => {
             notify({ type: 'success', title: 'Redirection Stripe', text: 'Finalisez le paiement dans votre navigateur.' });
         } else {
             const rank: Record<string, number> = { supporter: 1, vip: 2 };
-            const currentRank = rank[currentPlanType.value || ''] || 0;
+            const currentRank = rank[currentFrontendType || ''] || 0;
             const targetRank = rank[planType] || 0;
 
             if (targetRank > currentRank) {
@@ -742,24 +752,31 @@ const refreshSubscription = async () => {
 // --- Init ---
 onMounted(async () => {
     try {
-        const [plansRes, statusRes, revenueRes, donationsRes, invoicesRes] = await Promise.allSettled([
+        // Phase 1: Critical UI Data (blocks the page loader)
+        const [plansRes, statusRes] = await Promise.allSettled([
             JeuxCracksAPI.getPlans(),
-            JeuxCracksAPI.getSubscriptionStatus(),
-            JeuxCracksAPI.getMonthlyRevenue(),
-            JeuxCracksAPI.getDonations(),
-            JeuxCracksAPI.getInvoices(),
+            JeuxCracksAPI.getSubscriptionStatus()
         ]);
 
         if (plansRes.status === 'fulfilled') plans.value = plansRes.value;
         if (statusRes.status === 'fulfilled') subscription.value = statusRes.value;
+    } catch (err) {
+        console.error('❌ Premium page critical init error:', err);
+    } finally {
+        // Instantly hide the loader so the user can interact with the page
+        loading.value = false;
+    }
+
+    // Phase 2: Background Data (loads without blocking)
+    Promise.allSettled([
+        JeuxCracksAPI.getMonthlyRevenue(),
+        JeuxCracksAPI.getDonations(),
+        JeuxCracksAPI.getInvoices(),
+    ]).then(([revenueRes, donationsRes, invoicesRes]) => {
         if (revenueRes.status === 'fulfilled') revenue.value = revenueRes.value;
         if (donationsRes.status === 'fulfilled') donations.value = donationsRes.value;
         if (invoicesRes.status === 'fulfilled') invoices.value = invoicesRes.value;
-    } catch (err) {
-        console.error('❌ Premium page init error:', err);
-    } finally {
-        loading.value = false;
-    }
+    }).catch(err => console.error('❌ Premium background data error:', err));
 });
 </script>
 

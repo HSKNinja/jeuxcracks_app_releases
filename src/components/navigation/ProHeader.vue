@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { MagnifyingGlassIcon, ChevronLeftIcon, UsersIcon, BellIcon } from '@heroicons/vue/24/outline';
 import { useRouter, useRoute } from 'vue-router';
-import { computed, ref } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { useSocialStore } from '../../store/social';
 import { useNotificationStore } from '../../store/notifications';
 
@@ -56,14 +56,24 @@ const notificationStore = useNotificationStore();
 
 const searchQuery = ref('');
 
+// Synchronize global header search with URL
+onMounted(() => {
+    if (route.query.q) {
+        searchQuery.value = route.query.q as string;
+    }
+});
+watch(() => route.query.q, (newQ) => {
+    if (newQ !== searchQuery.value) {
+        searchQuery.value = (newQ as string) || '';
+    }
+});
+
 const handleSearch = () => {
-
-
   if (searchQuery.value.trim()) {
     router.push(`/catalogue?q=${encodeURIComponent(searchQuery.value)}`);
-    // Optional: Clear search after navigating? 
-    // Usually keep it, but if we navigate away, it might be confusing. 
-    // For now, keep it.
+  } else {
+    // If empty search submitted, maybe clear and browse all
+    router.push(`/catalogue`);
   }
 };
 

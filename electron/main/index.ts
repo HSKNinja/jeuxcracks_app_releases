@@ -299,13 +299,7 @@ ipcMain.handle('open-navigator', async (e, url) => {
   shell.openExternal(url);
 });
 
-ipcMain.handle('read-file', async (_event, path, encoding = 'utf8') => {
-  return fs.readFile(path, { encoding });
-});
-ipcMain.handle('write-file', async (_event, path, data, encoding = 'utf8') => {
-  await fs.writeFile(path, data, { encoding });
-  return true;
-});
+
 
 ipcMain.handle('read-downloads', async () => {
   let legacyGames: any[] = [];
@@ -444,13 +438,7 @@ ipcMain.on('remove-game', async (e, gameID: string) => {
   }
 });
 
-ipcMain.on('delete-game', async (e, path) => {
-  try {
-    await fs.rm(path, { recursive: true, force: true });
-  } catch (err) {
-    console.error('Erreur lors de la suppression:', err);
-  }
-});
+
 
 ipcMain.on('open-game-emplacement', async (e, path) => {
   shell.openPath(path);

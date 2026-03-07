@@ -31,12 +31,14 @@ const routes = [
         component: Catalog,
         meta: { requiresAuth: true }
     },
+    /*
     {
         path: "/shop",
         name: "Magasin",
         component: ThemeShop,
         meta: { requiresAuth: true }
     },
+    */
     {
         path: "/catalogue/:id",
         name: "Game",
@@ -54,6 +56,7 @@ const routes = [
         component: Support,
         meta: { requiresAuth: true }
     },
+    /*
     {
         path: "/favorites",
         name: "Favories",
@@ -66,6 +69,7 @@ const routes = [
         component: Liked,
         meta: { requiresAuth: true }
     },
+    */
     {
         path: "/library",
         name: "Bibliothèque",

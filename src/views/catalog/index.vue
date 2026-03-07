@@ -7,7 +7,7 @@
         <div class="w-full xl:hidden flex items-center justify-between mb-6 animate-fade-in">
              <div>
                 <h1 class="text-3xl font-black text-white tracking-tighter uppercase">Catalogue</h1>
-                <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{{ pagination.totalResults }} Jeux</p>
+                <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{{ totalEnrichedGames }} Jeux</p>
              </div>
              <div class="flex flex-col items-center gap-2">
                  <button 
@@ -17,10 +17,10 @@
                     <FunnelIcon class="w-4 h-4" />
                     Filtres
                 </button>
-                <button 
+                 <button 
                     v-if="hasActiveFilters"
                     @click="resetAll"
-                    class="text-[10px] font-bold text-red-500 uppercase hover:text-red-400 flex items-center gap-1"
+                    class="text-[10px] font-bold text-red-500 uppercase hover:text-red-400 flex items-center gap-1 bg-red-500/10 px-3 py-1.5 rounded-lg"
                 >
                     <XMarkIcon class="w-3 h-3" />
                     Réinitialiser
@@ -37,28 +37,28 @@
 
         <!-- SIDEBAR DRAWER -->
         <aside 
-            class="fixed inset-y-0 left-0 w-80 bg-zinc-950 border-r border-white/5 p-8 z-[9999] transform transition-transform duration-300 ease-out xl:relative xl:transform-none xl:w-64 xl:p-0 xl:bg-transparent xl:border-none xl:z-0 xl:sticky xl:top-8 xl:h-auto custom-scrollbar overflow-y-auto"
+            class="fixed inset-y-0 left-0 w-80 bg-[#050505] border-r border-white/5 p-6 z-[9999] transform transition-transform duration-300 ease-out xl:relative xl:transform-none xl:w-72 xl:p-0 xl:bg-transparent xl:border-none xl:z-0 xl:sticky xl:top-12 xl:h-[calc(100vh-6rem)] custom-scrollbar overflow-y-auto flex flex-col gap-8"
             :class="showMobileFilters ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'"
         >
             
             <!-- Mobile Close Header -->
-            <div class="flex xl:hidden items-center justify-between mb-8">
+            <div class="flex xl:hidden items-center justify-between">
                 <h2 class="text-xl font-black text-white uppercase tracking-tighter">Filtres</h2>
                 <button 
                     type="button"
                     @click.stop="showMobileFilters = false" 
-                    class="p-4 hover:bg-zinc-900 rounded-full transition-colors cursor-pointer relative z-[10000] pointer-events-auto"
+                    class="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
                 >
                     <XMarkIcon class="w-6 h-6 text-zinc-400" />
                 </button>
             </div>
 
             <!-- Header (Desktop Only) -->
-            <div class="hidden xl:block mb-8">
-                <h1 class="text-4xl font-black text-white tracking-tighter uppercase mb-2">Catalogue</h1>
-                <div class="flex items-center gap-2">
-                     <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
-                     <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest">{{ pagination.totalResults }} Jeux</p>
+            <div class="hidden xl:block">
+                <h1 class="text-3xl font-black text-white tracking-tighter uppercase mb-1">Catalogue</h1>
+                 <div class="flex items-center gap-2">
+                     <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
+                     <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{{ totalEnrichedGames }} Titres</p>
                 </div>
             </div>
 
@@ -69,68 +69,33 @@
                     @input="handleSearch"
                     type="text" 
                     placeholder="Rechercher..." 
-                    class="block w-full bg-zinc-900/30 border-b-2 border-zinc-800 text-white placeholder-zinc-600 py-4 px-0 text-xl font-black uppercase tracking-tight focus:border-indigo-500 focus:outline-none transition-all" 
+                    class="block w-full bg-white/5 border border-white/10 rounded-2xl text-white placeholder-zinc-500 py-3.5 pl-12 pr-4 text-sm font-bold tracking-wide focus:border-white/30 focus:bg-white/10 focus:outline-none transition-all shadow-inner" 
                 />
-                <MagnifyingGlassIcon class="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-6 text-zinc-600 group-focus-within:text-indigo-500 transition-colors" />
+                <MagnifyingGlassIcon class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500 group-focus-within:text-white transition-colors" />
+                
+                <!-- Clear Search Button -->
+                <button v-if="searchQuery" @click="searchQuery = ''; handleSearch()" class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors">
+                    <XMarkIcon class="w-4 h-4" />
+                </button>
             </div>
 
+            <div class="w-full h-px bg-gradient-to-r from-white/10 to-transparent"></div>
+
             <!-- Filters Section -->
-            <div class="space-y-10 mt-12">
+            <div class="flex-1 flex flex-col gap-8">
                 
                 <!-- Sort -->
-                <div class="space-y-3">
-                    <h3 class="text-xs font-black text-zinc-500 uppercase tracking-[0.2em] border-l-2 border-zinc-800 pl-3">Trier par</h3>
-                    <div class="flex flex-col gap-1">
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Trier par</h3>
+                    <div class="flex flex-col gap-0.5">
                         <button 
                             v-for="opt in sortOptions"
                             :key="opt.value"
                             @click="setSort(opt.value)" 
-                            class="text-left text-sm font-bold uppercase transition-colors py-1"
-                            :class="filters.sort === opt.value ? 'text-white pl-2 border-l-2 border-indigo-500' : 'text-zinc-600 hover:text-zinc-400 pl-2 border-l-2 border-transparent'"
+                            class="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-bold uppercase transition-all"
+                            :class="filters.sort === opt.value ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-300'"
                         >
                             {{ opt.label }}
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Online Mode Toggle -->
-                <!-- Categories -->
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between border-l-2 border-zinc-800 pl-3">
-                         <h3 class="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Genre</h3>
-                         <button v-if="filters.category !== ''" @click="filters.category = ''; fetchGames()" class="text-[10px] font-bold text-red-500 uppercase hover:text-red-400">Reset</button>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-x-2 gap-y-1.5">
-                        <button 
-                            v-for="cat in categories" 
-                            :key="cat.slug"
-                            @click="setCategory(cat.slug)"
-                            class="text-left px-2.5 py-1.5 rounded bg-zinc-900/50 hover:bg-zinc-900 text-[10px] font-bold uppercase transition-colors flex items-center justify-between group"
-                            :class="filters.category === cat.slug ? 'text-indigo-400 ring-1 ring-indigo-500/50' : 'text-zinc-500 hover:text-zinc-300'"
-                        >
-                            {{ cat.name }}
-                            <span v-if="filters.category === cat.slug" class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Tags -->
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between border-l-2 border-zinc-800 pl-3">
-                         <h3 class="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Tags</h3>
-                         <button v-if="filters.tags.length > 0" @click="resetTags" class="text-[10px] font-bold text-red-500 uppercase hover:text-red-400">Reset</button>
-                    </div>
-                    
-                    <div class="flex flex-wrap gap-1.5">
-                        <button 
-                            v-for="tag in availableTags" 
-                            :key="tag"
-                            @click="toggleTag(tag)"
-                            class="px-2 py-1 rounded text-[9px] font-bold uppercase transition-all border"
-                            :class="filters.tags.includes(tag) ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-600 hover:text-zinc-400'"
-                        >
-                            {{ tag }}
                         </button>
                     </div>
                 </div>
@@ -139,9 +104,9 @@
             
             <button 
                 @click="resetAll"
-                class="w-full mt-12 py-4 bg-zinc-900 text-zinc-500 font-black uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all rounded-xl"
+                class="w-full mt-4 py-3.5 bg-zinc-900 border border-white/5 text-zinc-400 font-bold uppercase tracking-widest text-[10px] hover:bg-red-500 hover:text-white hover:border-red-500 transition-all rounded-xl shadow-lg"
             >
-                Réinitialiser
+                Tout Réinitialiser
             </button>
         </aside>
 
@@ -155,61 +120,73 @@
 
             <!-- Empty -->
             <div v-else-if="games.length === 0" class="h-[60vh] flex flex-col items-center justify-center text-center">
-                <MagnifyingGlassIcon class="w-16 h-16 text-zinc-800 mb-6" />
-                <h3 class="text-2xl font-black text-white uppercase tracking-tighter mb-2">Rien trouvé</h3>
-                <p class="text-zinc-500">Essayez d'autres termes ou filtres.</p>
+                <MagnifyingGlassIcon class="w-16 h-16 text-zinc-700 mb-6" />
+                <h3 class="text-2xl font-light text-white tracking-tight mb-2">Aucun résultat trouvé</h3>
+                <p class="text-zinc-500">Essayez d'autres termes de recherche ou de modifier vos filtres.</p>
             </div>
 
-            <!-- Grid (Portrait Cards 264x354) -->
-            <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 xl:gap-6 animate-fade-in-up">
+            <!-- Grid (Landscape Cards 16:9 aspect-video) -->
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 xl:gap-6 animate-fade-in-up">
                 
                 <div 
                     v-for="(game, index) in games" 
                     :key="game.id" 
-                    class="group relative bg-[#0a0a0a] rounded-xl overflow-hidden cursor-pointer border border-white/5 hover:border-indigo-500/50 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/10"
-                    @click="goToGame(game.id)"
-                    :style="{ animationDelay: `${index * 50}ms` }"
+                    class="group relative aspect-video rounded-xl overflow-hidden cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-white/5 hover:border-white/20 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/50 hover:z-50 bg-[#050505]"
+                    @click="goToGame(game.slug)"
+                    :style="{ animationDelay: `${index * 30}ms` }"
                 >
-                    <!-- Image Area (Portrait Aspect Ratio for new API images) -->
-                    <div class="relative w-full aspect-[3/4] overflow-hidden bg-zinc-900">
-                        <img 
-                            :src="game.header" 
-                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-102 opacity-80 group-hover:opacity-100"
-                            loading="lazy"
-                        />
-                        <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-                        
-                         <!-- Video Preview -->
-                         <video
-                            v-if="game.video"
-                            :src="game.video"
-                            class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                            muted loop playsinline
-                            @mouseenter="playVideo"
-                            @mouseleave="pauseVideo"
-                        ></video>
-                        
-                        <!-- Badges Top Left -->
-                        <div class="absolute top-3 left-3 flex flex-col gap-1 items-start">
-                             <span v-if="game.isOnline" class="px-2 py-0.5 bg-green-500 text-white text-[9px] font-black uppercase tracking-wider rounded shadow-lg">Online</span>
-                             <span v-if="game.isNew" class="px-2 py-0.5 bg-indigo-500 text-white text-[9px] font-black uppercase tracking-wider rounded shadow-lg">New</span>
-                        </div>
+                    <!-- Image Area -->
+                    <img 
+                        :src="game.header" 
+                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        loading="lazy"
+                    />
+                    
+                     <!-- Video Preview -->
+                     <video
+                        v-if="game.video"
+                        :src="game.video"
+                        class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                        muted loop playsinline
+                        @mouseenter="playVideo"
+                        @mouseleave="pauseVideo"
+                    ></video>
+
+                    <!-- Hover Darkener Overlay -->
+                    <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px]"></div>
+
+                    <!-- Badges Top Left -->
+                    <div class="absolute top-3 left-3 flex flex-col gap-1.5 items-start z-10">
+                         <span v-if="game.isOnline" class="px-2 py-0.5 bg-black/60 backdrop-blur-md text-emerald-400 border border-emerald-500/30 text-[9px] font-bold uppercase tracking-wider rounded shadow-lg">Multi</span>
+                         <span v-if="game.isNew" class="px-2 py-0.5 bg-black/60 backdrop-blur-md text-indigo-400 border border-indigo-500/30 text-[9px] font-bold uppercase tracking-wider rounded shadow-lg">New</span>
                     </div>
 
-                    <!-- Info Area -->
-                    <div class="p-3 xl:p-4 flex flex-col gap-2 overflow-hidden">
-                        <div class="flex justify-between items-start min-w-0">
-                             <div class="min-w-0 w-full overflow-hidden">
-                                 <span class="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1 truncate">{{ game.categories?.[0]?.name || game.categories?.[0] || 'Jeu' }}</span>
-                                 <h3 class="text-sm xl:text-base font-black text-white uppercase leading-tight group-hover:text-indigo-400 transition-colors truncate">{{ game.title }}</h3>
-                             </div>
-                        </div>
+                    <!-- Tags Top Right -->
+                    <div class="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                        <span class="px-2 py-0.5 bg-black/60 backdrop-blur-md text-zinc-300 border border-white/10 text-[9px] font-bold uppercase tracking-wider rounded shadow-lg">
+                            {{ game.categories?.[0] || 'Jeu' }}
+                        </span>
+                    </div>
+
+                    <!-- Bottom Info Gradient Overlay -->
+                    <div class="absolute bottom-0 inset-x-0 pt-24 pb-4 px-4 bg-gradient-to-t from-black via-black/80 to-transparent translate-y-2 group-hover:translate-y-0 transition-transform duration-500 pointer-events-none z-10 flex flex-col justify-end">
+                        <h3 class="text-sm md:text-base font-bold text-white uppercase tracking-tight leading-tight mb-1.5 truncate drop-shadow-md">
+                            {{ game.display_name }}
+                        </h3>
                         
-                        <div class="flex items-center justify-between pt-2 xl:pt-3 border-t border-zinc-800/50">
-                            <span class="text-[10px] font-bold text-zinc-600 uppercase">{{ game.latest_version?.size || 'N/A' }}</span>
-                            <div class="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase group-hover:text-zinc-300 transition-colors">
-                                <EyeIcon class="w-3 h-3" />
-                                {{ formatNumber(game.views) }}
+                        <div class="flex items-center justify-between mt-0.5">
+                            <span class="text-[10px] font-bold text-indigo-400">{{ game.total_size || 'N/A' }}</span>
+                            
+                            <!-- Stats -->
+                            <div class="flex items-center gap-3 text-[10px] font-bold text-zinc-400">
+                                <div class="flex items-center gap-1">
+                                    <EyeIcon class="w-3 h-3" />
+                                    {{ formatNumber(game.views) }}
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <HeartIcon class="w-3 h-3" />
+                                    {{ formatNumber(game.likes) }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -271,6 +248,7 @@ const loading = ref(true);
 const searchQuery = ref('');
 const showMobileFilters = ref(false);
 const pagination = ref({ page: 1, totalPages: 1, totalResults: 0 });
+const totalEnrichedGames = ref(0);
 
 // Watch for URL query changes (from global header search)
 watch(() => route.query.q, (newQ) => {
@@ -285,8 +263,20 @@ onMounted(() => {
     if (route.query.q) {
         searchQuery.value = route.query.q as string;
     }
+    fetchStats();
     fetchGames();
 });
+
+const fetchStats = async () => {
+    try {
+        const res: any = await useFetch('/api/engine/stats/');
+        if (res && res.engine && res.engine.enriched_games) {
+            totalEnrichedGames.value = res.engine.enriched_games;
+        }
+    } catch (e) {
+        console.error("Failed to fetch game stats:", e);
+    }
+};
 
 const filters = ref({
     sort: 'relevance', // 'relevance', 'newest', 'popular', 'views', 'downloads'
@@ -299,40 +289,12 @@ const filters = ref({
 const hasActiveFilters = computed(() => {
     return filters.value.sort !== 'relevance' || 
            filters.value.is_online !== null || 
-           filters.value.category !== '' ||
-           filters.value.tags.length > 0 ||
            filters.value.year !== '' ||
            searchQuery.value.length > 0;
 });
 
 
-// Categories Data (from API)
-const categories = [
-    { name: 'Action', slug: 'action' },
-    { name: 'Adventure', slug: 'adventure' },
-    { name: 'RPG', slug: 'role-playing-rpg' },
-    { name: 'Shooter', slug: 'shooter' },
-    { name: 'Strategy', slug: 'strategy' },
-    { name: 'Simulator', slug: 'simulator' },
-    { name: 'Indie', slug: 'indie' },
-    { name: 'Racing', slug: 'racing' },
-    { name: 'Sport', slug: 'sport' },
-    { name: 'Puzzle', slug: 'puzzle' },
-    { name: 'Platform', slug: 'platform' },
-    { name: 'Arcade', slug: 'arcade' },
-    { name: 'Fighting', slug: 'fighting' },
-    { name: 'Tactical', slug: 'tactical' },
-    { name: 'Horror', slug: 'horror' },
-    { name: 'Visual Novel', slug: 'visual-novel' },
-];
 
-// Popular Tags Data
-const availableTags = [
-    'Multiplayer', 'Solo', 'Coop', 'Open world', 'Sandbox',
-    'Survival', 'Horror', 'PvP', 'Stealth', 'Simulation',
-    'Science fiction', 'Fantasy', 'Romance', 'Comedy',
-    'Split screen', 'Steam Cloud', 'HDR disponible'
-];
 
 // Sort Options
 const sortOptions = [
@@ -348,8 +310,8 @@ const formatNumber = (num: number) => {
     return new Intl.NumberFormat('fr-FR', { notation: "compact", compactDisplay: "short" }).format(num);
 };
 
-const goToGame = (id: string) => {
-    router.push(`/catalogue/${id}`);
+const goToGame = (slug: string) => {
+    router.push(`/catalogue/${slug}`);
 };
 
 const setSort = (value: string) => {
@@ -370,32 +332,11 @@ const toggleOnline = () => {
     fetchGames();
 };
 
-const setCategory = (slug: string) => {
-    filters.value.category = filters.value.category === slug ? '' : slug;
-    pagination.value.page = 1;
-    fetchGames();
-};
 
-const toggleTag = (tag: string) => {
-    const idx = filters.value.tags.indexOf(tag);
-    if (idx >= 0) {
-        filters.value.tags.splice(idx, 1);
-    } else {
-        filters.value.tags.push(tag);
-    }
-    pagination.value.page = 1;
-    fetchGames();
-};
-
-const resetTags = () => {
-    filters.value.tags = [];
-    pagination.value.page = 1;
-    fetchGames();
-};
 
 const resetAll = () => {
     searchQuery.value = '';
-    filters.value = { sort: 'relevance', is_online: true, category: '', tags: [], year: '' };
+    filters.value = { sort: 'relevance', is_online: true, year: '' };
     pagination.value.page = 1;
     fetchGames();
 };
@@ -414,10 +355,19 @@ const scrollToTop = () => {
 // Search Debounce 
 let searchTimeout: any = null;
 const handleSearch = () => {
-
     if (searchTimeout) clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         pagination.value.page = 1;
+        
+        // Push to URL to keep ProHeader and URL in sync
+        const query: any = { ...route.query };
+        if (searchQuery.value.trim()) {
+            query.q = searchQuery.value.trim();
+        } else {
+            delete query.q;
+        }
+        router.replace({ path: route.path, query }).catch(() => {});
+        
         fetchGames();
     }, 500);
 };
@@ -453,83 +403,73 @@ const fetchGames = async () => {
     games.value = [];
     
     try {
-        // Build URL with new search API
+        const isSearch = !!searchQuery.value.trim();
+        const baseUrl = isSearch ? '/api/engine/search/' : '/api/engine/games/';
         const params = new URLSearchParams();
-        params.set('page', pagination.value.page.toString());
         
-        // Fuzzy search query
-        if (searchQuery.value.trim()) {
+        params.set('page', pagination.value.page.toString());
+        params.set('per_page', '39');
+        
+        // Custom search routing uses `q`
+        if (isSearch) {
             params.set('q', searchQuery.value.trim());
         }
 
-        // Category filter
-        if (filters.value.category) {
-            params.set('category', filters.value.category);
-        }
-
-        // Tags filter (comma-separated)
-        if (filters.value.tags.length > 0) {
-            params.set('tags', filters.value.tags.join(','));
-        }
-
-        // Online filter
-        if (filters.value.is_online !== null) {
-            params.set('is_online', filters.value.is_online.toString());
-        }
-
-        // Year filter
-        if (filters.value.year) {
-            params.set('year', filters.value.year);
-        }
-
-        // Sort order
-        if (filters.value.sort !== 'relevance') {
-            params.set('sort', filters.value.sort);
-        }
-
-        const url = `/api/app/games/search/?${params.toString()}`;
-
+        // Apply filters if engine API supports them, otherwise they are ignored safely
+        if (filters.value.is_online !== null) params.set('is_online', filters.value.is_online.toString());
+        if (filters.value.year) params.set('year', filters.value.year);
+        if (filters.value.sort !== 'relevance') params.set('sort', filters.value.sort);
         
+        // Ensure ONLY enriched games are requested
+        params.set('enriched_only', 'true');
+
+        const url = `${baseUrl}?${params.toString()}`;
         const res: any = await useFetch(url);
         
-        if (res && (res.results || res.games)) {
-            const rawGames = res.results || res.games;
+        if (res && res.results) {
+            // Further client-side safegard to strictly remove any game without steam_app_id / metadata
+            const rawGames = res.results.filter((g: any) => g.steam_app_id || g.metadata);
+            
             games.value = rawGames.map((g: any) => {
-                // Get header image (prioritize new API format)
-                let header = g.header || g.cover;
-                if (!header) header = '/assets/placeholder.webp';
+                // Prioritize metadata header image since we want landscape, fallback to generating it from steam_app_id
+                let header = g.metadata?.header_image;
+                if (!header && g.steam_app_id) {
+                    header = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.steam_app_id}/header.jpg`;
+                }
+                header = header || g.header || g.cover || '/assets/placeholder.webp';
+
+                // Evaluate properties based on Game Hub API
+                const isOnline = g.metadata?.tags?.includes('Multi-player') || g.metadata?.tags?.includes('Co-op') || false;
+                const releaseYear = g.metadata?.release_date ? new Date(g.metadata.release_date).getFullYear() : 'N/A';
+                
+                // File size (either direct from list 'total_size' or from detail 'versions[0].file_size')
+                const latestVersionSize = g.total_size || (g.versions && g.versions.length > 0 ? g.versions[0].file_size : 'N/A');
 
                 return {
                     id: g.id,
-                    title: g.title,
+                    slug: g.slug || g.id, // Fallback to id if slug is somehow missing
+                    display_name: g.display_name || g.title,
                     header: header,
                     views: g.views || 0,
                     likes: g.likes || 0,
-                    isOnline: g.is_online || g.versions?.[0]?.is_online || false,
-                    releaseYear: g.release_date ? new Date(g.release_date).getFullYear() : 'N/A',
-                    isNew: isNewGame(g.published_at || g.created_at),
-                    video: g.video || null,
-                    categories: g.categories || [],
+                    isOnline: isOnline,
+                    releaseYear: releaseYear,
+                    isNew: isNewGame(g.last_updated || (g.versions && g.versions.length > 0 ? g.versions[0].upload_date : null)),
+                    video: g.metadata?.trailers?.[0] || g.video || null,
+                    categories: g.metadata?.genres || g.categories || [],
                     is_liked: g.is_liked || false,
                     is_favorited: g.is_favorited || false,
-                    latest_version: g.latest_version
+                    total_size: latestVersionSize
                 };
             });
 
-            // Handle DRF pagination format
-            if (res.count !== undefined) {
-                const totalPages = Math.ceil(res.count / 24);
-                pagination.value = {
-                    page: pagination.value.page,
-                    totalPages: totalPages,
-                    totalResults: res.count
-                };
-            } else if (res.pagination) {
-                pagination.value = {
-                    page: res.pagination.current_page || 1,
-                    totalPages: res.pagination.total_pages || 1,
-                    totalResults: res.pagination.total_results || 0
-                };
+            // Handle new Game Hub pagination format
+            if (res.meta) {
+                 pagination.value = {
+                     page: res.meta.page || 1,
+                     totalPages: Math.ceil((res.meta.total || 0) / (res.meta.per_page || 39)) || 1,
+                     totalResults: res.meta.total || 0
+                 };
             }
         }
     } catch (error: any) {

@@ -133,12 +133,6 @@
                     </div>
 
                     <div class="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 flex flex-col group hover:border-white/10 transition-colors">
-                        <HeartIcon class="w-5 h-5 text-zinc-500 mb-3 group-hover:text-zinc-300 transition-colors" />
-                        <div class="text-2xl font-medium text-white tracking-tight mb-0.5">{{ favoritesCount }}</div>
-                        <div class="text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Favoris</div>
-                    </div>
-
-                    <div class="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 flex flex-col group hover:border-white/10 transition-colors col-span-2">
                         <ClockIcon class="w-5 h-5 text-zinc-500 mb-3 group-hover:text-zinc-300 transition-colors" />
                         <div class="text-xl font-medium text-white tracking-tight mb-0.5 truncate" :title="prettyMilliseconds(totalStats.totalTimePlayedMs)">
                           {{ prettyMilliseconds(totalStats.totalTimePlayedMs) }}

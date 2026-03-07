@@ -43,16 +43,16 @@
     </div>
 
     <!-- COVERS GRID VIEW (Default & Only) -->
-    <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-6 animate-slide-up">
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 animate-slide-up">
         <div v-for="(game, index) in enrichedGames" :key="game.id" 
-             class="group relative aspect-[2/3] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/20 hover:z-50"
+             class="group relative aspect-video transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/50 hover:z-50"
              :style="{ animationDelay: `${index * 50}ms` }"
              @click="launchGame(game)"
         >
             <!-- Visual Content (Clipped) -->
-            <div class="absolute inset-0 bg-zinc-900 rounded-2xl group-hover:rounded-none overflow-hidden ring-1 ring-white/5 group-hover:ring-indigo-500/50 transition-all duration-300">
+            <div class="absolute inset-0 bg-[#0a0a0a] rounded-xl overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-white/5 group-hover:border-white/20 transition-all duration-300">
                 <!-- Cover Image -->
-                <img :src="resolveImage(game)" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                <img :src="resolveImage(game)" @error="handleImageError" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 
                 <!-- Hover Overlay -->
                 <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px]"></div>
@@ -65,7 +65,7 @@
                 </div>
 
                 <!-- Bottom Info Gradient -->
-                <div class="absolute bottom-0 inset-x-0 pt-16 pb-4 px-4 bg-gradient-to-t from-black/95 via-black/60 to-transparent translate-y-2 group-hover:translate-y-0 transition-transform duration-500 pointer-events-none">
+                <div class="absolute bottom-0 inset-x-0 pt-20 pb-4 px-4 bg-gradient-to-t from-black via-black/80 to-transparent translate-y-2 group-hover:translate-y-0 transition-transform duration-500 pointer-events-none">
                      <h4 class="text-sm font-bold text-white uppercase tracking-condensed truncate leading-tight mb-1 shadow-black drop-shadow-md">{{ game.name || game.title }}</h4>
                      
                      <!-- Stats Pill -->
@@ -154,21 +154,42 @@ function prettyMilliseconds(ms: number) {
 const enrichLibrary = async () => {
     // ... existing enrich logic ...
     for (const game of enrichedGames.value) {
-        if (!game.header && !game.icon && game.id) {
+        if (!game.header && !game.icon) {
             try {
-                // Fetch full game details from new API
-                const data: any = await useFetch(`/api/app/games/${game.id}/`);
-                if (data && data.id) { // New API returns direct object
-                     // Update local object reactive
-                     Object.assign(game, {
-                         header: data.header || data.urls?.header_image || data.urls?.image || data.informations?.image,
-                         icon: data.icon,
-                         video: data.video || data.urls?.trailer ? (data.video || data.urls.trailer) : null,
-                         ...data // Merge other useful fields
-                     });
+                let targetSlug = game.slug;
+
+                // Legacy save support: if game doesn't have a slug, try to find it via Search API
+                if (!targetSlug && (game.name || game.title)) {
+                    const searchQ = game.name || game.title;
+                    const searchRes: any = await useFetch(`/api/engine/search/?q=${encodeURIComponent(searchQ)}&enriched_only=false`);
+                    if (searchRes && searchRes.results && searchRes.results.length > 0) {
+                        // Find match by ID or pick the first
+                        const match = searchRes.results.find((r:any) => r.id === game.id) || searchRes.results[0];
+                        if (match && match.slug) {
+                            targetSlug = match.slug;
+                            game.slug = match.slug;
+                        }
+                    }
+                }
+
+                if (!targetSlug) continue; // Skip if we still have no slug 
+
+                // Fetch full game details from new API using slug
+                const data: any = await useFetch(`/api/engine/games/${targetSlug}/`);
+                if (data && data.id) { // New API
+                     let headerImg = data.metadata?.header_image;
+                     if (!headerImg && data.steam_app_id) {
+                         headerImg = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${data.steam_app_id}/header.jpg`;
+                     }
+
+                     // Only overwrite properties if we actually have new data
+                     if (headerImg) game.header = headerImg;
+                     if (data.steam_app_id) game.steam_app_id = data.steam_app_id;
+                     if (data.metadata?.icon) game.icon = data.metadata.icon;
+                     if (data.metadata?.trailers?.[0]) game.video = data.metadata.trailers[0];
                 }
             } catch (e) {
-                console.error(`Failed to enrich game ${game.id}`, e);
+                console.error(`Failed to enrich game ${game.slug || game.name}`, e);
             }
         }
     }
@@ -312,11 +333,12 @@ const uninstallGame = async (game: any) => {
 };
 
 const resolveImage = (item: any): string => {
-    if (!item) return '/assets/placeholder.webp';
+    if (!item) return '/assets/placeholder-cover.jpg';
 
     // Helper to process URL
     const processUrl = (url: string | undefined | null) => {
         if (!url) return null;
+        if (url.startsWith('/assets/')) return url; // Load local assets directly
         if (url.startsWith('http')) return url; 
         if (url.startsWith('//')) return `https:${url}`;
         if (url.startsWith('/')) return `https://api.jeuxcracks.fr${url}`;
@@ -326,14 +348,19 @@ const resolveImage = (item: any): string => {
     // 1. Unpack nested game object if present (store.library might be Install[] which has .game)
     const gameData = item.game || item;
 
-    // 2. Check candidates in order of preference (Header -> Icon -> API fields)
+    // Steam App ID Generation directly
+    if (gameData.steam_app_id) {
+        return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${gameData.steam_app_id}/header.jpg`;
+    }
+
+    // 2. Check candidates in order of preference
     const candidates = [
         gameData.header,
-        gameData.icon,
+        gameData.metadata?.header_image,
         gameData.urls?.header_image,
         gameData.urls?.image,
         gameData.informations?.image,
-        // Fallback to item root if different
+        gameData.icon,
         item.header,
         item.icon
     ];
@@ -343,8 +370,12 @@ const resolveImage = (item: any): string => {
         if (processed) return processed;
     }
 
-    return '/assets/placeholder.webp';
+    return '/assets/placeholder-cover.jpg';
 };
+
+function handleImageError(event: Event) {
+  (event.target as HTMLImageElement).src = '/assets/placeholder-cover.jpg';
+}
 
 // Video Playback Handlers (Safe)
 const playVideo = (e: Event) => {

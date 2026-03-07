@@ -93,19 +93,28 @@
                             <!-- Like Button -->
                             <button 
                                 @click="toggleLike()"
-                                class="p-5 rounded-xl border border-white/20 hover:bg-white/10 transition-all group/likebtn"
+                                class="p-5 rounded-xl border border-white/20 hover:bg-white/10 transition-all group/likebtn relative overflow-hidden"
                                 :title="game?.is_liked ? 'Je n\'aime plus' : 'J\'aime'"
                             >
-                                <HeartIcon :class="['w-6 h-6 transition-colors', game?.is_liked ? 'text-red-500 fill-red-500' : 'text-zinc-300 group-hover/likebtn:text-red-500']" />
+                                <HeartIcon :class="['w-6 h-6 transition-transform duration-300', game?.is_liked ? 'text-red-500 fill-red-500 scale-110' : 'text-zinc-300 group-hover/likebtn:text-red-500 group-hover/likebtn:scale-110']" />
                             </button>
 
                             <!-- Favorite Button -->
                             <button 
                                 @click="toggleFavorite()"
-                                class="p-5 rounded-xl border border-white/20 hover:bg-white/10 transition-all group/favbtn"
+                                class="p-5 rounded-xl border border-white/20 hover:bg-white/10 transition-all group/favbtn relative overflow-hidden"
                                 :title="isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'"
                             >
-                                <StarIcon :class="['w-6 h-6 transition-colors', isFavorite ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-300 group-hover/favbtn:text-yellow-500']" />
+                                <StarIcon :class="['w-6 h-6 transition-transform duration-300', isFavorite ? 'text-yellow-500 fill-yellow-500 scale-110' : 'text-zinc-300 group-hover/favbtn:text-yellow-500 group-hover/favbtn:scale-110']" />
+                            </button>
+                            
+                            <!-- Report Button -->
+                            <button 
+                                @click="showReportModal = true"
+                                class="p-5 rounded-xl border border-white/10 hover:border-red-500/50 hover:bg-red-500/10 transition-all group/warnbtn ml-auto lg:ml-0"
+                                title="Signaler un problème avec ce jeu"
+                            >
+                                <ExclamationTriangleIcon class="w-6 h-6 text-zinc-500 group-hover/warnbtn:text-red-500 transition-colors" />
                             </button>
                         </div>
                         
@@ -129,18 +138,22 @@
                             <span class="text-white">{{ game?.developer || 'N/A' }}</span>
                         </div>
                         <div class="flex flex-col items-end">
+                            <span class="text-xs font-bold uppercase text-zinc-600">Éditeur</span>
+                            <span class="text-white">{{ game?.publisher || 'N/A' }}</span>
+                        </div>
+                        <div class="flex flex-col items-end">
                             <span class="text-xs font-bold uppercase text-zinc-600">Date de sortie</span>
                             <span class="text-white">{{ game?.release_date || 'N/A' }}</span>
                         </div>
                         <div class="flex flex-col items-end">
                             <span class="text-xs font-bold uppercase text-zinc-600">Genre</span>
-                            <span class="text-white">{{ game?.categories?.slice(0,2).map(c => c.name || c).join(', ') || 'N/A' }}</span>
+                            <span class="text-white">{{ typeof game?.categories?.[0] === 'string' ? game?.categories?.slice(0,3).join(', ') : game?.categories?.slice(0,3).map(c => c.name || c).join(', ') || 'N/A' }}</span>
                         </div>
                         
                         <!-- Stats -->
                         <div v-if="stats" class="pt-4 border-t border-zinc-800 w-full flex flex-col items-end gap-4 animate-fade-in">
                             <div class="flex flex-col items-end">
-                                <span class="text-xs font-bold uppercase text-indigo-400">Temps de jeu</span>
+                                <span class="text-xs font-bold uppercase text-zinc-600">Temps de jeu</span>
                                 <span class="text-xl font-black text-white">{{ prettyMilliseconds(stats.totalTimePlayedMs) }}</span>
                             </div>
                             <div class="flex flex-col items-end">
@@ -187,7 +200,7 @@
                     À propos du jeu
                 </h3>
                 <div class="prose prose-invert prose-lg max-w-none text-zinc-400 font-light leading-relaxed p-8 rounded-3xl bg-zinc-900/30 border border-white/5">
-                    <div v-html="game?.description"></div>
+                    <div v-html="DOMPurify.sanitize(game?.description || '')"></div>
                 </div>
             </div>
 
@@ -206,16 +219,16 @@
                             <div class="w-2 h-2 rounded-full bg-zinc-600"></div>
                             <h4 class="text-sm font-black text-zinc-300 uppercase tracking-widest">Minimal</h4>
                         </div>
-                        <div class="text-xs text-zinc-400 font-mono leading-relaxed opacity-80" v-html="configurationSystemMinimal || 'Standard Requirements'"></div>
+                        <div class="text-xs text-zinc-400 font-mono leading-relaxed opacity-80" v-html="DOMPurify.sanitize(configurationSystemMinimal || 'Standard Requirements')"></div>
                     </div>
 
                     <!-- Rec -->
                     <div class="p-6 bg-white/[0.02]">
                         <div class="flex items-center gap-3 mb-4">
-                            <div class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_currentColor]"></div>
+                            <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
                             <h4 class="text-sm font-black text-white uppercase tracking-widest">Recommandée</h4>
                         </div>
-                        <div class="text-xs text-zinc-300 font-mono leading-relaxed" v-html="configurationSystemRecommended || 'High Requirements'"></div>
+                        <div class="text-xs text-zinc-300 font-mono leading-relaxed" v-html="DOMPurify.sanitize(configurationSystemRecommended || 'High Requirements')"></div>
                     </div>
 
                 </div>
@@ -322,13 +335,13 @@
                     :class="ver.is_latest ? 'bg-indigo-500/10 border-indigo-500/50 hover:bg-indigo-500/20' : 'bg-zinc-900 border-white/5 hover:border-white/20'"
                 >
                     <div class="flex items-center justify-between mb-1">
-                        <span class="font-black text-white uppercase tracking-wider">{{ ver.version }}</span>
+                        <span class="font-black text-white uppercase tracking-wider">{{ ver.version_raw || ver.version || 'Version Inconnue' }}</span>
                         <span v-if="ver.is_latest" class="px-2 py-0.5 bg-indigo-500 text-white text-[9px] font-bold uppercase rounded shadow">Recommandé</span>
                     </div>
                     <div class="flex items-center gap-4 text-xs font-bold text-zinc-500 uppercase">
                         <span :class="{'text-indigo-300': ver.is_latest}">{{ ver.source }}</span>
-                        <span v-if="ver.size" class="w-1 h-1 rounded-full bg-zinc-700"></span>
-                        <span v-if="ver.size">{{ ver.size }}</span>
+                        <span v-if="ver.file_size || ver.size" class="w-1 h-1 rounded-full bg-zinc-700"></span>
+                        <span v-if="ver.file_size || ver.size">{{ ver.file_size || ver.size }}</span>
                         <!-- Online Indicator -->
                          <span v-if="ver.is_online" class="ml-auto flex items-center gap-1 text-green-400">
                             <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
@@ -365,6 +378,50 @@
             </button>
        </div>
     </ModalConfirm>
+    
+    <!-- MODAL: REPORT GAME -->
+    <vue-final-modal
+      v-model="showReportModal"
+      class="flex justify-center items-center"
+      content-class="relative w-full max-w-lg mx-4 p-8 bg-[#0f0f0f] border border-zinc-800 rounded-2xl shadow-2xl animate-fade-in-up"
+      :click-to-close="true"
+      :esc-to-close="true"
+      overlay-class="bg-black/60 backdrop-blur-sm"
+    >
+        <div class="flex items-center gap-3 mb-4">
+            <div class="p-3 bg-red-500/20 rounded-full">
+                <ExclamationTriangleIcon class="w-6 h-6 text-red-500" />
+            </div>
+            <h3 class="text-xl font-black text-white uppercase tracking-tighter">Signaler ce jeu</h3>
+        </div>
+        
+        <p class="text-zinc-400 text-sm mb-6">Quel est le problème rencontré avec <span class="text-white font-bold">{{ game?.title }}</span> ?</p>
+        
+        <div class="space-y-4">
+            <select v-model="reportReason" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white outline-none focus:border-indigo-500 transition-colors cursor-pointer">
+                <option value="" disabled>Sélectionnez une raison...</option>
+                <option value="broken_link">Lien mort / Fichier introuvable</option>
+                <option value="malware">Fichier corrompu / Alerte antivirus</option>
+                <option value="fake">Faux jeu / Mauvais fichiers</option>
+                <option value="other">Autre (précisez ci-dessous)</option>
+            </select>
+            
+            <textarea 
+                v-model="reportDetails" 
+                rows="4" 
+                placeholder="Détails supplémentaires (facultatif)..."
+                class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white outline-none focus:border-indigo-500 transition-colors resize-none placeholder-zinc-600"
+            ></textarea>
+
+            <button 
+                @click="submitReport"
+                :disabled="isReporting || !reportReason"
+                class="w-full py-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black uppercase tracking-wider text-xs rounded-xl transition-all mt-4"
+            >
+                {{ isReporting ? 'Envoi...' : 'Envoyer le signalement' }}
+            </button>
+        </div>
+    </vue-final-modal>
 
   </div>
 </template>
@@ -373,11 +430,13 @@
 import ModalConfirm from '../../components/ModalConfirm.vue';
 import { onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import DOMPurify from 'dompurify';
 import { useVfm, VueFinalModal } from 'vue-final-modal';
 import { useFetch } from '../../utils/useFetch';
 import { 
     EyeIcon, CalendarIcon, HeartIcon, StarIcon, ArrowDownTrayIcon, PlayIcon, 
-    FolderOpenIcon, CpuChipIcon, ArrowLeftIcon, DocumentTextIcon, PhotoIcon 
+    FolderOpenIcon, CpuChipIcon, ArrowLeftIcon, DocumentTextIcon, PhotoIcon,
+    ExclamationTriangleIcon
 } from '@heroicons/vue/24/solid';
 import { useMainStore } from '../../store';
 import { useNotification } from '@kyvg/vue3-notification';
@@ -397,6 +456,11 @@ const versions = ref<any[]>([]);
 const selectedVersion = ref<any>(null);
 const modalId = Symbol('modalId');
 const modalSettings = Symbol('modalSettings');
+
+const showReportModal = ref(false);
+const reportReason = ref('');
+const reportDetails = ref('');
+const isReporting = ref(false);
 
 // State
 const loading = ref(true);
@@ -525,35 +589,15 @@ async function fetchVersionsAndShowModal() {
     
     try {
         if (!game.value?.id) return;
-        const res: any = await JeuxCracksAPI.getDownloadLinks(game.value.id);
         
-        let allVersions: any[] = [];
-        
-        // Handle different API responses
-        if (Array.isArray(res)) {
-            allVersions = res; // Direct array of versions
-        } else if (res.versions && Array.isArray(res.versions)) {
-            allVersions = res.versions;
-        } else if (res.results && Array.isArray(res.results)) {
-            allVersions = res.results;
-        } else if (res.download_links) {
-            // Fallback for simple structure (rare)
-             allVersions = [{
-                id: 'default',
-                version: 'Default',
-                source: 'Unknown',
-                download_links: res.download_links,
-                is_latest: true
-             }];
-        }
+        let allVersions: any[] = game.value.versions || [];
 
         // Process versions: Find Magnet links
         versions.value = allVersions.map(v => {
-            // Find magnet link
-            const magnet = v.download_links?.find((l:any) => l.type === 'magnet');
+            const magnet = v.download_links?.find((l:any) => l.link_type === 'magnet');
             return {
                 ...v,
-                magnet_url: magnet?.url,
+                magnet_url: magnet?.uri,
                 has_magnet: !!magnet,
                 // Assuming API sends is_latest, or we logic it here (e.g. first one)
                 // For now rely on API or sorting
@@ -570,8 +614,8 @@ async function fetchVersionsAndShowModal() {
         }
 
     } catch (e) {
-        console.error("Failed to fetch download links", e);
-        notify({ type: 'error', title: 'Erreur', text: 'Impossible de récupérer les liens de téléchargement.' });
+        console.error("Failed to process download links", e);
+        notify({ type: 'error', title: 'Erreur', text: 'Impossible de lire les liens de téléchargement.' });
         showVersionModal.value = false;
     } finally {
         loadingVersions.value = false;
@@ -607,8 +651,8 @@ async function startDownload(version: any) {
     id: game.value?.id,
     title: game.value?.title,
     source: source,
-    version: version.version, // Add Version
-    informations: { credit: game.value?.informations?.credit },
+    version: version.version_raw || version.version, // Add Version
+    informations: { credit: game.value?.developer },
   };
   
   downloadType.value = 'torrent'; // Force torrent/magnet
@@ -647,9 +691,6 @@ async function deleteGame() {
   if (installStore.isInstallExist(game.value?.id)) {
       if (installStore.isFinished(game.value?.id)) window.electronAPI?.send('remove-game', game.value?.id);
       installStore.removeInstallById(game.value?.id);
-      // Wait, delete-game expects path... ensure we have it
-      const path = installed.value?.path || (destPath.value + '/' + game.value?.title);
-      window.electronAPI?.send('delete-game', path);
   }
   vfm.close(modalSettings);
 }
@@ -705,88 +746,64 @@ async function updateInstallationStatus() {
 
 async function fetchData(id: string | string[]) {
   try {
-      const response: any = await useFetch(`/api/app/games/${id}/`);
+      const response: any = await useFetch(`/api/engine/games/${id}/`);
       if (response.detail) {
         error.value = response.detail;
         notify({ type: 'error', title: 'Erreur', text: response.detail });
       } else {
-        // New API returns direct flat object
         const data = response;
-        
         if (!data || !data.id) throw new Error('Données de jeu invalides');
 
-        // Requirements Parsing - new format is structured object {minimum: {os, cpu, ram}, recommended: {os, cpu, ram}}
-        if (data.requirements?.minimum) {
-          if (typeof data.requirements.minimum === 'string') {
-            configurationSystemMinimal.value = parseHTML(data.requirements.minimum);
-          } else {
-            // New structured format
-            const r = data.requirements.minimum;
-            configurationSystemMinimal.value = `OS: ${r.os || 'N/A'}<br>CPU: ${r.cpu || 'N/A'}<br>RAM: ${r.ram || 'N/A'}`;
-          }
-        }
-        if (data.requirements?.recommended) {
-          if (typeof data.requirements.recommended === 'string') {
-            configurationSystemRecommended.value = parseHTML(data.requirements.recommended);
-          } else {
-            const r = data.requirements.recommended;
-            configurationSystemRecommended.value = `OS: ${r.os || 'N/A'}<br>CPU: ${r.cpu || 'N/A'}<br>RAM: ${r.ram || 'N/A'}`;
-          }
+        // Requirements Parsing (Fallback if API supports it later, otherwise null)
+        configurationSystemMinimal.value = data.metadata?.pc_requirements?.minimum || "Données non disponibles";
+        configurationSystemRecommended.value = data.metadata?.pc_requirements?.recommended || "Données non disponibles";
+        
+        let headerImg = data.metadata?.header_image;
+        if (!headerImg && data.steam_app_id) {
+            headerImg = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${data.steam_app_id}/header.jpg`;
         }
         
-        // Get size from versions if available
-        let detectedSize = 0;
+        // Get size from versions
+        let detectedSize = data.total_size || 0;
         if (data.versions && data.versions.length > 0) {
-          detectedSize = data.versions[0].size || 0;
+          detectedSize = detectedSize || data.versions[0].file_size_bytes || data.versions[0].file_size || 0;
         }
 
-        // Map to game.value with new API structure
+        // Map to game.value
         game.value = {
             id: data.id,
-            steam_id: data.steam_id || '',
-            title: data.title || '',
+            steam_app_id: data.steam_app_id,
+            title: data.display_name || data.title || '',
             slug: data.slug || '',
-            header: data.header || '',
-            background: data.background || '',
-            video: data.video || '',
-            description: data.description || '',
-            descriptionShort: data.description_short || '',
-            screenshots: data.screenshots || [],
-            categories: data.categories || [],
-            tags: data.tags || [],
-            developer: data.developer || 'N/A',
-            publisher: data.publisher || 'N/A',
-            release_date: data.release_date || 'N/A',
+            header: headerImg || '/assets/placeholder.webp',
+            background: headerImg || '/assets/placeholder.webp',
+            video: data.metadata?.trailers?.[0] || '',
+            description: data.metadata?.description || data.description || 'Aucune description disponible.',
+            descriptionShort: data.metadata?.short_description || '',
+            screenshots: data.metadata?.screenshots || [],
+            categories: data.metadata?.genres || data.categories || [],
+            tags: data.metadata?.tags || data.tags || [],
+            developer: data.metadata?.developers?.[0] || 'N/A',
+            publisher: data.metadata?.publishers?.[0] || 'N/A',
+            release_date: data.metadata?.release_date || 'N/A',
             views: data.views || 0,
             likes: data.likes || 0,
             favorites_count: data.favorites_count || 0,
             downloads_count: data.downloads_count || 0,
             is_liked: data.is_liked || false,
             is_favorited: data.is_favorited || false,
-            isOnline: data.versions?.[0]?.is_online || false,
-            source: data.source || [],
+            isOnline: data.metadata?.tags?.includes('Multi-player') || data.metadata?.tags?.includes('Co-op') || false,
+            source: data.versions?.[0]?.source || data.source || [],
             versions: data.versions || [],
             size: detectedSize,
-            published_at: data.published_at || '',
-            updated_at: data.updated_at || '',
-            // Legacy compatibility
-            informations: {
-                developer: data.developer || 'N/A',
-                publisher: data.publisher || 'N/A',
-                release: data.release_date || 'N/A'
-            },
-            download: {
-                torrent: data.versions?.[0]?.download_links?.find((l: any) => l.type === 'magnet')?.url || null,
-                direct: data.versions?.[0]?.download_links?.find((l: any) => l.type === 'direct')?.url || null
-            }
+            updated_at: data.last_updated || '',
         };
         
-        // Update favorite state from API response
-        isFavorite.value = data.is_favorited;
+        isFavorite.value = data.is_favorited || false;
         
         await updateInstallationStatus();
         
-        // Fetch Stats
+        // Fetch Stats if logged in
         if (store.user?.id) {
             try {
                 stats.value = await window.electronAPI?.invoke('get-game-stats', { userId: store.user.id, gameId: data.id });
@@ -869,26 +886,28 @@ function handleImageError(event: Event) {
   (event.target as HTMLImageElement).src = '/assets/placeholder-cover.jpg';
 }
 
-// --- LIKE / FAVORITE / VIEW API CALLS ---
+// --- LIKE / FAVORITE / VIEW / REPORT API CALLS ---
 
+// The new API handles interactions via /api/engine/games/<slug>/favorite/ and /like/
 async function toggleFavorite() {
     if (!store.user?.id) {
         notify({ type: 'warn', title: 'Connexion requise', text: 'Connectez-vous pour ajouter aux favoris.' });
         return;
     }
-    if (!game.value?.id || isLoadingFavorite.value) return;
+    if (!game.value?.slug || isLoadingFavorite.value) return;
     
     isLoadingFavorite.value = true;
     try {
         if (isFavorite.value) {
-            await JeuxCracksAPI.removeFavorite(game.value.id);
+            await useFetch(`/api/engine/games/${game.value.slug}/unfavorite/`, { method: 'POST', auth: true });
             isFavorite.value = false;
             notify({ type: 'success', text: 'Retiré des favoris' });
         } else {
-            await JeuxCracksAPI.addFavorite(game.value.id);
+            await useFetch(`/api/engine/games/${game.value.slug}/favorite/`, { method: 'POST', auth: true });
             isFavorite.value = true;
             notify({ type: 'success', text: 'Ajouté aux favoris' });
         }
+        await store.fetchFavorites();
     } catch (err) {
         console.error('toggleFavorite error:', err);
         notify({ type: 'error', text: 'Erreur lors de la mise à jour des favoris' });
@@ -902,16 +921,16 @@ async function toggleLike() {
         notify({ type: 'warn', title: 'Connexion requise', text: 'Connectez-vous pour liker.' });
         return;
     }
-    if (!game.value?.id) return;
+    if (!game.value?.slug) return;
     
     try {
         if (game.value.is_liked) {
-            await JeuxCracksAPI.unlikeGame(game.value.id);
+            await useFetch(`/api/engine/games/${game.value.slug}/unlike/`, { method: 'POST', auth: true });
             game.value.is_liked = false;
             game.value.likes = Math.max(0, (game.value.likes || 1) - 1);
             notify({ type: 'success', text: 'Like retiré' });
         } else {
-            await JeuxCracksAPI.likeGame(game.value.id);
+            await useFetch(`/api/engine/games/${game.value.slug}/like/`, { method: 'POST', auth: true });
             game.value.is_liked = true;
             game.value.likes = (game.value.likes || 0) + 1;
             notify({ type: 'success', text: 'Jeu liké !' });
@@ -930,12 +949,42 @@ async function checkFavoriteStatus() {
 }
 
 async function registerView() {
-    // View endpoint doesn't require login
-    if (!game.value?.id) return;
+    // Prevent double view registration logic if needed
+    if (!game.value?.slug) return;
     try {
-        await JeuxCracksAPI.incrementViews(game.value.id);
+        await useFetch(`/api/engine/games/${game.value.slug}/view/`, { method: 'POST' });
     } catch (err) {
         console.error('registerView error:', err);
+    }
+}
+
+async function submitReport() {
+    if (!store.user?.id) {
+        notify({ type: 'warn', title: 'Connexion requise', text: 'Connectez-vous pour signaler un jeu.' });
+        return;
+    }
+    if (!game.value?.slug || !reportReason.value) return;
+
+    isReporting.value = true;
+    try {
+        await useFetch(`/api/engine/games/${game.value.slug}/report/`, { 
+            method: 'POST', 
+            auth: true,
+            body: {
+                reason: reportReason.value,
+                details: reportDetails.value
+            }
+        });
+        
+        notify({ type: 'success', title: 'Signalement envoyé', text: 'Merci pour votre retour.' });
+        showReportModal.value = false;
+        reportReason.value = '';
+        reportDetails.value = '';
+    } catch (err) {
+        console.error('Report error:', err);
+        notify({ type: 'error', title: 'Erreur', text: 'Impossible d\'envoyer le signalement.' });
+    } finally {
+        isReporting.value = false;
     }
 }
 </script>

@@ -1,6 +1,6 @@
 {
   "name": "jeuxcracks-launcher",
-  "version": "1.0.39",
+  "version": "1.0.99",
   "description": "Le launcher officiel JeuxCracks.fr",
   "author": "JeuxCracks",
   "main": "dist-electron/main/index.js",
@@ -36,9 +36,11 @@
   "dependencies": {
     "@heroicons/vue": "^2.1.1",
     "@kyvg/vue3-notification": "^3.2.1",
+    "@types/dompurify": "^3.2.0",
     "@types/node": "^20.14.10",
     "chart.js": "^4.4.2",
     "decompress": "^4.2.1",
+    "dompurify": "^3.3.2",
     "dotenv": "^16.4.5",
     "electron-log": "^5.4.1",
     "electron-root-path": "^1.1.0",

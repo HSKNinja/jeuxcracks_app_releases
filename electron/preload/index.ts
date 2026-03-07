@@ -94,18 +94,53 @@ setTimeout(removeLoading, 4999)
 // Expose l'API Electron de façon sécurisée
 try {
   const { contextBridge, ipcRenderer } = require('electron');
+
+  const allowedSendChannels = [
+    'minimize-window', 'maximize-window', 'close-window', 'launch-game',
+    'open-game-emplacement', 'remove-game', 'restart-app', 'open-external',
+    'auth-success', 'auth-token-refresh', 'update-setting', 'check-for-update',
+    'set-download-limit', 'set-upload-limit', 'pause-torrent', 'resume-torrent',
+    'cancel-torrent', 'remove-torrent', 'stop-torrent', 'download'
+  ];
+
+  const allowedInvokeChannels = [
+    'get-save-path', 'choose-exe-file', 'open-navigator', 'read-downloads',
+    'force-library-sync', 'get-settings', 'get-app-version', 'get-download-limits',
+    'open-data-folder', 'get-electron-version', 'get-library-stats', 'get-libraries',
+    'get-cache-sizes', 'open-temp-folder', 'clear-temp-files', 'clear-image-cache',
+    'verify-library-integrity', 'get-all-user-stats'
+  ];
+
+  const allowedOnChannels = [
+    'main-process-message', 'enter-full-screen', 'game-removed', 'setting-changed',
+    'checking-for-update', 'update-not-available', 'update-available',
+    'update-downloaded', 'update-error', 'download-progress', 'download-done',
+    'torrent-error', 'verify-progress', 'verify-done'
+  ];
+
   contextBridge.exposeInMainWorld('electronAPI', {
-    send: (...args) => ipcRenderer.send(...args),
-    invoke: (...args) => ipcRenderer.invoke(...args),
-    on: (...args) => ipcRenderer.on(...args),
-    removeAllListeners: (...args) => ipcRenderer.removeAllListeners(...args),
-    readFile: (path, encoding = 'utf8') => ipcRenderer.invoke('read-file', path, encoding),
-    writeFile: (path, data, encoding = 'utf8') => ipcRenderer.invoke('write-file', path, data, encoding),
+    send: (channel: string, ...args: any[]) => {
+      if (allowedSendChannels.includes(channel)) ipcRenderer.send(channel, ...args);
+    },
+    invoke: (channel: string, ...args: any[]) => {
+      if (allowedInvokeChannels.includes(channel)) return ipcRenderer.invoke(channel, ...args);
+      return Promise.reject(`IPC channel "${channel}" not allowed`);
+    },
+    on: (channel: string, listener: (...args: any[]) => void) => {
+      if (allowedOnChannels.includes(channel)) {
+        const subscription = (event: any, ...args: any[]) => listener(event, ...args);
+        ipcRenderer.on(channel, subscription);
+        return () => ipcRenderer.removeListener(channel, subscription);
+      }
+    },
+    removeAllListeners: (channel: string) => {
+      if (allowedOnChannels.includes(channel)) ipcRenderer.removeAllListeners(channel);
+    },
     // Window Controls
     minimize: () => ipcRenderer.send('minimize-window'),
     maximize: () => ipcRenderer.send('maximize-window'),
     close: () => ipcRenderer.send('close-window'),
-    launchGame: (path) => ipcRenderer.send('launch-game', path),
+    launchGame: (path: string) => ipcRenderer.send('launch-game', path),
   });
 } catch (e) {
   // Pas dans Electron, ne rien faire

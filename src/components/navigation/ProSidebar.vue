@@ -42,19 +42,6 @@
                     {{ downloadStore.downloads.length }}
                 </span>
             </router-link>
-            <router-link to="/favorites" class="nav-item">
-                <StarIcon class="w-5 h-5" />
-                <span>Favoris</span>
-            </router-link>
-            <router-link to="/liked" class="nav-item">
-                <HeartIcon class="w-5 h-5" />
-                <span>Jeux Aimés</span>
-            </router-link>
-            <!-- Moved Shop to User Section -->
-            <router-link to="/shop" class="nav-item">
-                <ShoppingBagIcon class="w-5 h-5" />
-                <span>Boutique</span>
-            </router-link>
             <router-link to="/premium" class="nav-item group/premium">
                 <SparklesIcon class="w-5 h-5 group-hover/premium:text-amber-500 transition-colors" />
                 <span class="group-hover/premium:text-amber-400 transition-colors">Premium</span>
