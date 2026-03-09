@@ -1,0 +1,34 @@
+[
+    {
+        "id": 1,
+        "title": "Version 1.1.2 : Redesign Complet & Stats Temps Réel",
+        "description": "Découvrez notre nouvelle page d'accueil ultra-moderne avec intégration des actualités et statistiques de revenus/jeux en temps réel.",
+        "full_content": "## 🛠️ Corrections de bugs (Mise à jour de sécurité & Hotfix)\n\n* **Correction critique de la gestion des bibliothèques** : Résolution d'un problème massif introduit par la récente mise à jour de sécurité (v1.1.1) qui empêchait la création ou l'ajout de nouveaux répertoires de jeux. Le bouton \"Ajouter une bibliothèque\" (depuis les paramètres ou la page d'un jeu) réagit à nouveau correctement et ouvre bien l'explorateur de fichiers.\n* **Amélioration de la sécurité du Launcher** : Cette mise à jour consolide également les correctifs de sécurité appliqués au cœur d'Electron, rendant l'application totalement immunisée contre les failles d'exécution de code à distance (RCE) tout en conservant toutes les fonctionnalités actives.\n* **Correction des exclusions Windows Defender** : Résolution d'un bug système qui empêchait l'ajout automatique de vos bibliothèques de jeux aux exclusions de Windows Defender. L'élévation de privilèges (UAC) fonctionne à nouveau correctement à l'ajout d'une bibliothèque.\n* **Correction des Filtres de Tri** : Le menu déroulant \"Trier par\" (Vues, Nouveautés, Populaires, etc.) du catalogue fonctionne de nouveau correctement. Il interagit désormais parfaitement avec la nouvelle API du moteur de recherche.\n\n## ✨ Améliorations UI & UX\n\n* **Transparence Windows Defender** : L'ajout d'une nouvelle bibliothèque de téléchargement requiert désormais votre consentement explicite. Une fenêtre vous affiche clairement la commande PowerShell d'exclusion qui sera exécutée pour éviter la suppression accidentelle de vos jeux par votre antivirus.\n* **Redesign Complet de la Page d'Accueil** : Une toute nouvelle interface \"Pro & Classy\" ultra-moderne avec un Hero Slider affiné, des effets de flou (backdrop-blur) et une navigation plus fluide.\n* **Système d'Actualités Dynamique** : Intégration d'une section news directement sur la home, pilotée par un système de données flexible pour les annonces et patch notes.\n* **Statistiques en Temps Réel** : Les badges de la home (Nombre de Jeux, Objectif Global) sont désormais connectés en direct à l'API du catalogue et aux revenus réels du projet.\n* **Objectif Global Visuel** : Un nouvel indicateur de progression vert émeraude affiche l'avancée du financement mensuel (80€) avec les montants réels récoltés.\n* **Affichage des Statistiques** : Les cartes de jeux dans le catalogue affichent désormais le nombre total de téléchargements réels du jeu (à côté du nombre de vues) au lieu du compteur de likes.\n* **Refonte de la Pagination** : Fini les simples boutons \"Précédent/Suivant\" ! Le catalogue dispose désormais d'une pagination moderne et numérotée.\n\n*Merci à la communauté pour les signalements rapides ! N'hésitez pas à faire remonter tout autre comportement inhabituel sur le Discord. ❤️*",
+        "category": "Patch Note",
+        "date": "2026-03-09",
+        "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop",
+        "link": "/news/1",
+        "accent_color": "indigo"
+    },
+    {
+        "id": 2,
+        "title": "Soutenez JeuxCracks : Devenir Premium",
+        "description": "Aidez-nous à maintenir les serveurs actifs et profitez d'avantages exclusifs sur le launcher.",
+        "category": "Événement",
+        "date": "2026-03-08",
+        "image": "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop",
+        "link": "/premium",
+        "accent_color": "amber"
+    },
+    {
+        "id": 3,
+        "title": "Infrastructure JC-Engine : La Révolution Rust",
+        "description": "La migration vers le JC-Engine est terminée. Profitez d'une base de données 3x plus rapide et d'une stabilité à toute épreuve.",
+        "full_content": "## 🚀 L'Aube d'une Nouvelle Ère\n\nLe **JC-Engine** n'est pas qu'une simple mise à jour de base de données. C'est le nouveau cœur battant de JeuxCracks, conçu pour propulser le site et le launcher vers des sommets de performance inégalés.\n\n## 🦀 La Puissance de Rust\n\nAu centre de cette infrastructure se trouve notre nouveau **Scraper**, intégralement codé en **Rust**. \n\n* **Robustesse Folle** : Rust nous permet d'éliminer des classes entières de bugs (memory safety) avant même l'exécution.\n* **Évolutivité Massive** : Là où l'ancien système montrait ses limites à 1 000 jeux, le JC-Engine est déjà prêt à gérer plus de **10 000 jeux simultanément** sans aucune baisse de régime.\n* **Rapidité** : Le traitement des données est désormais 3x plus rapide, garantissant des mises à jour quasi-instantanées sur le launcher.\n\n## 📊 Comparatif : Ancien vs Nouveau\n\n| Caractéristique | Ancien Système | JC-Engine (Rust) |\n|-----------------|----------------|------------------|\n| Capacité Jeux | 1,500 | 10,000+ |\n| Vitesse Scrap | 15s / page | 2s / page |\n| Stabilité | Variable | 99.9% |\n| Latence API | 250ms | 45ms |\n\n## 🔮 Prochaines Étapes : L'IA au Contrôle\n\nCe que vous voyez aujourd'hui n'est que la fondation. Le JC-Engine est un projet à part entière qui va s'enrichir de fonctionnalités révolutionnaires :\n\n* **Mises à jour (MAJ) & Mods** : Détection et intégration automatique des derniers patchs et des meilleurs mods communautaires.\n* **Suggestions Automatiques** : Un algorithme intelligent qui apprend de vos goûts pour vous proposer la perle rare.\n* **IA Intégrée** : À terme, l'infrastructure sera **pilotée à 100% par une Intelligence Artificielle**, capable d'auto-réparer les liens, de scraper de nouvelles sources et de modérer le contenu de manière autonome.\n\nLe futur du cracking et du partage de jeux commence ici. Merci de faire partie de l'aventure ! ❤️",
+        "category": "Stabilité",
+        "date": "2026-03-07",
+        "image": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
+        "link": "/news/3",
+        "accent_color": "emerald"
+    }
+]

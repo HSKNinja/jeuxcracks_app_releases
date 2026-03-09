@@ -12,6 +12,7 @@ import Login from "../views/Login.vue";
 import Register from "../views/Register.vue";
 import Account from "../views/Account.vue";
 import Premium from "../views/Premium.vue";
+import NewsDetail from "../views/NewsDetail.vue";
 import DMCA from "../views/DMCA.vue";
 import { useMainStore } from '../store'
 
@@ -111,6 +112,12 @@ const routes = [
         name: "Premium",
         component: Premium,
         meta: { requiresAuth: true, title: "Devenir Premium" }
+    },
+    {
+        path: "/news/:id",
+        name: "NewsDetail",
+        component: NewsDetail,
+        meta: { requiresAuth: true }
     },
     {
         path: "/dmca",

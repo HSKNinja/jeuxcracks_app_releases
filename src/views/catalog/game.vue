@@ -245,6 +245,27 @@
                     </div>
                 </div>
 
+                <!-- Support CTA -->
+                <div class="p-8 rounded-3xl bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-amber-500/20 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-xl bg-amber-500/20">
+                            <HeartIcon class="w-6 h-6 text-amber-500" />
+                        </div>
+                        <h4 class="text-lg font-black text-white uppercase tracking-tighter">Soutenir le projet</h4>
+                    </div>
+                    <p class="text-sm text-zinc-400 leading-relaxed">
+                        Si vous appréciez JeuxCracks, aidez-nous à rester en ligne en faisant un don ou en passant Premium. Chaque contribution compte !
+                    </p>
+                    <div class="flex flex-col gap-2">
+                        <router-link to="/premium" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-black uppercase tracking-widest text-xs text-center rounded-xl transition-all shadow-lg shadow-amber-500/20">
+                            Devenir Premium
+                        </router-link>
+                        <router-link to="/support" class="w-full py-3 bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest text-[10px] text-center rounded-xl transition-all border border-white/10">
+                            Faire un don
+                        </router-link>
+                    </div>
+                </div>
+
             </div>
 
         </div>
@@ -423,6 +444,44 @@
         </div>
     </vue-final-modal>
 
+    <!-- Windows Defender Consent Modal -->
+    <div v-if="showDefenderConsent" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelLibraryAdd"></div>
+        <div class="relative bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl p-6 flex flex-col gap-5 animate-fade-in-up">
+            <div class="flex items-center gap-3 text-amber-500">
+                <ShieldExclamationIcon class="w-8 h-8" />
+                <h3 class="text-xl font-black uppercase tracking-tight text-white">Autorisation Windows Defender</h3>
+            </div>
+            
+            <p class="text-sm text-zinc-400">
+                Pour éviter que Windows Defender ne supprime par erreur des fichiers de vos jeux dans ce dossier, nous devons l'ajouter aux exclusions de l'antivirus.
+            </p>
+
+            <div class="bg-black/50 p-3 rounded-lg border border-white/5 font-mono text-[10px] text-zinc-500 break-all select-all">
+                Add-MpPreference -ExclusionPath "{{ pendingLibraryPath }}"
+            </div>
+
+            <p class="text-xs text-amber-500/80 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                Une fenêtre d'autorisation administrateur (UAC) va s'ouvrir après avoir cliqué sur "Accepter". Si vous refusez, le dossier ne sera pas ajouté.
+            </p>
+
+            <div class="flex items-center justify-end gap-3 mt-2">
+                <button 
+                    @click="cancelLibraryAdd" 
+                    class="px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-white/5 hover:text-white transition-colors uppercase tracking-wider"
+                >
+                    Refuser
+                </button>
+                <button 
+                    @click="confirmAddLibrary" 
+                    class="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors uppercase tracking-wider flex items-center gap-2"
+                >
+                    Accepter
+                </button>
+            </div>
+        </div>
+    </div>
+
   </div>
 </template>
 
@@ -436,7 +495,7 @@ import { useFetch } from '../../utils/useFetch';
 import { 
     EyeIcon, CalendarIcon, HeartIcon, StarIcon, ArrowDownTrayIcon, PlayIcon, 
     FolderOpenIcon, CpuChipIcon, ArrowLeftIcon, DocumentTextIcon, PhotoIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon, ShieldExclamationIcon
 } from '@heroicons/vue/24/solid';
 import { useMainStore } from '../../store';
 import { useNotification } from '@kyvg/vue3-notification';
@@ -458,6 +517,8 @@ const modalId = Symbol('modalId');
 const modalSettings = Symbol('modalSettings');
 
 const showReportModal = ref(false);
+const showDefenderConsent = ref(false);
+const pendingLibraryPath = ref('');
 const reportReason = ref('');
 const reportDetails = ref('');
 const isReporting = ref(false);
@@ -565,21 +626,37 @@ async function addLibrary() {
         if (window.electronAPI) {
             const path = await window.electronAPI.invoke('open-dialog', { properties: ['openDirectory'] });
             if (path) {
-                const updated = await window.electronAPI.invoke('add-library', path);
-                
-                // Check if directory is empty or suitable (optional check)
-                const files = await window.electronAPI.invoke('get-files', path);
-                if (files && files.length > 0) {
-                     // Warn user but proceed
-                }
-                destPath.value = path;
-                showInstallModal.value = false;
-                
-                // NEW: Fetch versions and show selection
-                await fetchVersionsAndShowModal();
+                pendingLibraryPath.value = path;
+                showDefenderConsent.value = true;
             }
         }
     } catch (e) { console.error(e); }
+}
+
+async function confirmAddLibrary() {
+    try {
+        if (window.electronAPI && pendingLibraryPath.value) {
+            const updated = await window.electronAPI.invoke('add-library', pendingLibraryPath.value);
+            
+            // Check if directory is empty or suitable (optional check)
+            const files = await window.electronAPI.invoke('get-files', pendingLibraryPath.value);
+            if (files && files.length > 0) {
+                 // Warn user but proceed
+            }
+            destPath.value = pendingLibraryPath.value;
+            showInstallModal.value = false;
+            
+            // Fetch versions and show selection
+            await fetchVersionsAndShowModal();
+        }
+    } catch (e) { console.error(e); }
+    showDefenderConsent.value = false;
+    pendingLibraryPath.value = '';
+}
+
+function cancelLibraryAdd() {
+    showDefenderConsent.value = false;
+    pendingLibraryPath.value = '';
 }
 
 async function fetchVersionsAndShowModal() {
@@ -637,6 +714,15 @@ async function startDownload(version: any) {
   if (!version || !version.magnet_url) {
       notify({ type: 'error', title: 'Erreur', text: 'Lien magnet invalide.' });
       return;
+  }
+  
+  // Increment download count on backend
+  try {
+      if (game.value?.slug) {
+         await useFetch(`/api/engine/games/${game.value.slug}/download/`, 'GET');
+      }
+  } catch (e) {
+      console.warn("Failed to increment download count", e);
   }
   
   let URL = version.magnet_url;
@@ -899,11 +985,11 @@ async function toggleFavorite() {
     isLoadingFavorite.value = true;
     try {
         if (isFavorite.value) {
-            await useFetch(`/api/engine/games/${game.value.slug}/unfavorite/`, { method: 'POST', auth: true });
+            await useFetch(`/api/engine/games/${game.value.slug}/unfavorite/`, 'POST');
             isFavorite.value = false;
             notify({ type: 'success', text: 'Retiré des favoris' });
         } else {
-            await useFetch(`/api/engine/games/${game.value.slug}/favorite/`, { method: 'POST', auth: true });
+            await useFetch(`/api/engine/games/${game.value.slug}/favorite/`, 'POST');
             isFavorite.value = true;
             notify({ type: 'success', text: 'Ajouté aux favoris' });
         }
@@ -925,12 +1011,12 @@ async function toggleLike() {
     
     try {
         if (game.value.is_liked) {
-            await useFetch(`/api/engine/games/${game.value.slug}/unlike/`, { method: 'POST', auth: true });
+            await useFetch(`/api/engine/games/${game.value.slug}/unlike/`, 'POST');
             game.value.is_liked = false;
             game.value.likes = Math.max(0, (game.value.likes || 1) - 1);
             notify({ type: 'success', text: 'Like retiré' });
         } else {
-            await useFetch(`/api/engine/games/${game.value.slug}/like/`, { method: 'POST', auth: true });
+            await useFetch(`/api/engine/games/${game.value.slug}/like/`, 'POST');
             game.value.is_liked = true;
             game.value.likes = (game.value.likes || 0) + 1;
             notify({ type: 'success', text: 'Jeu liké !' });
@@ -952,7 +1038,7 @@ async function registerView() {
     // Prevent double view registration logic if needed
     if (!game.value?.slug) return;
     try {
-        await useFetch(`/api/engine/games/${game.value.slug}/view/`, { method: 'POST' });
+        await useFetch(`/api/engine/games/${game.value.slug}/view/`, 'POST');
     } catch (err) {
         console.error('registerView error:', err);
     }
@@ -967,13 +1053,9 @@ async function submitReport() {
 
     isReporting.value = true;
     try {
-        await useFetch(`/api/engine/games/${game.value.slug}/report/`, { 
-            method: 'POST', 
-            auth: true,
-            body: {
-                reason: reportReason.value,
-                details: reportDetails.value
-            }
+        await useFetch(`/api/engine/games/${game.value.slug}/report/`, 'POST', {
+            reason: reportReason.value,
+            details: reportDetails.value
         });
         
         notify({ type: 'success', title: 'Signalement envoyé', text: 'Merci pour votre retour.' });

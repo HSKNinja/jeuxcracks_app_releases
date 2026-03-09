@@ -200,8 +200,10 @@ class LibraryService {
             // Build elevated PowerShell command for only the new paths
             const pathsArg = newPaths.map(p => "'" + p.replace(/'/g, "''") + "'").join(',');
             const innerScript = `$paths = @(${pathsArg}); foreach($p in $paths){ Add-MpPreference -ExclusionPath $p -ErrorAction SilentlyContinue }`;
-            const escapedScript = innerScript.replace(/"/g, '\\"');
-            const cmd = `powershell -WindowStyle Hidden -NoProfile -Command "Start-Process powershell -ArgumentList '-WindowStyle Hidden -NoProfile -Command ${escapedScript}' -Verb RunAs -Wait"`;
+            
+            // Encode to Base64 in UTF-16LE, which is explicitly required by PowerShell's -EncodedCommand
+            const base64Script = Buffer.from(innerScript, 'utf16le').toString('base64');
+            const cmd = `powershell -WindowStyle Hidden -NoProfile -Command "Start-Process powershell -ArgumentList '-WindowStyle Hidden -NoProfile -EncodedCommand ${base64Script}' -Verb RunAs -Wait"`;
 
             exec(cmd, { windowsHide: true }, (err) => {
                 if (err) {

@@ -521,7 +521,7 @@ const cancelImmediately = ref(false);
 const showInvoices = ref(false);
 
 // Monthly goal (configurable)
-const monthlyGoal = ref(50);
+const monthlyGoal = ref(80);
 
 // --- Boutique ---
 const activeShopTab = ref('cosmetics');

@@ -100,7 +100,8 @@ try {
     'open-game-emplacement', 'remove-game', 'restart-app', 'open-external',
     'auth-success', 'auth-token-refresh', 'update-setting', 'check-for-update',
     'set-download-limit', 'set-upload-limit', 'pause-torrent', 'resume-torrent',
-    'cancel-torrent', 'remove-torrent', 'stop-torrent', 'download'
+    'cancel-torrent', 'remove-torrent', 'stop-torrent', 'download',
+    'pause-download', 'stop-torrent-by-id', 'cancel-download', 'set-exe-file'
   ];
 
   const allowedInvokeChannels = [
@@ -108,7 +109,9 @@ try {
     'force-library-sync', 'get-settings', 'get-app-version', 'get-download-limits',
     'open-data-folder', 'get-electron-version', 'get-library-stats', 'get-libraries',
     'get-cache-sizes', 'open-temp-folder', 'clear-temp-files', 'clear-image-cache',
-    'verify-library-integrity', 'get-all-user-stats'
+    'verify-library-integrity', 'get-all-user-stats', 'add-library', 'open-dialog',
+    'get-files', 'get-game-stats', 'is-game-installed', 'get-game-install-info',
+    'get-total-user-stats', 'remove-library', 'set-default-library', 'rename-library'
   ];
 
   const allowedOnChannels = [

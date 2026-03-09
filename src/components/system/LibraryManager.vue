@@ -65,16 +65,58 @@
             </div>
         </div>
     </div>
+
+    <!-- Windows Defender Consent Modal -->
+    <div v-if="showDefenderConsent" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelLibraryAdd"></div>
+        <div class="relative bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl p-6 flex flex-col gap-5 animate-fade-in-up">
+            <div class="flex items-center gap-3 text-amber-500">
+                <ShieldExclamationIcon class="w-8 h-8" />
+                <h3 class="text-xl font-black uppercase tracking-tight text-white">Autorisation Windows Defender</h3>
+            </div>
+            
+            <p class="text-sm text-zinc-400">
+                Pour éviter que Windows Defender ne supprime par erreur des fichiers de vos jeux dans ce dossier, nous devons l'ajouter aux exclusions de l'antivirus.
+            </p>
+
+            <div class="bg-black/50 p-3 rounded-lg border border-white/5 font-mono text-[10px] text-zinc-500 break-all select-all">
+                Add-MpPreference -ExclusionPath "{{ pendingLibraryPath }}"
+            </div>
+
+            <p class="text-xs text-amber-500/80 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                Une fenêtre d'autorisation administrateur (UAC) va s'ouvrir après avoir cliqué sur "Accepter". Si vous refusez, le dossier ne sera pas ajouté.
+            </p>
+
+            <div class="flex items-center justify-end gap-3 mt-2">
+                <button 
+                    @click="cancelLibraryAdd" 
+                    class="px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-white/5 hover:text-white transition-colors uppercase tracking-wider"
+                >
+                    Refuser
+                </button>
+                <button 
+                    @click="confirmAddLibrary" 
+                    class="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors uppercase tracking-wider flex items-center gap-2"
+                >
+                    Accepter
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick, onMounted } from 'vue';
-import { FolderOpenIcon, StarIcon, TrashIcon, PencilIcon } from '@heroicons/vue/24/solid';
+import { FolderOpenIcon, StarIcon, TrashIcon, PencilIcon, ShieldExclamationIcon } from '@heroicons/vue/24/solid';
 
 const libraries = ref<any[]>([]);
 const renamingId = ref<string | null>(null);
 const renameValue = ref('');
 const renameInput = ref<HTMLInputElement | null>(null);
+
+// Modal state
+const showDefenderConsent = ref(false);
+const pendingLibraryPath = ref('');
 
 const fetchLibraries = async () => {
     if (window.electronAPI) {
@@ -87,11 +129,27 @@ const addLibrary = async () => {
         if (window.electronAPI) {
             const path = await window.electronAPI.invoke('open-dialog', { properties: ['openDirectory'] });
             if (path) {
-                const updated = await window.electronAPI.invoke('add-library', path);
-                if (updated) libraries.value = updated;
+                pendingLibraryPath.value = path;
+                showDefenderConsent.value = true;
             }
         }
     } catch (e) { console.error(e); }
+};
+
+const confirmAddLibrary = async () => {
+    try {
+        if (window.electronAPI && pendingLibraryPath.value) {
+            const updated = await window.electronAPI.invoke('add-library', pendingLibraryPath.value);
+            if (updated) libraries.value = updated;
+        }
+    } catch (e) { console.error(e); }
+    showDefenderConsent.value = false;
+    pendingLibraryPath.value = '';
+};
+
+const cancelLibraryAdd = () => {
+    showDefenderConsent.value = false;
+    pendingLibraryPath.value = '';
 };
 
 const removeLibrary = async (id: string) => {

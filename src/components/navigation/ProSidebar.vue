@@ -60,6 +60,25 @@
         </div>
       </div>
 
+      <!-- Support CTA -->
+      <div class="px-3 pt-2">
+          <div class="relative group/cta p-4 rounded-2xl bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border border-indigo-500/20 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-600 opacity-0 group-hover/cta:opacity-10 transition-opacity"></div>
+              <div class="relative z-10 space-y-3">
+                  <div class="flex items-center gap-2">
+                      <div class="p-1.5 rounded-lg bg-indigo-500/20">
+                          <SparklesIcon class="w-4 h-4 text-indigo-400" />
+                      </div>
+                      <span class="text-[10px] font-black uppercase tracking-widest text-indigo-300">Devenir Premium</span>
+                  </div>
+                  <p class="text-[10px] text-zinc-400 leading-relaxed font-medium">Soutenez le développement et profitez d'avantages exclusifs.</p>
+                  <router-link to="/premium" class="block w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest text-center rounded-lg transition-colors shadow-lg shadow-indigo-600/20">
+                      En savoir plus
+                  </router-link>
+              </div>
+          </div>
+      </div>
+
     </nav>
 
     <!-- Bottom User -->

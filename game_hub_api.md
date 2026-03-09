@@ -92,6 +92,7 @@ Retourne les stats du JC-Engine et les compteurs sociaux Django.
 ```
 GET /api/engine/games/
 GET /api/engine/games/?page=2&per_page=20
+GET /api/engine/games/?sort=downloads_count
 ```
 
 Liste paginée de tous les jeux (JC-Engine) enrichie avec les données sociales Django.
@@ -102,6 +103,7 @@ Liste paginée de tous les jeux (JC-Engine) enrichie avec les données sociales 
 |-------|------|--------|-------------|
 | `page` | int | 1 | Numéro de page |
 | `per_page` | int | 50 | Résultats par page (max: 200) |
+| `sort` | string | *(aucun)* | Tri par popularité. Options: `views`, `likes`, `favorites_count`, `downloads_count` |
 
 **Réponse** `200 OK`
 ```json
@@ -118,6 +120,7 @@ Liste paginée de tous les jeux (JC-Engine) enrichie avec les données sociales 
       "last_updated": "2026-03-03 05:31:23",
       "views": 15,
       "likes": 3,
+      "downloads_count": 5,
       "favorites_count": 1,
       "is_liked": false,
       "is_favorited": false
@@ -631,10 +634,10 @@ PostgreSQL                          ← likes, vues, favoris, signalements
 
 | Endpoint Engine | TTL |
 |----------------|-----|
-| `/api/stats` | 60s |
-| `/api/games` (liste) | 120s |
-| `/api/games/:slug` (détail) | 300s |
-| `/api/games/:slug/latest` | 300s |
-| `/api/games/:slug/versions` | 300s |
-| `/api/games/:slug/metadata` | 600s |
-| `/api/search` | 60s |
+| `/api/engine/stats` | 60s |
+| `/api/engine/games` (liste) | 120s |
+| `/api/engine/games/:slug` (détail) | 300s |
+| `/api/engine/games/:slug/latest` | 300s |
+| `/api/engine/games/:slug/versions` | 300s |
+| `/api/engine/games/:slug/metadata` | 600s |
+| `/api/engine/search` | 60s |

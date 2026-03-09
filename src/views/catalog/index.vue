@@ -179,13 +179,13 @@
                             
                             <!-- Stats -->
                             <div class="flex items-center gap-3 text-[10px] font-bold text-zinc-400">
-                                <div class="flex items-center gap-1">
+                                <div class="flex items-center gap-1" title="Vues">
                                     <EyeIcon class="w-3 h-3" />
                                     {{ formatNumber(game.views) }}
                                 </div>
-                                <div class="flex items-center gap-1">
-                                    <HeartIcon class="w-3 h-3" />
-                                    {{ formatNumber(game.likes) }}
+                                <div class="flex items-center gap-1" title="Téléchargements">
+                                    <ArrowDownTrayIcon class="w-3 h-3" />
+                                    {{ formatNumber(game.downloads || 0) }}
                                 </div>
                             </div>
                         </div>
@@ -195,28 +195,58 @@
 
             </div>
 
-            <!-- Pagination -->
-            <div v-if="pagination.totalPages > 1" class="flex justify-center mt-16 mb-8">
-                <div class="flex items-center gap-1 bg-zinc-900/50 p-2 rounded-xl backdrop-blur-sm border border-white/5">
+            <!-- Pagination (Redesigned & Modernized) -->
+            <div v-if="pagination.totalPages > 1" class="flex justify-center mt-16 mb-16 animate-fade-in-up">
+                <div class="inline-flex items-center bg-[#0a0a0a] p-1.5 rounded-2xl border border-white/5 shadow-2xl">
+                    
+                    <!-- Previous Button -->
                      <button 
                         @click="changePage(pagination.page - 1)" 
                         :disabled="pagination.page <= 1"
-                        class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white hover:text-black disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 transition-all"
+                        class="h-10 px-4 flex items-center justify-center rounded-xl text-xs font-bold uppercase transition-all duration-300 mr-2"
+                        :class="pagination.page <= 1 ? 'opacity-30 cursor-not-allowed text-zinc-600' : 'text-zinc-400 hover:bg-white/10 hover:text-white'"
                     >
-                        <ChevronLeftIcon class="w-4 h-4" />
+                        <ChevronLeftIcon class="w-4 h-4 mr-1" />
+                        Précédent
                     </button>
                     
-                    <div class="px-4 text-xs font-black text-zinc-500 uppercase">
-                        {{ pagination.page }} <span class="text-zinc-700 mx-1">/</span> {{ pagination.totalPages }}
+                    <!-- Page Numbers -->
+                    <div class="flex items-center gap-1 hidden md:flex">
+                        <template v-for="p in visiblePages" :key="p">
+                            <!-- Number Button -->
+                            <button 
+                                v-if="p !== '...'"
+                                @click="changePage(p as number)"
+                                class="w-10 h-10 flex items-center justify-center rounded-xl text-sm font-black transition-all duration-300"
+                                :class="p === pagination.page ? 'bg-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)]' : 'text-zinc-500 hover:bg-white/10 hover:text-white'"
+                            >
+                                {{ p }}
+                            </button>
+                            <!-- Ellipsis -->
+                            <span v-else class="w-8 h-10 flex items-center justify-center text-zinc-600 font-bold">
+                                ...
+                            </span>
+                        </template>
+                    </div>
+                    
+                    <!-- Short representation for mobile -->
+                    <div class="px-6 text-sm font-black flex items-center gap-2 md:hidden">
+                        <span class="text-white">{{ pagination.page }}</span> 
+                        <span class="text-zinc-700">/</span> 
+                        <span class="text-zinc-500">{{ pagination.totalPages }}</span>
                     </div>
 
+                    <!-- Next Button -->
                      <button 
                         @click="changePage(pagination.page + 1)" 
                         :disabled="pagination.page >= pagination.totalPages"
-                        class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white hover:text-black disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 transition-all"
+                        class="h-10 px-4 flex items-center justify-center rounded-xl text-xs font-bold uppercase transition-all duration-300 ml-2"
+                        :class="pagination.page >= pagination.totalPages ? 'opacity-30 cursor-not-allowed text-zinc-600' : 'text-zinc-400 hover:bg-white/10 hover:text-white'"
                     >
-                        <ChevronRightIcon class="w-4 h-4" />
+                        Suivant
+                        <ChevronRightIcon class="w-4 h-4 ml-1" />
                     </button>
+
                 </div>
             </div>
 
@@ -236,7 +266,8 @@ import {
     ChevronLeftIcon,
     ChevronRightIcon,
     FunnelIcon,
-    XMarkIcon
+    XMarkIcon,
+    ArrowDownTrayIcon
 } from '@heroicons/vue/24/solid';
 
 const router = useRouter();
@@ -250,6 +281,21 @@ const showMobileFilters = ref(false);
 const pagination = ref({ page: 1, totalPages: 1, totalResults: 0 });
 const totalEnrichedGames = ref(0);
 
+// Visible pages logic for the new pagination
+const visiblePages = computed(() => {
+    const total = pagination.value.totalPages;
+    const current = pagination.value.page;
+    if (total <= 7) {
+        return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+        return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+        return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+});
 // Watch for URL query changes (from global header search)
 watch(() => route.query.q, (newQ) => {
     if (newQ !== undefined) {
@@ -415,10 +461,22 @@ const fetchGames = async () => {
             params.set('q', searchQuery.value.trim());
         }
 
-        // Apply filters if engine API supports them, otherwise they are ignored safely
+        // Apply filters if engine API supports them
         if (filters.value.is_online !== null) params.set('is_online', filters.value.is_online.toString());
         if (filters.value.year) params.set('year', filters.value.year);
-        if (filters.value.sort !== 'relevance') params.set('sort', filters.value.sort);
+        
+        // Correct sorting parameter mapping for the new engine API
+        const sortMapping: Record<string, string> = {
+            'relevance': 'views,downloads_count', // Mixed fields for Django OrderingFilter
+            'popular': 'likes',
+            'newest': 'new',
+            'views': 'views',
+            'downloads': 'downloads_count'
+        };
+        const mappedSort = sortMapping[filters.value.sort] || filters.value.sort;
+        if (mappedSort) {
+            params.set('sort', mappedSort);
+        }
         
         // Ensure ONLY enriched games are requested
         params.set('enriched_only', 'true');
@@ -452,6 +510,7 @@ const fetchGames = async () => {
                     header: header,
                     views: g.views || 0,
                     likes: g.likes || 0,
+                    downloads: g.downloads_count || 0,
                     isOnline: isOnline,
                     releaseYear: releaseYear,
                     isNew: isNewGame(g.last_updated || (g.versions && g.versions.length > 0 ? g.versions[0].upload_date : null)),
