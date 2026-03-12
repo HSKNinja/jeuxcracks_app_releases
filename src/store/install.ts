@@ -52,7 +52,7 @@ export const useInstallStore = defineStore('install', {
   state: () => ({
     installs: [] as Install[],
   }),
-  persist: false,
+  persist: true,
   getters: {
     getNbInstalls: (state) => state.installs.length,
     getInstallsPending: (state) => state.installs.filter((dl: Install) => !dl.finished),
@@ -67,8 +67,27 @@ export const useInstallStore = defineStore('install', {
         : false,
   },
   actions: {
-    updateProgress(id: any, progress: number, message: string) {
-        const index = this.installs.findIndex((i) => i.id == id);
+    updateProgress(id: any, progress: number, message: string, title?: string) {
+        let index = this.installs.findIndex((i) => i.id == id);
+        
+        // Auto-Create if missing (Resurrect mechanism for Hot Reload survival)
+        if (index === -1 && title) {
+            console.log(`⚠️ Install non trouvé (Ghost HMR?). Recréation: ${title}`);
+            const newInstall = {
+                id: id,
+                title: title,
+                credit: '',
+                path: '',
+                finished: false,
+                canceled: false,
+                progress: progress,
+                message: message,
+            };
+            this.addInstall(newInstall);
+            this.fetchGameData(id); // Récupère la couverture/titre complet
+            index = this.installs.findIndex((i) => i.id == id);
+        }
+
         if (index !== -1) {
             this.installs[index].progress = progress;
             this.installs[index].message = message;

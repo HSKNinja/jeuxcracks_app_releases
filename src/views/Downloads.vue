@@ -106,49 +106,68 @@
         </div>
     </section>
 
-    <!-- 2. INSTALLATIONS -->
+    <!-- 2. INSTALLATIONS / EXTRACTIONS -->
     <section v-if="installStore.getInstallsPending.length > 0" class="space-y-6 animate-slide-up" :style="{ animationDelay: '200ms' }">
         <h3 class="text-xs font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
              <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-             Installations en cours
+             Extraction / Installation ({{ installStore.getInstallsPending.length }})
         </h3>
         
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 gap-6">
              <div v-for="install in installStore.getInstallsPending" :key="install.id" 
                   class="group relative overflow-hidden rounded-3xl bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-all duration-500 hover:shadow-2xl hover:shadow-green-500/10 backdrop-blur-md">
                   
                   <!-- Background Gradient -->
                   <div class="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-                  <div class="relative flex items-center p-5 md:p-6 gap-6">
-                      <!-- Icon (Left) -->
-                      <div class="w-20 h-20 rounded-2xl bg-zinc-900/80 flex items-center justify-center border border-white/5 shadow-inner flex-shrink-0 group-hover:scale-105 transition-transform duration-500">
-                          <Cog6ToothIcon class="w-10 h-10 text-green-500 animate-spin-slow" />
+                  <div class="relative flex h-full">
+                      <!-- Cover Art (Left) -->
+                      <div class="w-32 sm:w-40 flex-shrink-0 relative bg-gradient-to-br from-green-900/30 to-zinc-900">
+                          <img v-if="install.game?.header" :src="install.game.header" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                          <div class="absolute inset-0 bg-gradient-to-r from-transparent to-[#0a0a0a]/90"></div>
+                          <!-- Spinning Cog Overlay -->
+                          <div class="absolute inset-0 flex items-center justify-center">
+                              <div class="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center">
+                                  <Cog6ToothIcon class="w-6 h-6 text-green-400 animate-spin-slow" />
+                              </div>
+                          </div>
                       </div>
 
                       <!-- Content (Right) -->
-                      <div class="flex-1 min-w-0 flex flex-col justify-center space-y-3">
-                          
-                          <div class="flex justify-between items-start">
-                              <div>
+                      <div class="flex-1 p-5 md:p-6 flex flex-col justify-between min-w-0">
+                          <div class="flex justify-between items-start gap-4">
+                              <div class="flex-1 min-w-0">
                                   <div class="flex items-center gap-2 mb-1">
-                                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-green-500/10 text-green-400 border border-green-500/20 animate-pulse">Installation</span>
+                                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border"
+                                            :class="(install.progress || 0) > 0 ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'">
+                                          {{ (install.progress || 0) > 0 ? 'Installation' : 'En file d\'attente' }}
+                                      </span>
                                   </div>
-                                  <h4 class="text-lg md:text-xl font-black text-white truncate">{{ install.title }}</h4>
+                                  <h4 class="text-xl md:text-2xl font-black text-white leading-tight truncate group-hover:text-green-400 transition-colors duration-300" :title="install.title">{{ install.title }}</h4>
                               </div>
-                              <span class="text-xs font-mono text-zinc-400">{{ Math.round(install.progress) }}%</span>
+                              
+                              <span class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tabular-nums flex-shrink-0"
+                                    v-if="(install.progress || 0) > 0">
+                                  {{ Math.round(install.progress || 0) }}<span class="text-sm text-zinc-600 ml-0.5">%</span>
+                              </span>
                           </div>
-
-                          <!-- Progress Bar -->
-                          <div class="space-y-1.5">
-                              <div class="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider text-green-400/80">
-                                  <span class="truncate">{{ install.message || 'En cours...' }}</span>
+                          
+                          <!-- Progress -->
+                          <div class="space-y-2 mt-4">
+                              <div class="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider"
+                                   :class="(install.progress || 0) > 0 ? 'text-green-400/80' : 'text-zinc-500'">
+                                  <span class="truncate">{{ install.message || 'Validation en cours...' }}</span>
                               </div>
                               <div class="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                                  <div class="h-full bg-gradient-to-r from-green-600 to-green-400 relative overflow-hidden transition-all duration-300 shadow-[0_0_10px_rgba(74,222,128,0.4)]" :style="`width: ${install.progress}%`"></div>
+                                  <div 
+                                      class="h-full relative overflow-hidden transition-all duration-300 rounded-full"
+                                      :class="(install.progress || 0) > 0 
+                                          ? 'bg-gradient-to-r from-green-600 to-green-400 shadow-[0_0_10px_rgba(74,222,128,0.4)]' 
+                                          : 'bg-zinc-600/50 indeterminate-bar'"
+                                      :style="`width: ${(install.progress || 0) > 0 ? Math.round(install.progress) : 100}%`"
+                                  ></div>
                               </div>
                           </div>
-
                       </div>
                   </div>
              </div>
@@ -273,6 +292,10 @@ const cancelDownload = (dl: any) => {
             notify({ type: 'info', title: 'Téléchargement', text: 'Téléchargement annulé.' });
         }
     }
+
+    // Restore keyboard focus after native dialog steals it (Electron bug)
+    window.focus();
+    document.body.focus();
 };
 
 // HELPERS

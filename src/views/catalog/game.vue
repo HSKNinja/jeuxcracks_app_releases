@@ -385,7 +385,6 @@
 
     <!-- MODAL: MANAGE INSTALLED -->
     <ModalConfirm
-      v-if="isGameInstalled || installStore.installs[installStore.getIndexInstallByTitle(game?.title)]?.finished"
       :modal-id="modalSettings"
       title="Gestion"
       @confirm="vfm.close(modalSettings)"

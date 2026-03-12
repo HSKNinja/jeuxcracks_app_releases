@@ -101,7 +101,8 @@ try {
     'auth-success', 'auth-token-refresh', 'update-setting', 'check-for-update',
     'set-download-limit', 'set-upload-limit', 'pause-torrent', 'resume-torrent',
     'cancel-torrent', 'remove-torrent', 'stop-torrent', 'download',
-    'pause-download', 'stop-torrent-by-id', 'cancel-download', 'set-exe-file'
+    'pause-download', 'stop-torrent-by-id', 'cancel-download', 'set-exe-file',
+    'retry-extraction'
   ];
 
   const allowedInvokeChannels = [
@@ -111,14 +112,16 @@ try {
     'get-cache-sizes', 'open-temp-folder', 'clear-temp-files', 'clear-image-cache',
     'verify-library-integrity', 'get-all-user-stats', 'add-library', 'open-dialog',
     'get-files', 'get-game-stats', 'is-game-installed', 'get-game-install-info',
-    'get-total-user-stats', 'remove-library', 'set-default-library', 'rename-library'
+    'get-total-user-stats', 'remove-library', 'set-default-library', 'rename-library',
+    'scan-unextracted-games'
   ];
 
   const allowedOnChannels = [
     'main-process-message', 'enter-full-screen', 'game-removed', 'setting-changed',
     'checking-for-update', 'update-not-available', 'update-available',
     'update-downloaded', 'update-error', 'download-progress', 'download-done',
-    'torrent-error', 'verify-progress', 'verify-done'
+    'torrent-error', 'verify-progress', 'verify-done', 'install-start',
+    'install-progress', 'install-done', 'install-failed', 'error', 'find-many-exe'
   ];
 
   contextBridge.exposeInMainWorld('electronAPI', {

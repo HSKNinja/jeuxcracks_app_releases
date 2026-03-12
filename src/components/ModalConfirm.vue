@@ -2,6 +2,7 @@
 import { VueFinalModal } from 'vue-final-modal'
 
 defineProps<{
+  modalId?: string | number | symbol,
   title?: string,
   button?: string
 }>()
@@ -13,9 +14,12 @@ const emit = defineEmits<{
 
 <template>
   <VueFinalModal
+    :modal-id="modalId"
     class="flex justify-center items-center"
     content-class="relative flex flex-col w-full max-w-xl mx-4 p-8 bg-[#0f0f0f]/95 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] space-y-6 animate-fade-in-up"
     overlay-class="bg-black/80 backdrop-blur-sm transition-opacity duration-300"
+    :click-to-close="true"
+    :esc-to-close="true"
   >
     <!-- Header -->
     <div class="flex items-center justify-between pb-4 border-b border-white/5">

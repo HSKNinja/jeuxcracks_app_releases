@@ -1,6 +1,6 @@
 <template>
   <div class="fixed right-0 top-16 bottom-0 w-72 bg-[#111] border-l border-white/5 flex flex-col z-40 transform transition-transform duration-300 ease-in-out"
-       :class="socialStore.isPanelOpen ? 'translate-x-0' : 'translate-x-full'">
+       :class="[socialStore.isPanelOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none']">
     
     <!-- Header -->
     <div class="p-4 border-b border-white/5 flex items-center justify-between">

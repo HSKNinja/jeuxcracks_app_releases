@@ -26,8 +26,6 @@
       </main>
       
     </div>
-    
-    <ModalsContainer />
   </div>
 </template>
 

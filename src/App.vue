@@ -185,6 +185,7 @@ if (window.electronAPI) {
     downloadStore.removeDownloadByTitle(title);
   });
   window.electronAPI.on('install-start', (e: any, newInstall: any) => {
+    console.log('📦 Frontend: receive install-start:', newInstall?.title);
     if (newInstall.game && newInstall.game.header) {
       const getImageUrl = (imagePath: string | undefined): string => {
         if (!imagePath) return '/assets/placeholder.webp';
@@ -195,6 +196,7 @@ if (window.electronAPI) {
       newInstall.game.header = getImageUrl(newInstall.game.header);
     }
     installStore.addInstall(newInstall);
+    console.log('📦 Frontend: added to installStore, pending count:', installStore.getInstallsPending.length);
   });
   window.electronAPI.on('install-failed', (e: any, id: any) => {
     notify({ type: 'error', title: 'Installation', text: "L'installation a échoué" });
@@ -216,7 +218,7 @@ if (window.electronAPI) {
   });
   window.electronAPI.on('install-progress', (e: any, status: any) => {
     if (status && status.gameID) {
-        installStore.updateProgress(status.gameID, status.progress, status.message);
+        installStore.updateProgress(status.gameID, status.progress, status.message, status.gameTitle);
     }
   });
   window.electronAPI.on('error', (e: any, err: any) => {

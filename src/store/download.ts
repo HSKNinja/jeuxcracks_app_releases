@@ -92,7 +92,7 @@ export const useDownloadStore = defineStore('download', {
                  downloadType: download.downloadType || 'torrent',
                  paused: download.paused || false,
                  data: download,
-                 game: undefined, 
+                 game: download.gameData || undefined, // Important: pass the gameData so the UI can render cover/etc.
                  chartData: null
              };
              this.addDownload(newDl);

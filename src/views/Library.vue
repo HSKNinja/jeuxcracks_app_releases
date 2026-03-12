@@ -15,10 +15,10 @@
 
         <div>
              <button 
-                @click="scanGames" 
+                @click="openScannerModal" 
                 class="group flex items-center gap-3 px-6 py-3 bg-zinc-900/50 border border-zinc-700/50 backdrop-blur-md text-zinc-300 font-bold uppercase tracking-wider text-xs hover:bg-white hover:text-black hover:border-white transition-all rounded-full shadow-lg"
             >
-                 <ArrowPathIcon class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" :class="scanning ? 'animate-spin' : ''" />
+                 <ArrowPathIcon class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" :class="isScanningFolders ? 'animate-spin' : ''" />
                  <span>Scanner</span>
              </button>
         </div>
@@ -121,6 +121,65 @@
         <div v-if="menuOpenId" @click="closeMenu" class="fixed inset-0 z-[9998] bg-transparent"></div>
     </Teleport>
 
+    <!-- SCANNER MODAL -->
+    <Teleport to="body">
+        <div v-if="isScannerModalOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-12 overflow-hidden">
+            <!-- Backdrop -->
+            <div @click="closeScannerModal" class="absolute inset-0 bg-black/80 backdrop-blur-sm animate-fade-in text-white/10"></div>
+            
+            <!-- Modal Content -->
+            <div class="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slide-up max-h-full">
+                <!-- Header -->
+                <div class="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+                    <div>
+                        <h2 class="text-xl font-black text-white uppercase tracking-wider flex items-center gap-3">
+                            <FolderIcon class="w-6 h-6 text-indigo-500" />
+                            Dossiers Résiduels
+                        </h2>
+                        <p class="text-xs text-zinc-500 mt-1">Dossiers téléchargés mais non extraits/installés dans la bibliothèque.</p>
+                    </div>
+                    <button @click="closeScannerModal" class="p-2 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors">
+                        <XMarkIcon class="w-6 h-6" />
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gradient-to-b from-[#0a0a0a] to-zinc-900">
+                    <div v-if="isScanningFolders" class="flex flex-col items-center justify-center py-12">
+                        <ArrowPathIcon class="w-12 h-12 text-indigo-500 animate-spin mb-4" />
+                        <p class="text-zinc-400 font-medium animate-pulse">Analyse du dossier Downloads...</p>
+                    </div>
+
+                    <div v-else-if="unextractedGames.length === 0" class="flex flex-col items-center justify-center py-12 text-center text-zinc-500">
+                        <div class="w-16 h-16 rounded-full border border-dashed border-zinc-700 flex items-center justify-center mb-4">
+                            <CheckIcon class="w-8 h-8 text-green-500" />
+                        </div>
+                        <p class="font-bold text-white mb-1 tracking-wide">Aucun jeu en attente</p>
+                        <p class="text-sm">Votre dossier de téléchargement est propre.</p>
+                    </div>
+
+                    <div v-else class="space-y-3">
+                        <div v-for="game in unextractedGames" :key="game.path" class="group flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center border border-white/5 group-hover:bg-indigo-500/20 group-hover:border-indigo-500/50 transition-colors">
+                                    <ArchiveBoxIcon class="w-5 h-5 text-zinc-400 group-hover:text-indigo-400" />
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-bold text-white tracking-wide truncate">{{ game.title }}</h4>
+                                    <p class="text-[10px] sm:text-xs text-zinc-500 font-mono truncate w-48 sm:w-80" :title="game.path">{{ game.path }}</p>
+                                </div>
+                            </div>
+                            <button @click="retryExtraction(game.title, game.path)" class="px-4 py-2 bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-lg hover:bg-indigo-400 transition-all shadow-lg active:scale-95 flex items-center gap-2 flex-shrink-0">
+                                <RocketLaunchIcon class="w-4 h-4 hidden sm:block" />
+                                Installer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -129,7 +188,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMainStore } from '../store';
 import { useFetch } from '../utils/useFetch';
-import { PlayIcon, ArrowPathIcon, FolderIcon, EllipsisVerticalIcon, Squares2X2Icon, ListBulletIcon, RectangleGroupIcon, ClockIcon, RocketLaunchIcon } from '@heroicons/vue/24/solid';
+import { PlayIcon, ArrowPathIcon, FolderIcon, EllipsisVerticalIcon, Squares2X2Icon, ListBulletIcon, RectangleGroupIcon, ClockIcon, RocketLaunchIcon, XMarkIcon, CheckIcon, ArchiveBoxIcon } from '@heroicons/vue/24/solid';
 
 const router = useRouter();
 const store = useMainStore();
@@ -226,16 +285,55 @@ watch(() => store.library, (newLib) => {
 import { useNotification } from '@kyvg/vue3-notification';
 const { notify } = useNotification();
 
-const scanGames = async () => {
-    scanning.value = true;
-    try {
-        await store.forceLibrarySync(); 
-        notify({ type: 'success', title: 'Scan terminé', text: 'Bibliothèque mise à jour.' });
-    } catch (e) {
-        console.error("Scan error", e);
-        notify({ type: 'error', title: 'Erreur', text: 'Impossible de scanner la bibliothèque.' });
-    } finally {
-        scanning.value = false;
+// Scanner Modal logic
+const isScannerModalOpen = ref(false);
+const isScanningFolders = ref(false);
+const unextractedGames = ref<any[]>([]);
+
+const openScannerModal = async () => {
+    isScannerModalOpen.value = true;
+    isScanningFolders.value = true;
+    unextractedGames.value = [];
+    
+    // Auto-sync library first to ensure our baseline is correct
+    try { await store.forceLibrarySync(); } catch (e) {}
+
+    if ((window as any).electronAPI) {
+        try {
+            unextractedGames.value = await (window as any).electronAPI.invoke('scan-unextracted-games');
+            
+            // Filter out any games that are currently being actively downloaded or installed
+            const downloadStore = (await import('../store/download')).useDownloadStore();
+            unextractedGames.value = unextractedGames.value.filter(uGame => {
+                return !downloadStore.downloads.some(activeDl => 
+                    activeDl.title.toLowerCase() === uGame.title.toLowerCase()
+                );
+            });
+            
+        } catch(e) {
+            console.error('Scan unextracted error', e);
+            notify({ type: 'error', title: 'Erreur', text: 'Impossible d\'analyser le dossier.' });
+        }
+    }
+    isScanningFolders.value = false;
+};
+
+const closeScannerModal = () => {
+    isScannerModalOpen.value = false;
+};
+
+const retryExtraction = (gameTitle: string, folderPath: string) => {
+    if ((window as any).electronAPI) {
+        (window as any).electronAPI.send('retry-extraction', gameTitle, folderPath);
+        
+        // Remove from UI optimistically
+        unextractedGames.value = unextractedGames.value.filter(g => g.path !== folderPath);
+        
+        notify({ type: 'success', title: 'Installation lancée', text: `Reprise de ${gameTitle}.` });
+        
+        // Redirect to downloads page
+        closeScannerModal();
+        router.push('/downloads');
     }
 };
 
@@ -320,6 +418,13 @@ const openLocation = (game: any) => {
 };
 
 const uninstallGame = async (game: any) => {
+    // IMPORTANT: Close menu BEFORE the blocking confirm() dialog.
+    // Otherwise the z-[9998] backdrop stays active and blocks all UI.
+    closeMenu();
+
+    // Use nextTick to ensure the DOM has cleared the backdrop before showing confirm()
+    await new Promise(r => setTimeout(r, 50));
+
     if (confirm(`Voulez-vous vraiment désinstaller ${game.title || game.name} ?`)) {
         if ((window as any).electronAPI) {
              (window as any).electronAPI.send('remove-game', game.id);
@@ -329,7 +434,10 @@ const uninstallGame = async (game: any) => {
               notify({ type: 'success', title: 'Désinstallation', text: 'Jeu supprimé de la bibliothèque.' });
         }
     }
-    closeMenu();
+
+    // Restore keyboard focus after native dialog steals it (Electron bug)
+    window.focus();
+    document.body.focus();
 };
 
 const resolveImage = (item: any): string => {
@@ -404,6 +512,26 @@ onMounted(async () => {
         store.syncLibraryFromFile();
     }
     await fetchStats();
+
+    // Dependency Installation Listeners
+    if ((window as any).electronAPI) {
+        (window as any).electronAPI.on('dependency-install-start', (event: any, data: { name: string }) => {
+            notify({ 
+                type: 'warn', 
+                title: 'Installation Dépendance', 
+                text: `Préparation de ${data.name}... Veuillez accepter la demande d'administrateur si elle apparaît.`,
+                duration: 10000 
+            });
+        });
+
+        (window as any).electronAPI.on('dependency-install-end', (event: any, data: { name: string }) => {
+            notify({ 
+                type: 'success', 
+                title: 'Dépendance Installée', 
+                text: `${data.name} a été installé avec succès.` 
+            });
+        });
+    }
 });
 </script>
 

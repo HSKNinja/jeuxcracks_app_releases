@@ -1,6 +1,6 @@
 <template>
   <div class="fixed right-0 top-16 bottom-0 w-80 bg-[#111] border-l border-white/5 flex flex-col z-50 transform transition-transform duration-300 ease-in-out"
-       :class="notificationStore.isPanelOpen ? 'translate-x-0' : 'translate-x-full'">
+       :class="[notificationStore.isPanelOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none']">
     
     <!-- Header -->
     <div class="p-4 border-b border-white/5 flex items-center justify-between">
@@ -34,7 +34,7 @@
     <div v-else class="flex-1 overflow-y-auto custom-scrollbar">
       
       <!-- Empty State -->
-      <div v-if="notificationStore.notifications.length === 0" 
+      <div v-if="notificationStore.allNotifications.length === 0" 
            class="flex flex-col items-center justify-center h-full text-center px-4">
         <svg class="w-12 h-12 text-zinc-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
@@ -45,7 +45,7 @@
 
       <!-- Notification Items -->
       <div v-else class="divide-y divide-white/5">
-        <div v-for="notif in notificationStore.notifications" :key="notif.id"
+        <div v-for="notif in notificationStore.allNotifications" :key="notif.id"
              @click="notificationStore.handleNotificationClick(notif)"
              class="p-3 hover:bg-white/5 cursor-pointer transition-colors relative group"
              :class="{ 'bg-indigo-500/5': !notif.is_read }">

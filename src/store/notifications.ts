@@ -68,7 +68,7 @@ export const useNotificationStore = defineStore('notifications', {
         });
         if (res.ok) {
           const data = await res.json();
-          this.unreadCount = data.count;
+          this.unreadCount = data.count + this.localNotifications.filter(n => !n.is_read).length;
           // Merge with existing, prioritizing unread
           const existingIds = new Set(this.notifications.map(n => n.id));
           const newNotifs = data.notifications.filter((n: Notification) => !existingIds.has(n.id));
@@ -89,13 +89,35 @@ export const useNotificationStore = defineStore('notifications', {
         if (res.ok) {
           const data = await res.json();
           this.notifications = data.notifications || data;
-          this.unreadCount = this.notifications.filter(n => !n.is_read).length;
+          this.unreadCount = this.notifications.filter(n => !n.is_read).length + this.localNotifications.filter(n => !n.is_read).length;
         }
       } catch (e) { console.error('Failed to fetch all notifications', e); }
       finally { this.isLoading = false; }
     },
 
     async markAsRead(notificationIds?: number[]) {
+      // Sépare les notifications locales des notifications distantes
+      const localIds = (notificationIds || []).filter(id => id < 0);
+      const remoteIds = notificationIds ? notificationIds.filter(id => id > 0) : [];
+
+      // Marquer les locales comme lues (ou toutes si pas d'IDs)
+      if (!notificationIds) {
+        this.localNotifications.forEach(n => n.is_read = true);
+        this.saveLocalNotifications();
+      } else if (localIds.length > 0) {
+        localIds.forEach(id => {
+          const notif = this.localNotifications.find(n => n.id === id);
+          if (notif) notif.is_read = true;
+        });
+        this.saveLocalNotifications();
+      }
+
+      // Si c'est juste des locales ou qu'il n'y a plus de remote à traiter
+      if (notificationIds && remoteIds.length === 0) {
+         this.unreadCount = this.notifications.filter(n => !n.is_read).length + this.localNotifications.filter(n => !n.is_read).length;
+         return;
+      }
+
       const mainStore = useMainStore();
       if (!mainStore.tokens?.access) return;
 
@@ -106,25 +128,34 @@ export const useNotificationStore = defineStore('notifications', {
             'Authorization': `Bearer ${mainStore.tokens.access}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ notification_ids: notificationIds || [] })
+          body: JSON.stringify({ notification_ids: notificationIds ? remoteIds : [] })
         });
         if (res.ok) {
           // Update local state
-          if (notificationIds && notificationIds.length > 0) {
-            notificationIds.forEach(id => {
+          if (notificationIds && remoteIds.length > 0) {
+            remoteIds.forEach(id => {
               const notif = this.notifications.find(n => n.id === id);
               if (notif) notif.is_read = true;
             });
-          } else {
+          } else if (!notificationIds) {
             // Mark all as read
             this.notifications.forEach(n => n.is_read = true);
           }
-          this.unreadCount = this.notifications.filter(n => !n.is_read).length;
+          this.unreadCount = this.notifications.filter(n => !n.is_read).length + this.localNotifications.filter(n => !n.is_read).length;
         }
       } catch (e) { console.error('Failed to mark notifications as read', e); }
     },
 
     async deleteNotification(id: number) {
+      if (id < 0) {
+        // Local notification
+        const wasUnread = this.localNotifications.find(n => n.id === id)?.is_read === false;
+        this.localNotifications = this.localNotifications.filter(n => n.id !== id);
+        this.saveLocalNotifications();
+        if (wasUnread) this.unreadCount--;
+        return;
+      }
+
       const mainStore = useMainStore();
       if (!mainStore.tokens?.access) return;
 

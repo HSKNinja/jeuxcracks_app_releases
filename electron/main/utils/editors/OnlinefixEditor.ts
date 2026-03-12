@@ -1,126 +1,169 @@
 import * as fs from 'fs';
-import { join } from 'path';
+import { join, basename } from 'path';
 import { installService } from '../../services/installService';
-import { Worker } from 'worker_threads';
-import { BrowserWindow } from 'electron';
-
-import { rootPath } from 'electron-root-path';
+import { extractionService } from '../../services/ExtractionService';
 import { getMainWindow } from '../..';
-import { app } from 'electron';
-import * as unrar from 'node-unrar-js';
-import { dirname } from 'path';
+
+// ==========================================
+// Types
+// ==========================================
+
+type ArchiveType = 'rar-single' | 'rar-multipart' | 'split-zip' | 'zip-single' | '7z-single' | '7z-multipart';
+
+interface ArchiveInfo {
+  fullPath: string;
+  directory: string;
+  fileName: string;
+  relativePath: string;
+  type: ArchiveType;
+  isFixRepair: boolean;
+}
+
+// ==========================================
+// OnlineFixEditor
+// ==========================================
 
 export class OnlineFixEditor implements EditorInterface {
-  verifyStructure(filePath: string): boolean {
-    console.log('🔍 Vérification de la structure OnlineFix pour:', filePath);
-    
-    // Structure OnlineFix :
-    // gamePath/
-    // ├── Fix Repair/
-    // │   ├── NameOfTheGame_Fix_Repair_Steam_Generic.rar
-    // ├── NameOfTheGame-OFME.rar (ou .part1.rar, .part2.rar, etc.)
 
-    const gamePath = join(filePath, '..');
-    const fixRepairPath = join(gamePath, 'Fix Repair');
-    
-    console.log('📁 Chemin du jeu:', gamePath);
-    console.log('🔧 Chemin Fix Repair:', fixRepairPath);
-    
-    // Vérifier si le dossier Fix Repair existe
-    if (!fs.existsSync(fixRepairPath)) {
-      console.log('❌ Dossier Fix Repair non trouvé');
-      return false;
-    }
-
-    // Vérifier s'il y a des fichiers de réparation
-    const fixFiles = fs.readdirSync(fixRepairPath);
-    console.log('🔧 Fichiers de réparation trouvés:', fixFiles);
-    
-    const hasFixFile = fixFiles.some((file) => file.endsWith('_Fix_Repair_Steam_Generic.rar'));
-    if (!hasFixFile) {
-      console.log('❌ Aucun fichier de réparation trouvé');
-      return false;
-    }
-
-    // Vérifier s'il y a des fichiers de jeu OnlineFix
-    const gameFiles = fs.readdirSync(gamePath);
-    console.log('🎮 Fichiers dans le dossier du jeu:', gameFiles);
-    
-    const gameFilePattern = /.*-OFME(\.rar|\.part\d+\.rar)$/;
-    const hasGameFile = gameFiles.some((file) => gameFilePattern.test(file));
-    
-    if (!hasGameFile) {
-      console.log('❌ Aucun fichier de jeu OnlineFix trouvé');
-      return false;
-    }
-
-    console.log('✅ Structure OnlineFix vérifiée avec succès');
-    return true;
+  /**
+   * Vérifie si le torrent contient une structure OnlineFix.
+   */
+  verifyStructure(torrentPath: string): boolean {
+    console.log('🔍 Vérification structure OnlineFix dans:', torrentPath);
+    const archives = this.findArchives(torrentPath);
+    const found = archives.length > 0;
+    console.log(found ? `✅ ${archives.length} archive(s) OnlineFix trouvée(s)` : '❌ Aucune archive OnlineFix');
+    return found;
   }
 
-  public installGame = async (filePath: string, gameData: Game): Promise<void> => {
+  /**
+   * Point d'entrée principal. Reçoit le chemin BRUT du torrent.
+   */
+  public installGame = async (torrentPath: string, gameData: Game): Promise<void> => {
     console.log('🔧 Installation OnlineFix:', gameData.title);
-    console.log('📦 Source du jeu:', gameData.source);
+    console.log('📂 Chemin torrent:', torrentPath);
     
-    const gamePath = join(filePath, '..');
-    const fixRepairPath = join(gamePath, 'Fix Repair');
-    
+    const win = getMainWindow();
+
     try {
-      // 1. Extraire d'abord les fichiers de réparation
-      const fixFiles = fs.readdirSync(fixRepairPath);
-      const fixFile = fixFiles.find((file) => file.endsWith('_Fix_Repair_Steam_Generic.rar'));
-
-      if (fixFile) {
-        console.log('🔧 Extraction du fichier de réparation:', fixFile);
-        await this.extractFile(fixRepairPath, fixFile, gameData, true);
+      // 1. Scanner pour trouver les archives
+      const archives = this.findArchives(torrentPath);
+      
+      if (archives.length === 0) {
+        throw new Error(`Aucune archive trouvée dans ${torrentPath}`);
       }
 
-      // 2. Extraire ensuite les fichiers de jeu
-    const gameFiles = fs.readdirSync(gamePath);
-    const gameFilePattern = /.*-OFME(\.rar|\.part\d+\.rar)$/;
-    const gameParts = gameFiles.filter((file) => gameFilePattern.test(file)).sort();
+      console.log('📦 Archives trouvées:');
+      archives.forEach(a => console.log(`   ${a.isFixRepair ? '🔧' : '🎮'} ${a.relativePath} (${a.type})`));
 
-    if (gameParts.length > 0) {
-        console.log('🎮 Extraction des fichiers de jeu:', gameParts);
-        
-      if (gameParts.length === 1) {
-          // Fichier unique
-          await this.extractFile(gamePath, gameParts[0], gameData, false);
-      } else {
-          // Fichiers multipart
-          await this.extractMultipartFiles(gameParts.map((part) => join(gamePath, part)), gamePath, gameData);
-        }
+      // 2. Séparer Fix Repair et archives de jeu
+      const fixArchives = archives.filter(a => a.isFixRepair);
+      const gameArchives = archives.filter(a => !a.isFixRepair);
+
+      // 3. Extraire Fix Repair d'abord
+      for (const fix of fixArchives) {
+        console.log('🔧 Extraction Fix Repair:', fix.fileName);
+        await extractionService.extract({
+          archivePath: fix.fullPath,
+          outputDir: fix.directory,
+          gameId: gameData?.id,
+          gameTitle: `${gameData.title} (Fix)`,
+          password: 'online-fix.me',
+          deleteAfter: true,
+        });
       }
+
+      // 4. Extraire le jeu
+      if (gameArchives.length === 0) {
+        throw new Error('Aucune archive de jeu trouvée (seulement Fix Repair)');
+      }
+
+      const firstArchive = this.findFirstPart(gameArchives);
+      console.log('📦 Extraction du jeu:', firstArchive.fileName);
+      
+      const extractedPath = await extractionService.extract({
+        archivePath: firstArchive.fullPath,
+        outputDir: firstArchive.directory,
+        gameId: gameData?.id,
+        gameTitle: gameData.title,
+        password: 'online-fix.me',
+        deleteAfter: true,
+      });
+
+      // 5. Enregistrer le jeu
+      installService.installFinished(extractedPath, gameData);
+
     } catch (error) {
-      console.error('❌ Erreur lors de l\'installation OnlineFix:', error);
-      const win = getMainWindow();
-      win?.webContents.send('error', `Erreur lors de l'installation OnlineFix: ${error.message}`);
+      console.error('❌ Erreur installation OnlineFix:', error);
+      win?.webContents.send('error', `Erreur installation: ${error.message}`);
+      win?.webContents.send('install-failed', gameData?.id);
     }
   };
 
-  private extractFile = async (filePath: string, fileName: string, gameData: Game, isFixFile: boolean = false): Promise<void> => {
-    console.log(`📦 Extraction: ${fileName} (Fix: ${isFixFile})`);
-    
-    // Utiliser le service d'installation qui gère le worker thread
-    const finalPath = await installService.runRAR(filePath, fileName, gameData, 'online-fix.me');
-    
-    // Si c'est la dernière étape (jeu principal), ajouter à la bibliothèque
-    if (!isFixFile) {
-        installService.installFinished(finalPath as string, gameData);
-    }
-  };
+  // ==========================================
+  // Archive Scanning
+  // ==========================================
 
-  private extractMultipartFiles = async (filePaths: string[], destination: string, gameData: Game): Promise<void> => {
-    console.log('📦 Extraction multipart:', filePaths.length, 'fichiers');
+  private findArchives(rootPath: string, maxDepth = 4): ArchiveInfo[] {
+    const results: ArchiveInfo[] = [];
     
-    // Pour les fichiers multipart, on extrait seulement la première partie
-    // car node-unrar-js peut avoir des problèmes avec les gros fichiers
-    if (filePaths.length > 0) {
-      const firstPart = filePaths[0];
-      const fileName = firstPart.split('/').pop() || firstPart.split('\\').pop();
-      await this.extractFile(destination, fileName, gameData, false);
-    }
-  };
+    const scan = (dir: string, depth: number) => {
+      if (depth > maxDepth || !fs.existsSync(dir)) return;
+      
+      try {
+        for (const item of fs.readdirSync(dir)) {
+          const fullPath = join(dir, item);
+          try {
+            const stat = fs.statSync(fullPath);
+            if (stat.isDirectory()) {
+              scan(fullPath, depth + 1);
+            } else {
+              const type = this.getArchiveType(item);
+              if (type) {
+                results.push({
+                  fullPath,
+                  directory: dir,
+                  fileName: item,
+                  relativePath: fullPath.replace(rootPath, '').replace(/^[\\/]/, ''),
+                  type,
+                  isFixRepair: dir.includes('Fix Repair') || item.includes('Fix_Repair'),
+                });
+              }
+            }
+          } catch (e) { /* skip inaccessible */ }
+        }
+      } catch (e) { /* skip inaccessible dir */ }
+    };
 
+    scan(rootPath, 0);
+    return results;
+  }
 
+  private getArchiveType(fileName: string): ArchiveType | null {
+    if (/\.part\d+\.rar$/i.test(fileName)) return 'rar-multipart';
+    if (/\.rar$/i.test(fileName)) return 'rar-single';
+    if (/\.zip\.\d{3}$/i.test(fileName)) return 'split-zip';
+    if (/\.zip$/i.test(fileName)) return 'zip-single';
+    if (/\.7z\.\d{3}$/i.test(fileName)) return '7z-multipart';
+    if (/\.7z$/i.test(fileName)) return '7z-single';
+    return null;
+  }
+
+  private findFirstPart(archives: ArchiveInfo[]): ArchiveInfo {
+    const multipart = archives.find(a => 
+      a.type === 'rar-multipart' && /\.part0?1\.rar$/i.test(a.fileName)
+    ) || archives.find(a => 
+      a.type === 'split-zip' && /\.zip\.001$/i.test(a.fileName)
+    ) || archives.find(a => 
+      a.type === '7z-multipart' && /\.7z\.001$/i.test(a.fileName)
+    );
+
+    if (multipart) return multipart;
+
+    const singleArchive = archives.find(a => 
+      a.type === 'rar-single' || a.type === 'zip-single' || a.type === '7z-single'
+    );
+    
+    return singleArchive || archives[0];
+  }
 }

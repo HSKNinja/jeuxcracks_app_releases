@@ -1,16 +1,19 @@
 <template>
-  <header class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-30 select-none transition-all duration-300" style="-webkit-app-region: drag">
+  <header class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-30 select-none transition-all duration-300 relative">
     
-    <!-- Title / Breadcrumbs (Hidden on very small screens to make room for generic search if focused, or just truncate) -->
-    <div class="flex items-center gap-4 min-w-0 pr-4">
+    <!-- Drag Zone: ONLY the empty space behind the title, NOT covering inputs -->
+    <div class="absolute inset-0 z-0" style="-webkit-app-region: drag"></div>
+
+    <!-- Title / Breadcrumbs -->
+    <div class="flex items-center gap-4 min-w-0 pr-4 relative z-10 pointer-events-none">
        <h2 class="text-sm font-bold text-zinc-100 truncate">{{ pageTitle || 'JeuxCracks' }}</h2>
     </div>
 
-    <!-- Right Controls -->
-    <div class="flex items-center gap-4 pr-[135px] flex-shrink-0" style="-webkit-app-region: no-drag">
+    <!-- Right Controls (Everything here is NO-DRAG and interactive) -->
+    <div class="flex items-center gap-4 pr-[135px] flex-shrink-0 relative z-10" style="-webkit-app-region: no-drag">
        <!-- Search -->
        <div class="relative group w-full md:w-auto">
-         <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
+         <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-indigo-400 transition-colors pointer-events-none" />
          <input 
            v-model="searchQuery"
            @keyup.enter="handleSearch"
@@ -43,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { MagnifyingGlassIcon, ChevronLeftIcon, UsersIcon, BellIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, UsersIcon, BellIcon } from '@heroicons/vue/24/outline';
 import { useRouter, useRoute } from 'vue-router';
 import { computed, ref, watch, onMounted } from 'vue';
 import { useSocialStore } from '../../store/social';
@@ -56,12 +59,12 @@ const notificationStore = useNotificationStore();
 
 const searchQuery = ref('');
 
-// Synchronize global header search with URL
 onMounted(() => {
     if (route.query.q) {
         searchQuery.value = route.query.q as string;
     }
 });
+
 watch(() => route.query.q, (newQ) => {
     if (newQ !== searchQuery.value) {
         searchQuery.value = (newQ as string) || '';
@@ -72,13 +75,11 @@ const handleSearch = () => {
   if (searchQuery.value.trim()) {
     router.push(`/catalogue?q=${encodeURIComponent(searchQuery.value)}`);
   } else {
-    // If empty search submitted, maybe clear and browse all
     router.push(`/catalogue`);
   }
 };
 
 const pageTitle = computed(() => {
-    // Simple mapping or route logic
     if (route.path === '/') return 'Accueil';
     if (route.path.startsWith('/catalogue')) return 'Catalogue';
     if (route.path.startsWith('/library')) return 'Bibliothèque';

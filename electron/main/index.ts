@@ -4,7 +4,7 @@ import { release } from 'os';
 import { join, dirname } from 'path';
 import { rootPath } from 'electron-root-path';
 import * as fs from 'fs/promises';
-import { client, torrentService } from './services/torrentService';
+import { torrentService } from './services/torrentService';
 import { libraryService } from './services/libraryService';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
@@ -292,7 +292,7 @@ ipcMain.on('maximize-window', () => {
 });
 ipcMain.on('close-window', () => {
   console.log('close');
-  client.destroy();
+  torrentService.destroy();
   app.quit();
 });
 ipcMain.handle('open-navigator', async (e, url) => {

@@ -14,60 +14,61 @@
         </div>
     </div>
 
-    <!-- 1. HERO SLIDER SECTION -->
-    <section class="relative w-full h-[75vh] min-h-[550px] overflow-hidden">
-        <transition-group name="fade" tag="div" class="h-full w-full relative">
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 1. HERO SLIDER                             -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="relative w-full h-[55vh] min-h-[420px] overflow-hidden">
+        <transition-group name="hero-fade" tag="div" class="h-full w-full relative">
             <div 
                 v-if="trendingGames[activeIndex]"
                 :key="trendingGames[activeIndex].id"
                 class="absolute inset-0 w-full h-full"
             >
-                <!-- Background Layer -->
+                <!-- BG Image -->
                 <div class="absolute inset-0 bg-black">
                     <img 
                         :src="trendingGames[activeIndex].header" 
-                        class="w-full h-full object-cover animate-pan-zoom opacity-60" 
+                        class="w-full h-full object-cover animate-pan-zoom opacity-50" 
                     />
-                    <div class="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/30 to-transparent"></div>
                 </div>
 
-                <!-- Content Area -->
-                <div class="absolute inset-0 z-20 px-8 md:px-16 xl:px-24 flex flex-col justify-center items-start h-full max-w-[1920px] mx-auto">
-                    <div class="w-full max-w-4xl space-y-6">
-                        <!-- Tags -->
-                        <div class="flex items-center gap-4 animate-slide-up" style="animation-delay: 100ms">
-                             <div class="flex items-center gap-2 px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full">
+                <!-- Content -->
+                <div class="absolute inset-0 z-20 px-8 md:px-12 flex items-end pb-28 max-w-[1920px] mx-auto">
+                    <div class="w-full max-w-3xl space-y-5">
+                        <!-- Badge -->
+                        <div class="flex items-center gap-3 animate-slide-up" style="animation-delay: 50ms">
+                             <div class="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full">
                                 <FireIcon class="w-3 h-3 text-indigo-400" />
-                                <span class="text-[10px] font-black uppercase tracking-widest text-indigo-300">Tendance</span>
+                                <span class="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-300">Tendance</span>
                              </div>
-                             <span class="text-white/40 text-[10px] font-bold uppercase tracking-widest">{{ trendingGames[activeIndex].categories?.[0]?.name || 'Jeu' }}</span>
+                             <span class="text-white/30 text-[9px] font-bold uppercase tracking-widest">{{ trendingGames[activeIndex].categories?.[0]?.name || trendingGames[activeIndex].categories?.[0] || '' }}</span>
                         </div>
 
                         <!-- Title -->
-                        <h1 class="text-5xl md:text-7xl xl:text-8xl font-black text-white leading-none tracking-tighter uppercase animate-reveal-text">
+                        <h1 class="text-4xl md:text-6xl xl:text-7xl font-black text-white leading-[0.9] tracking-tighter uppercase animate-reveal-text line-clamp-2">
                             {{ trendingGames[activeIndex].title }}
                         </h1>
                         
                         <!-- Desc -->
-                        <p class="max-w-xl text-zinc-400 text-sm md:text-base font-medium leading-relaxed line-clamp-2 animate-slide-up" style="animation-delay: 300ms">
+                        <p class="max-w-lg text-zinc-500 text-sm font-medium leading-relaxed line-clamp-2 animate-slide-up" style="animation-delay: 200ms">
                             {{ trendingGames[activeIndex].descriptionShort }}
                         </p>
 
                         <!-- Actions -->
-                        <div class="flex items-center gap-4 pt-4 animate-slide-up" style="animation-delay: 400ms">
+                        <div class="flex items-center gap-3 animate-slide-up" style="animation-delay: 300ms">
                             <button 
                                 @click="goToPage(`/catalogue/${trendingGames[activeIndex].slug || trendingGames[activeIndex].id}`)"
-                                class="group relative px-8 py-4 bg-white text-black font-black uppercase tracking-widest text-xs flex items-center gap-3 overflow-hidden transition-all hover:pr-12"
+                                class="group px-7 py-3.5 bg-white text-black font-black uppercase tracking-widest text-[11px] flex items-center gap-2.5 rounded-xl hover:bg-indigo-500 hover:text-white transition-all duration-300 shadow-xl"
                             >
                                 <PlayIcon class="w-4 h-4" />
-                                <span>Jouer</span>
-                                <ArrowLongRightIcon class="absolute right-4 w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0" />
+                                <span>Découvrir</span>
                             </button>
                             
                             <button 
                                 @click="nextSlide"
-                                class="p-4 border border-white/10 hover:bg-white/5 text-white transition-all rounded-full group"
+                                class="p-3.5 border border-white/10 hover:bg-white/10 text-white transition-all rounded-xl group backdrop-blur-sm"
                             >
                                 <ArrowLongRightIcon class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </button>
@@ -77,210 +78,241 @@
             </div>
         </transition-group>
 
-        <!-- Slider Dots -->
-        <div class="absolute bottom-40 right-8 md:right-16 xl:right-24 z-30 flex flex-col gap-3">
+        <!-- Slide Progress Dots (Vertical, Right) -->
+        <div class="absolute bottom-8 right-8 md:right-12 z-30 flex flex-col gap-2">
              <button 
                 v-for="(g, idx) in trendingGames" 
                 :key="g.id"
                 @click="goToSlide(idx)"
-                class="group p-2 flex items-center gap-4 justify-end cursor-pointer"
+                class="group flex items-center gap-3 justify-end cursor-pointer"
             >   
-                <span :class="activeIndex === idx ? 'text-white' : 'text-zinc-600'" class="text-[10px] font-black tracking-widest transition-colors opacity-0 group-hover:opacity-100 uppercase">
+                <span :class="activeIndex === idx ? 'text-white/60' : 'text-transparent'" class="text-[9px] font-bold tracking-widest transition-all group-hover:text-white/40 uppercase truncate max-w-[120px]">
                     {{ g.title }}
                 </span>
                 <div 
-                    class="w-8 h-[2px] transition-all duration-500"
-                    :class="activeIndex === idx ? 'bg-indigo-500 w-12' : 'bg-white/10 group-hover:bg-white/30'"
+                    class="h-[3px] transition-all duration-500 rounded-full"
+                    :class="activeIndex === idx ? 'bg-indigo-500 w-10' : 'bg-white/15 w-5 group-hover:bg-white/30'"
                 ></div>
              </button>
         </div>
+
+        <!-- Slide Counter -->
+        <div class="absolute bottom-8 left-8 md:left-12 z-30 flex items-baseline gap-1 select-none">
+            <span class="text-2xl font-black text-white tabular-nums">0{{ activeIndex + 1 }}</span>
+            <span class="text-sm text-zinc-700 font-bold">/</span>
+            <span class="text-sm text-zinc-600 font-bold tabular-nums">0{{ trendingGames.length }}</span>
+        </div>
     </section>
 
-    <!-- 2. MAIN CONTENT WRAPPER -->
-    <div class="relative z-30 max-w-[1920px] mx-auto px-8 md:px-16 xl:px-24 -mt-20 pb-24 space-y-24">
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 2. MAIN CONTENT                             -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="relative z-30 max-w-[1920px] mx-auto px-8 md:px-12 pb-16 space-y-16">
         
-        <!-- Quick Stats / Badges -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slide-up" style="animation-delay: 500ms">
-            <!-- 1. Nombre de Jeux -->
-            <div class="p-6 rounded-2xl bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/5 flex flex-col gap-1 hover:border-indigo-500/20 transition-all group">
-                <span class="text-[10px] font-black uppercase tracking-widest text-zinc-600 group-hover:text-indigo-400 transition-colors">Nombre de Jeux</span>
-                <span class="text-xl font-bold text-white">{{ formatNumber(totalGames) }}</span>
+        <!-- ── Stats Strip ── -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 -mt-14">
+            <!-- Games Count -->
+            <div class="p-5 rounded-2xl bg-[#0c0c0c]/90 backdrop-blur-xl border border-white/[0.04] flex items-center gap-4 hover:border-white/10 transition-all group">
+                <div class="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-colors">
+                    <RectangleStackIcon class="w-4 h-4 text-indigo-400" />
+                </div>
+                <div>
+                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-600 block">Catalogue</span>
+                    <span class="text-lg font-black text-white tracking-tight">{{ formatNumber(totalGames) }}</span>
+                </div>
             </div>
 
-            <!-- 2. Nouveautés -->
-            <div class="p-6 rounded-2xl bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/5 flex flex-col gap-1 hover:border-indigo-500/20 transition-all group">
-                <span class="text-[10px] font-black uppercase tracking-widest text-zinc-600 group-hover:text-indigo-400 transition-colors">Nouveautés</span>
-                <span class="text-xl font-bold text-white">12 Ajouts</span>
+            <!-- New Games -->
+            <div class="p-5 rounded-2xl bg-[#0c0c0c]/90 backdrop-blur-xl border border-white/[0.04] flex items-center gap-4 hover:border-white/10 transition-all group">
+                <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                    <BoltIcon class="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-600 block">Nouveautés</span>
+                    <span class="text-lg font-black text-white tracking-tight">{{ newGames.length }} Ajouts</span>
+                </div>
             </div>
 
-            <!-- 3. Premium -->
-            <div class="p-6 rounded-2xl bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/5 flex flex-col gap-1 hover:border-indigo-500/20 transition-all group">
-                <span class="text-[10px] font-black uppercase tracking-widest text-zinc-600 group-hover:text-indigo-400 transition-colors">Version App</span>
-                <span class="text-xl font-bold text-white">v1.1.2</span>
+            <!-- Version -->
+            <div class="p-5 rounded-2xl bg-[#0c0c0c]/90 backdrop-blur-xl border border-white/[0.04] flex items-center gap-4 hover:border-white/10 transition-all group">
+                <div class="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 group-hover:bg-purple-500/20 transition-colors">
+                    <CpuChipIcon class="w-4 h-4 text-purple-400" />
+                </div>
+                <div>
+                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-600 block">Version</span>
+                    <span class="text-lg font-black text-white tracking-tight">v1.1.3</span>
+                </div>
             </div>
 
-            <!-- 4. Soutenez-nous (Goal) -->
-            <div class="p-6 rounded-2xl bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/5 flex flex-col gap-2 hover:border-emerald-500/20 transition-all group cursor-pointer" @click="goToPage('/premium')">
-                <div class="flex flex-col gap-0.5">
-                    <span class="text-[10px] font-black uppercase tracking-widest text-zinc-600 group-hover:text-emerald-400 transition-colors">Objectif Global</span>
-                    <div class="flex items-baseline justify-between">
-                        <span class="text-lg font-bold text-white">{{ Math.round(revenue.total || 0) }}€ <span class="text-[10px] text-zinc-500">/ {{ monthlyGoal }}€</span></span>
-                        <span class="text-[8px] font-black text-emerald-500/50 uppercase tracking-tighter">{{ Math.round(revenueProgress) }}%</span>
+            <!-- Revenue Goal -->
+            <div class="p-5 rounded-2xl bg-[#0c0c0c]/90 backdrop-blur-xl border border-white/[0.04] hover:border-emerald-500/20 transition-all group cursor-pointer" @click="goToPage('/premium')">
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                        <HeartIcon class="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-600 block">Objectif</span>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-lg font-black text-white tracking-tight">{{ Math.round(revenue.total || 0) }}€</span>
+                            <span class="text-[10px] text-zinc-600 font-bold">/ {{ monthlyGoal }}€</span>
+                        </div>
                     </div>
                 </div>
-                <!-- Mini Sleek Progress Bar -->
                 <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all duration-1000" :style="{ width: revenueProgress + '%' }"></div>
+                    <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(16,185,129,0.4)]" :style="{ width: revenueProgress + '%' }"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Section: Actualités -->
-        <section class="space-y-8">
-            <div class="flex items-end justify-between">
-                <div class="space-y-2">
-                    <div class="flex items-center gap-2 text-indigo-400">
-                        <NewspaperIcon class="w-5 h-5" />
-                        <span class="text-[10px] font-black uppercase tracking-[0.3em]">Actualités</span>
-                    </div>
-                    <h2 class="text-4xl font-black text-white uppercase tracking-tighter">Patch Notes & Infos</h2>
+        <!-- ── News Section (Bento Grid) ── -->
+        <section class="space-y-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-1 h-6 bg-indigo-500 rounded-full"></div>
+                    <h2 class="text-2xl font-black text-white uppercase tracking-tight">Actualités</h2>
                 </div>
-                <router-link to="/news" class="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors pb-2">Tout voir</router-link>
+                <router-link to="/news" class="text-[10px] font-black uppercase tracking-widest text-zinc-600 hover:text-white transition-colors flex items-center gap-1.5">
+                    Tout voir
+                    <ArrowLongRightIcon class="w-4 h-4" />
+                </router-link>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Dynamic News Cards -->
+            <!-- Bento Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <!-- Featured Article (Main) -->
                 <div 
-                    v-for="article in newsArticles" 
-                    :key="article.id"
-                    @click="article.link.startsWith('/') ? goToPage(article.link) : window.open(article.link, '_blank')"
-                    class="group relative aspect-[16/10] rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 cursor-pointer"
+                    v-if="newsArticles[0]"
+                    @click="newsArticles[0].link.startsWith('/') ? goToPage(newsArticles[0].link) : null"
+                    class="lg:col-span-2 group relative rounded-2xl overflow-hidden cursor-pointer min-h-[280px] bg-zinc-900"
                 >
-                    <!-- Background Image -->
-                    <img :src="article.image" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-40 group-hover:opacity-60" />
-                    
-                    <!-- Gradient Overlay -->
+                    <img :src="newsArticles[0].image" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-30 group-hover:opacity-50" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+                    <div class="absolute inset-0 p-8 flex flex-col justify-end z-10">
+                        <span class="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-2">{{ newsArticles[0].category }}</span>
+                        <h3 class="text-2xl md:text-3xl font-black text-white uppercase leading-tight mb-2 group-hover:text-indigo-300 transition-colors line-clamp-2">{{ newsArticles[0].title }}</h3>
+                        <p class="text-sm text-zinc-400 line-clamp-2 max-w-xl">{{ newsArticles[0].description }}</p>
+                        <div class="flex items-center gap-2 mt-4 text-[10px] font-bold text-zinc-600">
+                            <span>{{ newsArticles[0].date }}</span>
+                            <span class="w-1 h-1 rounded-full bg-zinc-700"></span>
+                            <span class="text-indigo-500 group-hover:text-indigo-400 transition-colors">Lire l'article →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stacked Secondary Articles -->
+                <div class="flex flex-col gap-4">
                     <div 
-                        class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        :class="[
-                            article.accent_color === 'indigo' ? 'bg-gradient-to-br from-indigo-600/20 to-purple-600/20' : '',
-                            article.accent_color === 'amber' ? 'bg-gradient-to-br from-amber-600/20 to-orange-600/20' : '',
-                            article.accent_color === 'emerald' ? 'bg-gradient-to-br from-emerald-600/20 to-teal-600/20' : '',
-                            !['indigo', 'amber', 'emerald'].includes(article.accent_color) ? 'bg-gradient-to-br from-zinc-600/20 to-zinc-900/20' : ''
-                        ]"
-                    ></div>
-                    
-                    <div class="absolute inset-0 p-8 flex flex-col justify-end gap-3 z-10 bg-gradient-to-t from-black via-black/40 to-transparent">
-                        <span 
-                            class="text-[10px] font-black uppercase tracking-widest"
-                            :class="[
-                                article.accent_color === 'indigo' ? 'text-indigo-400' : '',
-                                article.accent_color === 'amber' ? 'text-amber-500' : '',
-                                article.accent_color === 'emerald' ? 'text-emerald-500' : '',
-                                !['indigo', 'amber', 'emerald'].includes(article.accent_color) ? 'text-zinc-400' : ''
-                            ]"
-                        >
-                            {{ article.category }}
-                        </span>
-                        <h3 class="text-xl font-black text-white uppercase leading-tight group-hover:translate-x-2 transition-transform">{{ article.title }}</h3>
-                        <p class="text-xs text-zinc-400 line-clamp-2">{{ article.description }}</p>
+                        v-for="article in newsArticles.slice(1, 3)" 
+                        :key="article.id"
+                        @click="article.link.startsWith('/') ? goToPage(article.link) : null"
+                        class="group relative flex-1 rounded-2xl overflow-hidden cursor-pointer min-h-[130px] bg-zinc-900"
+                    >
+                        <img :src="article.image" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-25 group-hover:opacity-40" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                        <div class="absolute inset-0 p-6 flex flex-col justify-end z-10">
+                            <span 
+                                class="text-[9px] font-black uppercase tracking-[0.2em] mb-1.5"
+                                :class="[
+                                    article.accent_color === 'amber' ? 'text-amber-500' : '',
+                                    article.accent_color === 'emerald' ? 'text-emerald-500' : '',
+                                    article.accent_color === 'indigo' ? 'text-indigo-400' : '',
+                                    !['indigo', 'amber', 'emerald'].includes(article.accent_color) ? 'text-zinc-400' : ''
+                                ]"
+                            >{{ article.category }}</span>
+                            <h3 class="text-base font-black text-white uppercase leading-tight line-clamp-1 group-hover:translate-x-1 transition-transform">{{ article.title }}</h3>
+                            <p class="text-[11px] text-zinc-500 line-clamp-1 mt-1">{{ article.description }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- CTA Banner: Premium -->
-        <section class="relative group p-1 w-full rounded-[2.5rem] bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-indigo-500/20 border border-white/5 overflow-hidden transition-all hover:border-indigo-500/30">
-            <div class="relative p-12 md:p-16 rounded-[2.2rem] bg-[#080808] flex flex-col md:flex-row items-center justify-between gap-12 overflow-hidden">
-                <!-- BG Glow -->
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-indigo-600/10 blur-[120px] pointer-events-none"></div>
+        <!-- ── Dernières Sorties (Horizontal Scroll) ── -->
+        <section class="space-y-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                    <h2 class="text-2xl font-black text-white uppercase tracking-tight">Dernières Sorties</h2>
+                </div>
+                <router-link to="/catalogue?sort=newest" class="text-[10px] font-black uppercase tracking-widest text-zinc-600 hover:text-white transition-colors flex items-center gap-1.5">
+                    Tout le catalogue
+                    <ArrowLongRightIcon class="w-4 h-4" />
+                </router-link>
+            </div>
+
+            <!-- Scroll Container -->
+            <div class="relative group/scroll">
+                <!-- Fade Edges -->
+                <div class="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#050505] to-transparent z-10 pointer-events-none opacity-0 group-hover/scroll:opacity-100 transition-opacity"></div>
+                <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#050505] to-transparent z-10 pointer-events-none"></div>
                 
-                <div class="relative z-10 max-w-2xl space-y-6 text-center md:text-left">
-                    <div class="flex items-center justify-center md:justify-start gap-3">
-                        <div class="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                            <SparklesIcon class="w-6 h-6 text-indigo-400" />
+                <div ref="scrollContainer" class="flex gap-4 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory custom-scrollbar-h">
+                    <div 
+                        v-for="game in newGames" :key="game.id"
+                        @click="goToPage(`/catalogue/${game.slug || game.id}`)"
+                        class="group flex-shrink-0 w-[260px] snap-start cursor-pointer"
+                    >
+                        <!-- Card -->
+                        <div class="relative aspect-video rounded-xl overflow-hidden bg-zinc-900 border border-white/[0.04] group-hover:border-white/15 transition-all duration-300 mb-3 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-black/50">
+                            <img :src="game.header" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            
+                            <!-- Play Icon Overlay -->
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                <div class="w-10 h-10 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center">
+                                    <PlayIcon class="w-4 h-4 text-white ml-0.5" />
+                                </div>
+                            </div>
+
+                            <!-- Views Badge -->
+                            <div class="absolute top-2.5 right-2.5 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <EyeIcon class="w-3 h-3 text-zinc-400" />
+                                <span class="text-[9px] font-bold text-white">{{ formatNumber(game.views) }}</span>
+                            </div>
                         </div>
-                        <span class="text-sm font-black text-indigo-400 uppercase tracking-[0.4em]">JeuxCracks Premium</span>
-                    </div>
-                    <h2 class="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none">Poussez l'expérience à son maximum</h2>
-                    <p class="text-zinc-400 font-medium">Libérez toute la puissance de la plateforme avec des vitesses illimitées, un badge donateur et un accès anticipé aux nouveaux cracks.</p>
-                </div>
 
-                <div class="relative z-10 flex flex-col items-center gap-6">
-                    <div class="text-center">
-                        <span class="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">À partir de</span>
-                        <span class="text-5xl font-black text-white tracking-tighter">2.99€<span class="ml-2 text-sm text-zinc-600 font-bold tracking-normal">/mois</span></span>
-                    </div>
-                    <router-link to="/premium" class="px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-xl shadow-indigo-600/20 hover:scale-105">
-                        M'abonner maintenant
-                    </router-link>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section: Nouveautés (Grille) -->
-        <section class="space-y-8">
-            <div class="flex items-end justify-between">
-                <div class="space-y-2">
-                    <div class="flex items-center gap-2 text-indigo-400">
-                        <ClockIcon class="w-5 h-5" />
-                        <span class="text-[10px] font-black uppercase tracking-[0.3em]">Catalogue</span>
-                    </div>
-                    <h2 class="text-4xl font-black text-white uppercase tracking-tighter">Dernières Sorties</h2>
-                </div>
-                <router-link to="/catalogue" class="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors pb-2">Explorer le catalogue</router-link>
-            </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div 
-                    v-for="game in newGames" :key="game.id"
-                    @click="goToPage(`/catalogue/${game.slug || game.id}`)"
-                    class="group relative aspect-[3/4] rounded-3xl overflow-hidden cursor-pointer bg-zinc-900 border border-white/5 hover:border-indigo-500/30 transition-all"
-                >
-                    <img :src="game.header" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80"></div>
-                    
-                    <!-- Hover Info -->
-                    <div class="absolute inset-0 p-6 flex flex-col justify-end translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                        <div class="space-y-1">
-                            <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{{ game.categories?.[0] }}</span>
-                            <h3 class="text-lg font-black text-white uppercase line-clamp-1 leading-tight">{{ game.title }}</h3>
+                        <!-- Info -->
+                        <div class="px-1">
+                            <h3 class="text-sm font-bold text-zinc-300 truncate group-hover:text-white transition-colors">{{ game.title }}</h3>
+                            <span class="text-[10px] text-zinc-600 font-medium">{{ game.categories?.[0] || '' }}</span>
                         </div>
-                    </div>
-                    
-                    <!-- Floating Views -->
-                    <div class="absolute top-4 right-4 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-md border border-white/10 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <EyeIcon class="w-3 h-3 text-zinc-400" />
-                        <span class="text-[10px] font-bold text-white">{{ formatNumber(game.views) }}</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Footer / Donation CTA -->
-        <footer class="flex flex-col items-center gap-12 text-center pt-12">
-            <div class="max-w-xl space-y-4">
-                <div class="flex items-center justify-center gap-2 text-amber-500">
-                    <HeartIcon class="w-5 h-5" />
-                    <span class="text-[10px] font-black uppercase tracking-[0.3em]">Support communitaitre</span>
+        <!-- ── Premium CTA (Slim Banner) ── -->
+        <section class="relative group overflow-hidden rounded-2xl border border-white/[0.04] hover:border-indigo-500/20 transition-all">
+            <div class="absolute inset-0 bg-gradient-to-r from-indigo-600/10 via-purple-600/5 to-indigo-600/10 group-hover:from-indigo-600/15 group-hover:to-indigo-600/15 transition-all"></div>
+            <div class="absolute top-1/2 left-1/3 -translate-y-1/2 w-[400px] h-[200px] bg-indigo-600/10 blur-[100px] pointer-events-none"></div>
+            
+            <div class="relative z-10 px-8 md:px-12 py-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-5">
+                    <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                        <SparklesIcon class="w-6 h-6 text-indigo-400" />
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-white uppercase tracking-tight">JeuxCracks Premium</h3>
+                        <p class="text-sm text-zinc-500">Vitesses illimitées, badge donateur et accès anticipé. <span class="text-white font-bold">À partir de 2.99€<span class="ml-1 text-zinc-600 font-normal">/mois</span></span></p>
+                    </div>
                 </div>
-                <h2 class="text-3xl font-black text-white uppercase tracking-tight">Maintenez le projet en vie</h2>
-                <p class="text-zinc-500 text-sm font-medium">JeuxCracks est un projet indépendant. Vos dons nous permettent de continuer à mettre à jour le catalogue et d'améliorer le launcher chaque jour.</p>
-                <div class="flex items-center justify-center gap-4 pt-4">
-                    <router-link to="/premium" class="px-8 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-xl transition-all">
-                        Faire un don
-                    </router-link>
-                    <a href="https://discord.jeuxcracks.fr" target="_blank" class="px-8 py-3 text-zinc-500 hover:text-white font-black uppercase tracking-widest text-[10px] transition-all">
-                        Rejoindre le Discord
-                    </a>
-                </div>
+                <router-link to="/premium" class="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest text-[11px] rounded-xl transition-all shadow-lg shadow-indigo-600/20 hover:shadow-indigo-500/30 whitespace-nowrap flex-shrink-0">
+                    Découvrir Premium
+                </router-link>
             </div>
-            
-            <div class="h-px w-24 bg-zinc-800"></div>
-            
-            <div class="flex flex-col items-center gap-2">
-                <img src="/assets/logo.webp" class="w-8 opacity-20 filter grayscale" />
-                <span class="text-[10px] font-bold text-zinc-700 uppercase tracking-[0.5em]">JeuxCracks Launcher © 2026</span>
+        </section>
+
+        <!-- ── Footer ── -->
+        <footer class="flex flex-col items-center gap-6 text-center pt-4">
+            <div class="h-px w-16 bg-zinc-800/50"></div>
+            <div class="flex items-center gap-6">
+                <router-link to="/premium" class="text-[10px] font-bold text-zinc-600 hover:text-white uppercase tracking-widest transition-colors">Faire un don</router-link>
+                <span class="w-1 h-1 rounded-full bg-zinc-800"></span>
+                <a href="https://discord.jeuxcracks.fr" target="_blank" class="text-[10px] font-bold text-zinc-600 hover:text-white uppercase tracking-widest transition-colors">Discord</a>
+            </div>
+            <div class="flex items-center gap-2 pb-4">
+                <img src="/assets/logo.webp" class="w-5 opacity-15 filter grayscale" />
+                <span class="text-[9px] font-bold text-zinc-800 uppercase tracking-[0.4em]">JeuxCracks © 2026</span>
             </div>
         </footer>
 
@@ -302,8 +334,9 @@ import {
     SparklesIcon,
     HeartIcon,
     FireIcon,
-    ClockIcon,
-    NewspaperIcon
+    RectangleStackIcon,
+    BoltIcon,
+    CpuChipIcon,
 } from '@heroicons/vue/24/solid';
 import { useNotification } from '@kyvg/vue3-notification';
 
@@ -319,7 +352,6 @@ const revenue = ref<any>({});
 const monthlyGoal = ref(80);
 const totalGames = ref(0);
 const activeIndex = ref(0);
-const progress = ref(0);
 
 // Computed
 const revenueProgress = computed(() => {
@@ -327,10 +359,8 @@ const revenueProgress = computed(() => {
     return Math.min(100, (revenue.value.total / monthlyGoal.value) * 100);
 });
 
-
 // Timers
 let slideTimer: any = null;
-let progressTimer: any = null;
 const SLIDE_DURATION = 8000;
 
 // Functions
@@ -355,17 +385,7 @@ function nextSlide() {
 
 function resetTimer() {
     clearInterval(slideTimer);
-    clearInterval(progressTimer);
-    progress.value = 0;
-    
     if (trendingGames.value.length === 0) return;
-
-    const step = 100 / (SLIDE_DURATION / 100);
-    progressTimer = setInterval(() => {
-        progress.value += step;
-        if (progress.value >= 100) progress.value = 100;
-    }, 100);
-
     slideTimer = setInterval(() => {
         nextSlide();
     }, SLIDE_DURATION);
@@ -415,7 +435,7 @@ async function fetchGameRow(sort: string, count: number) {
 onMounted(async () => {
   loading.value = true;
   try {
-    // Background fetch for revenue (don't block the UI)
+    // Background fetch for revenue
     JeuxCracksAPI.getMonthlyRevenue().then(res => {
         revenue.value = res;
     }).catch(err => console.error('Failed to fetch revenue:', err));
@@ -425,10 +445,10 @@ onMounted(async () => {
         totalGames.value = res?.meta?.total || 0;
     }).catch(err => console.error('Failed to fetch total games:', err));
 
-    // Parallel fetch for trending and new games
+    // Parallel fetch
     const [trending, newest] = await Promise.all([
         fetchGameRow('views', 5),
-        fetchGameRow('-id', 8) // Assume -id gives freshest
+        fetchGameRow('-id', 10)
     ]);
     
     trendingGames.value = trending;
@@ -447,7 +467,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
     clearInterval(slideTimer);
-    clearInterval(progressTimer);
 });
 </script>
 
@@ -457,50 +476,50 @@ onUnmounted(() => {
     100% { transform: scale(1.15); }
 }
 .animate-pan-zoom {
-    animation: pan-zoom 10s ease-out forwards;
+    animation: pan-zoom 12s ease-out forwards;
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(40px); }
+    from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
 }
 .animate-slide-up {
-    animation: slideUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
-}
-
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-40px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.animate-slide-down {
-    animation: slideDown 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     opacity: 0;
 }
 
 @keyframes revealText {
-    0% { clip-path: inset(0 100% 0 0); opacity: 0; transform: translateX(-20px); }
+    0% { clip-path: inset(0 100% 0 0); opacity: 0; transform: translateX(-15px); }
     100% { clip-path: inset(0 0 0 0); opacity: 1; transform: translateX(0); }
 }
 .animate-reveal-text {
-    animation: revealText 1.2s cubic-bezier(0.77, 0, 0.175, 1) forwards;
-    opacity: 0; /* Fallback */
+    animation: revealText 1s cubic-bezier(0.77, 0, 0.175, 1) forwards;
+    opacity: 0;
 }
 
-/* Custom Gradients/Shaders */
-.backdrop-blur-xl {
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+/* Hero Transition */
+.hero-fade-enter-active,
+.hero-fade-leave-active {
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-/* Transitions */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.fade-enter-from,
-.fade-leave-to {
+.hero-fade-enter-from,
+.hero-fade-leave-to {
   opacity: 0;
+}
+
+/* Horizontal Scrollbar */
+.custom-scrollbar-h::-webkit-scrollbar {
+    height: 4px;
+}
+.custom-scrollbar-h::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar-h::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 10px;
+}
+.custom-scrollbar-h::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
 }
 
 .animation-delay-200 {

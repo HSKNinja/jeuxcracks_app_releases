@@ -1,63 +1,193 @@
-const WebTorrent = require('webtorrent');
 import { BrowserWindow, ipcMain, app } from 'electron';
 import { installService } from './installService';
 import * as fs from 'fs';
 import { join } from 'path';
+import * as https from 'https';
+import * as http from 'http';
+import { spawn, ChildProcess } from 'child_process';
 import { getMainWindow } from '..';
+import Aria2 from 'aria2';
 
-export const client = new WebTorrent({
-  maxConns: 55,
-  utp: true,
-  dht: true,
-  tracker: true,
-});
+// Ensure standard paths
+const isPackaged = app.isPackaged;
+const aria2cPath = isPackaged 
+    ? join(process.resourcesPath, 'assets', 'aria2c', 'aria2c.exe')
+    : join(__dirname, '../../assets/aria2c/aria2c.exe');
 
-client.on('error', (err) => {
-  console.error('WebTorrent client error:', err);
-  const win = getMainWindow();
-  win?.webContents.send('error', err.message || 'Erreur WebTorrent');
-});
-
-class TorrentService {
-  private cancelledTorrents = new Set<string>(); // Pour tracker les torrents annulés
-  private activeTorrents = new Map<string, any>(); // Pour tracker les torrents actifs
-  private torrentsMetadata = new Map<string, any>(); // Metadata for persistence
-  private persistenceFile = join(app.getPath('userData'), 'downloads', 'active_torrents.json');
+export class TorrentService {
+  private aria2Process: ChildProcess | null = null;
+  private aria2Client: Aria2;
+  private activeTorrents = new Map<string, any>(); // infoHash -> { gid, gameData, savePath }
+  private torrentsMetadataFile = join(app.getPath('userData'), 'downloads', 'torrents_metav2.json');
+  private pollInterval: NodeJS.Timeout | null = null;
   
-  // Speed Limits
-  private downloadLimit = -1;
-  private uploadLimit = -1;
+  private downloadLimit = 0;
+  private uploadLimit = 0;
 
+  private globalTrackersArray = [
+    "udp://open.demonii.com:1337",
+    "udp://tracker.opentrackr.org:1337/announce",
+    "udp://tracker.openbittorrent.com:6969/announce",
+    "http://tracker.openbittorrent.com:80/announce",
+    "udp://tracker.torrent.eu.org:451/announce",
+    "udp://exodus.desync.com:6969/announce",
+    "udp://open.stealth.si:80/announce",
+    "udp://tracker.moeking.me:6969/announce",
+    "udp://explodie.org:6969/announce",
+    "udp://tracker.zer0day.to:1337/announce",
+    "udp://tracker.leechers-paradise.org:6969/announce",
+    "udp://coppersurfer.tk:6969/announce",
+    "udp://tracker.internetwarriors.net:1337/announce"
+  ];
+  
   constructor() {
+    this.aria2Client = new Aria2({
+      host: 'localhost',
+      port: 6800,
+      secure: false,
+      secret: 'JeuxCracksV2',
+      path: '/jsonrpc'
+    });
+
     ipcMain.handle('start-torrent', this.startTorrent);
     ipcMain.on('pause-torrent', this.pauseTorrent);
     ipcMain.on('resume-torrent', this.resumeTorrent);
-    ipcMain.on('stop-torrent', (event, infoHash, savePath) => {
-      console.log('🛑 Événement stop-torrent reçu:', infoHash, savePath);
-      this.stopTorrent(event, infoHash, savePath);
-    });
-    ipcMain.on('stop-torrent-by-id', (event, gameID) => {
-      console.log('🛑 Événement stop-torrent-by-id reçu:', gameID);
-      this.stopTorrentByGameId(event, gameID);
-    });
+    ipcMain.on('stop-torrent', (event, infoHash, savePath) => this.stopTorrent(event, infoHash, savePath));
+    ipcMain.on('stop-torrent-by-id', (event, gameID) => this.stopTorrentByGameId(event, gameID));
     
-    // Load persisted torrents on startup
-    this.loadState();
+    this.initAria2();
+  }
+
+  private async initAria2() {
+    try {
+      console.log('🚀 Démarrage du moteur Aria2c (V2 Hyper-Vitesse)...');
+      
+      // Force kill any zombie aria2c process before starting a new one (fixes 1-in-2 launch bug)
+      try {
+          const { execSync } = require('child_process');
+          execSync('taskkill /F /IM aria2c.exe /T', { windowsHide: true, stdio: 'ignore' });
+          console.log('🧹 Processus Aria2c fantôme nettoyé.');
+      } catch (e) {
+          // Normal if no process exists
+      }
+
+      const dhtPath = join(app.getPath('userData'), 'dht.dat');
+      const dht6Path = join(app.getPath('userData'), 'dht6.dat');
+      
+      const globalTrackers = this.globalTrackersArray.join(",");
+
+      const args = [
+        '--enable-rpc=true',
+        '--rpc-listen-all=false',
+        '--rpc-listen-port=6800',
+        '--rpc-secret=JeuxCracksV2',
+        
+        // --- 🚀 PERFORMANCE EXTREME (qBittorrent-like) ---
+        '--max-concurrent-downloads=10',
+        '--max-connection-per-server=16',
+        '--split=16',
+        '--min-split-size=1M',
+        '--bt-max-peers=200',
+        '--bt-request-peer-speed-limit=10M',
+        '--file-allocation=none',
+        '--seed-time=0',
+        
+        // --- 🌍 RESEAU ET TRACKERS ---
+        `--bt-tracker=${globalTrackers}`,
+        '--bt-save-metadata=true',
+        '--bt-load-saved-metadata=true',
+        "--bt-enable-lpd=true",
+        "--enable-dht=true",
+        "--enable-dht6=true",
+        `--dht-file-path=${dhtPath}`,
+        `--dht-file-path6=${dht6Path}`,
+        "--dht-listen-port=6881-6999",
+        "--dht-entry-point=dht.transmissionbt.com:6881",
+        "--dht-entry-point6=dht.transmissionbt.com:6881",
+        "--dht-entry-point=router.bittorrent.com:6881",
+        "--dht-entry-point=router.utorrent.com:6881",
+        "--enable-peer-exchange=true",
+        "--listen-port=6881-6999",
+        
+        // --- ⏱️ TIMEOUTS ---
+        "--bt-tracker-connect-timeout=5",
+        '--bt-tracker-interval=15',
+        
+        // --- 📁 FICHIERS ---
+        '--continue=true',
+        '--allow-overwrite=true',
+        '--auto-file-renaming=false',
+        `--dir=${app.getPath('downloads')}`
+      ];
+
+      this.aria2Process = spawn(aria2cPath, args, { windowsHide: true });
+      
+      this.aria2Process.on('error', (err) => {
+        console.error('❌ Erreur process Aria2c:', err);
+      });
+
+      this.aria2Process.on('exit', (code) => {
+        console.log(`🛑 Aria2c s'est arrêté (Code: ${code})`);
+      });
+
+      // Wait a moment for aria2c to start its RPC server
+      await new Promise(r => setTimeout(r, 1500));
+      
+      await this.aria2Client.open();
+      
+      // Verify connection works with a simple call
+      try {
+        const ver = await this.aria2Client.call('getVersion');
+        console.log('✅ Connecté au serveur RPC Aria2c! Version:', ver.version);
+      } catch(e) {
+        console.error('❌ Connexion Aria2c échouée (auth test):', e.message);
+        console.log('🔄 Retry connexion dans 2s...');
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+          await this.aria2Client.close();
+        } catch(e2) {}
+        await this.aria2Client.open();
+        const ver = await this.aria2Client.call('getVersion');
+        console.log('✅ Connecté au serveur RPC Aria2c (retry)! Version:', ver.version);
+      }
+
+      // Load Metadatas
+      this.loadState();
+      
+      // Start polling
+      this.startPolling();
+
+      // Listeners
+      this.aria2Client.on('onDownloadComplete', async ([events]) => {
+          console.log('✅ Événement RPC: Téléchargement terminé (GID:', events.gid, ')');
+          await this.handleDownloadComplete(events.gid);
+      });
+      this.aria2Client.on('onBtDownloadComplete', async ([events]) => {
+          console.log('✅ Événement RPC (BT): Téléchargement terminé (GID:', events.gid, ')');
+          await this.handleDownloadComplete(events.gid);
+      });
+      this.aria2Client.on('onDownloadError', ([events]) => {
+          console.warn('❌ Événement RPC: Erreur téléchargement (GID:', events.gid, ')');
+      });
+
+    } catch (e) {
+      console.error('❌ Impossible de démarrer Aria2c:', e);
+    }
   }
 
   public setDownloadLimit(bytes: number) {
       this.downloadLimit = bytes;
-      if (client) {
-          client.throttleDownload(bytes <= 0 ? -1 : bytes);
-          console.log('📉 Limite téléchargement définie:', bytes <= 0 ? 'Illimité' : bytes + ' o/s');
+      if (this.aria2Client) {
+          this.aria2Client.call('changeGlobalOption', { 'max-overall-download-limit': bytes <= 0 ? '0' : bytes.toString() }).catch(console.error);
+          console.log('📉 Limite DL Aria2:', bytes <= 0 ? 'Illimité' : bytes + ' o/s');
       }
   }
 
   public setUploadLimit(bytes: number) {
       this.uploadLimit = bytes;
-      if (client) {
-          client.throttleUpload(bytes <= 0 ? -1 : bytes);
-          console.log('📈 Limite envoi définie:', bytes <= 0 ? 'Illimité' : bytes + ' o/s');
+      if (this.aria2Client) {
+          this.aria2Client.call('changeGlobalOption', { 'max-overall-upload-limit': bytes <= 0 ? '0' : bytes.toString() }).catch(console.error);
+          console.log('📈 Limite UP Aria2:', bytes <= 0 ? 'Illimité' : bytes + ' o/s');
       }
   }
 
@@ -65,303 +195,453 @@ class TorrentService {
       return { download: this.downloadLimit, upload: this.uploadLimit };
   }
 
-  private stopTorrentByGameId = (event, gameID: string) => {
-      // Find infoHash from metadata
-      let infoHashToStop = null;
-      let savePathToStop = null;
-
-      for (const [hash, meta] of this.torrentsMetadata.entries()) {
-          if (meta.gameData && String(meta.gameData.id) === String(gameID)) {
-              infoHashToStop = hash;
-              savePathToStop = meta.savePath; // We might need to append title if that's how it was saved
-              // Check if savePath already includes title or not. 
-              // In startTorrent, we do: client.add(torrentFile, { path: savePath })
-              // Usually savePath comes from UI as "Downloads/GameTitle"
-              break;
-          }
-      }
-
-      if (infoHashToStop) {
-          console.log(`🎯 Torrent trouvé par ID ${gameID} -> ${infoHashToStop}`);
-          this.stopTorrent(event, infoHashToStop, savePathToStop);
-      } else {
-          console.log(`⚠️ Aucun torrent trouvé pour l'ID ${gameID}`);
-          // Fallback: If not in metadata but in activeTorrents? Unlikely if they stay synced.
-          // But maybe it's a magnet link pending metadata?
-          // WebTorrent doesn't easily map magnet -> gameID unless we stored it.
-          // We stored it in activeTorrents via 'gameData' property attached? No, we don't attach yet.
-          
-          // Try to cancel from cancelledTorrents set just in case
-          this.cancelledTorrents.add(gameID);
-      }
-  }
-  
   private saveState() {
      try {
-         const data = Array.from(this.torrentsMetadata.values());
-         fs.writeFileSync(this.persistenceFile, JSON.stringify(data, null, 2));
-         console.log('💾 État des torrents sauvegardé:', data.length, 'torrents');
+         const data = Array.from(this.activeTorrents.values());
+         fs.writeFileSync(this.torrentsMetadataFile, JSON.stringify(data, null, 2));
      } catch (error) {
-         console.error('❌ Erreur lors de la sauvegarde des torrents:', error);
+         console.error('❌ Erreur sauvegarde metadata Aria2:', error);
      }
   }
 
-  private loadState() {
+   private loadState() {
      try {
-         if (fs.existsSync(this.persistenceFile)) {
-             const data = JSON.parse(fs.readFileSync(this.persistenceFile, 'utf8'));
-             console.log('📂 Chargement des torrents persistants:', data.length);
+         if (fs.existsSync(this.torrentsMetadataFile)) {
+             const data = JSON.parse(fs.readFileSync(this.torrentsMetadataFile, 'utf8'));
+             console.log(`📂 Récupération de ${data.length} téléchargements Aria2c sauvegardés.`);
              
-             data.forEach(item => {
-                 if (item.torrentFile && typeof item.torrentFile === 'string' && fs.existsSync(item.torrentFile)) {
-                     console.log('🔄 Relance du torrent persistant:', item.gameData.title);
-                     // Simulate event as null since it's internal restoration
-                     this.startTorrent(null, item.torrentFile, item.savePath, item.gameData);
-                 } else {
-                     console.log('⚠️ Impossible de relancer le torrent (fichier manquant):', item.gameData.title);
-                 }
+             // Process each saved torrent
+             data.forEach(async (item: any) => {
+                if(item.torrentFile) {
+                    try {
+                        const status = await this.aria2Client.call('tellStatus', item.gid);
+                        if(status.status === 'paused') {
+                            await this.aria2Client.call('unpause', item.gid);
+                        }
+                        // GID is still valid, register in activeTorrents
+                        this.activeTorrents.set(item.infoHash, item);
+                    } catch(e) {
+                        // GID is expired (new Aria2c session), re-add from scratch
+                        console.log('♻️ Re-adding torrent to session:', item.gameData?.title);
+                        // Do NOT add the old entry to activeTorrents — startTorrent will create a fresh one
+                        this.startTorrent(null, item.torrentFile, item.savePath, item.gameData, false);
+                    }
+                }
              });
          }
      } catch (error) {
-         console.error('❌ Erreur lors du chargement des torrents:', error);
+         console.error('❌ Erreur chargement metadata Aria2:', error);
      }
   }
 
-  async startTorrent(_event, torrentFile: string | Buffer, savePath: string, gameData: Game) {
+  public startTorrent = async (_event, torrentFile: string | Buffer, savePath: string, gameData: any, isNewLaunch: boolean = true) => {
     try {
-      console.log('🚀 Démarrage du torrent:', gameData.title);
-      
-      // Si on redémarre explicitement un torrent, on doit le retirer de la liste des annulés
-      if (this.cancelledTorrents.has(gameData.id)) {
-        console.log('🔄 Retrait de la liste des torrents annulés pour redémarrage:', gameData.title);
-        this.cancelledTorrents.delete(gameData.id);
+      console.log('🚀 Torrent V2: Ajout de', gameData.title);
+
+      let gid = '';
+
+      if (typeof torrentFile === 'string' && (torrentFile.startsWith('magnet:') || torrentFile.toLowerCase().endsWith('.torrent'))) {
+          // Magnet URI or .torrent URL
+          // Ensure save directory exists before sending to Aria2c
+          try { fs.mkdirSync(savePath, { recursive: true }); } catch(e) {}
+          
+          if (torrentFile.toLowerCase().endsWith('.torrent')) {
+              // Direct URL to a .torrent file
+              try {
+                  console.log(`🌐 Téléchargement du fichier .torrent depuis: ${torrentFile}`);
+                  const torrentBuffer = await this.fetchTorrentFile(torrentFile);
+                  if (torrentBuffer && torrentBuffer.length > 100) {
+                      const torrentBase64 = torrentBuffer.toString('base64');
+                      gid = await this.aria2Client.call('aria2.addTorrent', torrentBase64, [], {
+                          dir: savePath,
+                          'bt-tracker': this.globalTrackersArray.join(',')
+                      });
+                      console.log('✅ .torrent URL chargé avec succès ! Métadonnées instantanées.');
+                  }
+              } catch (e) {
+                  console.error('❌ Erreur téléchargement .torrent URL, tentative magnet fallback si possible:', e.message);
+              }
+          }
+
+          if (!gid && torrentFile.startsWith('magnet:')) {
+              let finalMagnet = torrentFile;
+              for (const tr of this.globalTrackersArray) {
+                  const encodedTr = encodeURIComponent(tr);
+                  if (!finalMagnet.includes(encodedTr)) {
+                      finalMagnet += `&tr=${encodedTr}`;
+                  }
+              }
+              
+              gid = await this.aria2Client.call('aria2.addUri', [finalMagnet], {
+                  dir: savePath,
+                  'bt-tracker': this.globalTrackersArray.join(','),
+                  'bt-save-metadata': 'true',
+                  'bt-load-saved-metadata': 'true'
+              });
+              console.log('🧲 Magnet envoyé à Aria2 avec', this.globalTrackersArray.length, 'trackers injectés');
+          }
+      } else {
+          // Physical Torrent File (.torrent)
+          let torrentBase64 = '';
+          if (Buffer.isBuffer(torrentFile)) {
+            torrentBase64 = torrentFile.toString('base64');
+          } else if (typeof torrentFile === 'string' && fs.existsSync(torrentFile)) {
+            torrentBase64 = fs.readFileSync(torrentFile).toString('base64');
+          } else {
+            throw new Error('Fichier torrent ou lien magnet invalide');
+          }
+
+          // Ensure save directory exists before sending to Aria2c
+          try { fs.mkdirSync(savePath, { recursive: true }); } catch(e) {}
+
+          gid = await this.aria2Client.call('aria2.addTorrent', torrentBase64, [], {
+              dir: savePath,
+              'bt-tracker': this.globalTrackersArray.join(',')
+          });
       }
 
-      
-      console.log('🚀 Appel de client.add pour:', gameData.title);
-      console.log('📂 SavePath:', savePath);
-      // console.log('📄 TorrentFile:', typeof torrentFile === 'string' ? torrentFile : 'Buffer');
+      console.log('✅ Torrent ajouté à Aria2c avec GID:', gid);
 
-      client.add(torrentFile, { path: savePath }, (torrent) => {
-        console.log('📦 Callback client.add déclenché !');
-        console.log('📦 Torrent ajouté avec succès:', torrent.name);
-        console.log('🔑 InfoHash:', torrent.infoHash);
-        
-        // Ajouter le torrent à la liste des torrents actifs
-        this.activeTorrents.set(torrent.infoHash, torrent);
-        
-        // Persist metadata if torrentFile is a path string
-        if (typeof torrentFile === 'string') {
-            this.torrentsMetadata.set(torrent.infoHash, {
-                torrentFile,
-                savePath,
-                gameData
-            });
-            this.saveState();
-        }
-        
-      const interval = setInterval(() => {
-          try {
-             // console.log('Progress:', torrent.progress); // Too verbose
-         const torrentData = {
+      // Add to activeTorrents using gid as the temporary infoHash 
+      // (The polling loop will update it to the real infoHash once Aria2 resolves the magnet metadata)
+      this.activeTorrents.set(gid, {
+          gid,
+          infoHash: gid,
+          gameData,
+          savePath,
+          torrentFile: typeof torrentFile === 'string' ? torrentFile : null,
+          isCompleting: false,
+          addedAt: Date.now(),
+          retryCount: 0
+      });
+      this.saveState();
+      
+      // Force initial progress payload for UI to wake up
+      const win = getMainWindow();
+      win?.webContents.send('download-progress', {
           gameID: gameData.id,
           title: gameData.title,
-          name: torrent.name,
-          infoHash: torrent.infoHash,
-          progress: torrent.progress,
-          downloaded: torrent.downloaded,
-          received: torrent.received,
-          total: torrent.length,
-          timeRemaining: torrent.timeRemaining, // ms
-          uploaded: torrent.uploaded,
-          downloadSpeed: torrent.downloadSpeed,
-          uploadSpeed: torrent.uploadSpeed,
-          numPeers: torrent.numPeers,
-          path: torrent.path,
-          ready: torrent.ready,
-          paused: torrent.paused,
-          done: torrent.done,
-          downloadType: 'torrent'
-        };
-            
-        const win = getMainWindow();
-        win?.webContents.send('download-progress', torrentData, gameData.title);
-            
-        if (torrent.done || torrent.paused || torrent.destroyed || torrent.progress === 1) {
-              clearInterval(interval);
-            }
-          } catch (error) {
-            console.error('Erreur lors de la mise à jour du torrent:', error);
-          clearInterval(interval);
-        }
-      }, 1000);
+          name: gameData.title,
+          infoHash: gid,
+          progress: 0, 
+          downloaded: 0,
+          total: 0,
+          downloadSpeed: 0,
+          numPeers: 0,
+          path: savePath,
+          ready: false,
+          paused: false,
+          done: false,
+          downloadType: 'torrent',
+          gameData: gameData // 🚀 Pass gameData to store Auto-Resurrect
+      }, gameData.title);
 
-        torrent.on('ready', () => {
-          console.log('✅ Torrent prêt:', torrent.name);
-        });
-
-      torrent.on('done', async () => {
-          console.log('✅ Torrent terminé:', torrent.name);
-        clearInterval(interval);
-        
-        // Remove from persistence
-        this.torrentsMetadata.delete(torrent.infoHash);
-        this.saveState();
-        
-        // Vérifier si le torrent a été annulé
-        if (this.cancelledTorrents.has(torrent.infoHash)) {
-          console.log('🚫 Torrent annulé, pas d\'installation:', torrent.name);
-          this.cancelledTorrents.delete(torrent.infoHash);
-          this.activeTorrents.delete(torrent.infoHash);
-          return;
-        }
-        
-        const win = getMainWindow();
-          win?.webContents.send('download-done', gameData.title);
-          
-          // Native OS notification (if enabled)
-          try {
-              const { default: Store } = await import('electron-store');
-              const storeInst: any = new Store();
-              const settings = storeInst.get('settings') || {};
-              if (settings.notifications !== false) {
-                  const { Notification } = require('electron') as typeof import('electron');
-                  new Notification({ title: 'Téléchargement terminé', body: `${gameData.title} est prêt à jouer !` }).show();
-              }
-          } catch(e) { /* silent */ }
-          
-          try {
-            // Supprimer le fichier torrent
-        const torrentName = fs.readdirSync(torrent.path).find((file) => file.endsWith('.torrent'));
-            if (torrentName) {
-              fs.rmSync(join(torrent.path, torrentName), { recursive: true });
-            }
-            
-            // Supprimer le torrent de la liste active
-            this.activeTorrents.delete(torrent.infoHash);
-            
-        installService.installGame(gameData, savePath);
-          } catch (error) {
-            console.error('Erreur lors de la finalisation du torrent:', error);
-          }
-      });
-
-      torrent.on('error', (err) => {
-          console.error('❌ Erreur torrent:', err);
-        clearInterval(interval);
-        this.activeTorrents.delete(torrent.infoHash);
-        this.torrentsMetadata.delete(torrent.infoHash); // Remove from persistence
-        this.saveState();
-        
-        const win = getMainWindow();
-          win?.webContents.send('error', `Erreur torrent: ${err.message}`);
-        });
-
-        torrent.on('warning', (warning) => {
-          console.warn('⚠️ Avertissement torrent:', warning);
-        });
-      });
     } catch (error) {
-      console.error('❌ Erreur lors du démarrage du torrent:', error);
+      console.error('❌ Erreur ajout torrent Aria2:', error);
       const win = getMainWindow();
-      win?.webContents.send('error', `Erreur lors du démarrage du torrent: ${error.message}`);
+      win?.webContents.send('error', `Erreur de téléchargement: ${error.message}`);
     }
   }
 
-  private pauseTorrent = (_, infoHash: string) => {
+  private pauseTorrent = async (_, infoHash: string) => {
     try {
-      const torrent = client.get(infoHash);
-      if (torrent) {
-        torrent.destroy();
+      const torrentInfo = this.activeTorrents.get(infoHash);
+      if (torrentInfo && torrentInfo.gid) {
+        await this.aria2Client.call('aria2.pause', torrentInfo.gid);
         console.log('⏸️ Torrent mis en pause:', infoHash);
-        // Maybe we should keep it in persistence but marked as paused? 
-        // For now, pausing via UI destroys the client connection.
-        // If we want to resume on restart, we keep it in persistence.
-        // So I do NOT delete from persistence here.
       }
     } catch (error) {
-      console.error('Erreur lors de la pause du torrent:', error);
+      console.error('Erreur pause Aria2:', error);
     }
   };
 
-  private resumeTorrent = (event, infoHash: string, savePath: string, gameData: Game) => {
+  private resumeTorrent = async (event, infoHash: string, savePath: string, gameData: any) => {
     try {
-        console.log('🔄 Demande de reprise du torrent:', infoHash);
-        
-        // If gameData is missing (e.g. from Downloads.vue), try to recover it from persistence
-        if (!gameData || !gameData.title) {
-            const meta = this.torrentsMetadata.get(infoHash);
-            if (meta && meta.gameData) {
-                console.log('♻️ Récupération des données de jeu depuis la persistance pour:', meta.gameData.title);
-                gameData = meta.gameData;
-            } else {
-                console.error('❌ Impossible de reprendre : données de jeu manquantes pour le hash', infoHash);
-                return;
+        const torrentInfo = this.activeTorrents.get(infoHash);
+        if (torrentInfo && torrentInfo.gid) {
+            await this.aria2Client.call('aria2.unpause', torrentInfo.gid);
+            console.log('▶️ Torrent repris:', infoHash);
+        } else {
+            console.log('♻️ Torrent introuvable dans la session active, rechargement complet:', gameData.title);
+            // Re-call start if missing
+            if(torrentInfo?.torrentFile) {
+                this.startTorrent(event, torrentInfo.torrentFile, savePath, gameData);
             }
         }
-        
-    const win = getMainWindow();
-    win?.webContents.send('download-pending');
-    this.startTorrent(event, infoHash, savePath, gameData);
     } catch (error) {
-      console.error('Erreur lors de la reprise du torrent:', error);
+      // If GID is invalid (e.g., restarted app but torrent finished/removed), try to re-add
+      console.error('Erreur reprise Aria2, tentative de réajout:', error);
+      if(gameData && savePath){
+          const torrentInfo = this.activeTorrents.get(infoHash);
+          if (torrentInfo?.torrentFile) {
+              this.startTorrent(null, torrentInfo.torrentFile, savePath, gameData);
+          }
+      }
     }
   };
 
   private stopTorrent = async (_, infoHash: string, savePath?: string) => {
     try {
-      console.log('🛑 Tentative d\'arrêt du torrent:', infoHash);
+      console.log("🛑 Tentative d'arrêt Aria2:", infoHash);
+      const torrentInfo = this.activeTorrents.get(infoHash);
       
-      // Marquer le torrent comme annulé
-      this.cancelledTorrents.add(infoHash);
-      
-      // Remove from persistence
-      this.torrentsMetadata.delete(infoHash);
-      this.saveState();
-      
-      // Essayer de trouver le torrent dans la liste active
-      let torrent = this.activeTorrents.get(infoHash);
-      if (!torrent) {
-        // Si pas dans la liste active, essayer de le récupérer du client
-        torrent = client.get(infoHash);
-      }
-      
-    if (torrent) {
-        console.log('🛑 Torrent trouvé, arrêt en cours...');
-        
-        // Arrêter complètement le torrent
-        torrent.pause();
-      torrent.destroy();
-        
-        // Supprimer le torrent du client
+      if (torrentInfo && torrentInfo.gid) {
         try {
-          client.remove(torrent);
-        } catch (error) {
-          console.log('⚠️ Torrent déjà supprimé du client');
-        }
+            await this.aria2Client.call('aria2.remove', torrentInfo.gid);
+        } catch(e) { /* Ignore if already removed */ }
         
-        // Supprimer de la liste active
         this.activeTorrents.delete(infoHash);
+        this.saveState();
         
-        // Nettoyer les fichiers partiellement téléchargés
         if (savePath) {
           try {
-            const fs = require('fs').promises;
-            await fs.rm(savePath, { recursive: true, force: true });
+            await fs.promises.rm(savePath, { recursive: true, force: true });
             console.log('🗑️ Fichiers partiels supprimés:', savePath);
-          } catch (error) {
-            console.error('Erreur lors de la suppression des fichiers partiels:', error);
-          }
+          } catch (e) { console.error('Erreur suppression:', e); }
         }
-        
-        console.log('🛑 Torrent arrêté et supprimé:', infoHash);
-      } else {
-        console.log('⚠️ Torrent non trouvé pour l\'arrêt:', infoHash);
       }
     } catch (error) {
-      console.error('Erreur lors de l\'arrêt du torrent:', error);
+      console.error('Erreur arrêt Aria2:', error);
     }
   };
+
+  private stopTorrentByGameId = async (event, gameID: string) => {
+      for (const [hash, meta] of this.activeTorrents.entries()) {
+          if (meta.gameData && String(meta.gameData.id) === String(gameID)) {
+              await this.stopTorrent(event, hash, meta.savePath);
+              break;
+          }
+      }
+  };
+
+  private startPolling() {
+      if (this.pollInterval) clearInterval(this.pollInterval);
+      
+      this.pollInterval = setInterval(async () => {
+          try {
+              if (!this.aria2Client) return;
+              
+              // Get active, waiting, and paused downloads to cover everything
+              const active = await this.aria2Client.call('aria2.tellActive') || [];
+              const waiting = await this.aria2Client.call('aria2.tellWaiting', 0, 100) || [];
+              const stopped = await this.aria2Client.call('aria2.tellStopped', 0, 100) || [];
+              
+              const allDownloads = [...active, ...waiting, ...stopped];
+              const win = getMainWindow();
+              if (!win) return;
+
+              for (const [infoHash, torrentInfo] of this.activeTorrents.entries()) {
+                  // Find the matching download in Aria2 by GID or InfoHash
+                  const status = allDownloads.find(d => d.gid === torrentInfo.gid || d.infoHash === infoHash);
+                  
+                  if (!status) {
+                      console.log('🚨 Polling Aria2: GID/Hash non trouvé dans allDownloads:', torrentInfo.gid, infoHash, '| Downloads count:', allDownloads.length);
+                      
+                      // Watchdog: if the download has been stalled (not found in Aria2 at all) for >30s, retry
+                      if (torrentInfo.addedAt && Date.now() - torrentInfo.addedAt > 30000 && (torrentInfo.retryCount || 0) < 3) {
+                          console.log('⚠️ Watchdog: Torrent non trouvé depuis', Math.round((Date.now() - torrentInfo.addedAt) / 1000), 's. Retry automatique pour', torrentInfo.gameData.title);
+                          torrentInfo.retryCount = (torrentInfo.retryCount || 0) + 1;
+                          torrentInfo.addedAt = Date.now();
+                          this.activeTorrents.delete(infoHash);
+                          this.saveState();
+                          // Re-add the torrent
+                          if (torrentInfo.torrentFile) {
+                              this.startTorrent(null, torrentInfo.torrentFile, torrentInfo.savePath, torrentInfo.gameData, false);
+                          }
+                      }
+                  }
+
+                  if (status) {
+                      // Validate if infohash evolved (Magnet Link metadata downloaded)
+                      if(status.infoHash && status.infoHash !== infoHash) {
+                          torrentInfo.infoHash = status.infoHash;
+                          this.activeTorrents.delete(infoHash);
+                          this.activeTorrents.set(status.infoHash, torrentInfo);
+                          this.saveState();
+                      }
+
+                      const totalLength = parseInt(status.totalLength, 10) || 0;
+                      const completedLength = parseInt(status.completedLength, 10) || 0;
+                      const progressFloat = totalLength > 0 ? completedLength / totalLength : 0;
+                      
+                      // Watchdog: if metadata not resolved after 45s (totalLength still 0), retry
+                      if (totalLength === 0 && torrentInfo.addedAt && Date.now() - torrentInfo.addedAt > 45000 && (torrentInfo.retryCount || 0) < 3) {
+                          console.log('⚠️ Watchdog Metadata: Aucun metadata après', Math.round((Date.now() - torrentInfo.addedAt) / 1000), 's pour', torrentInfo.gameData.title, '- Retry', (torrentInfo.retryCount || 0) + 1);
+                          
+                          // Remove the stalled download from Aria2
+                          try { await this.aria2Client.call('aria2.forceRemove', torrentInfo.gid); } catch(e) {}
+                          try { await this.aria2Client.call('aria2.removeDownloadResult', torrentInfo.gid); } catch(e) {}
+                          
+                          torrentInfo.retryCount = (torrentInfo.retryCount || 0) + 1;
+                          torrentInfo.addedAt = Date.now();
+                          this.activeTorrents.delete(infoHash);
+                          this.saveState();
+                          // Re-add the torrent
+                          if (torrentInfo.torrentFile) {
+                              this.startTorrent(null, torrentInfo.torrentFile, torrentInfo.savePath, torrentInfo.gameData, false);
+                          }
+                          continue;
+                      }
+                      
+                      // Check real file completion (Magnet transitions don't count here as their status is active, followedBy newGID)
+                      const isComplete = status.status === 'complete' || (totalLength > 0 && completedLength === totalLength && !status.followedBy);
+                      
+                      // Aggressive fallback to catch missed 'onDownloadComplete' RPC events
+                      if (isComplete && !torrentInfo.isCompleting) {
+                          torrentInfo.isCompleting = true;
+                          this.handleDownloadComplete(status.gid);
+                      }
+                      
+                      const torrentData = {
+                          gameID: torrentInfo.gameData.id,
+                          title: torrentInfo.gameData.title,
+                          name: status.bittorrent?.info?.name || torrentInfo.gameData.title,
+                          infoHash: torrentInfo.infoHash,
+                          progress: progressFloat, 
+                          downloaded: completedLength,
+                          received: completedLength,
+                          total: totalLength,
+                          timeRemaining: parseInt(status.downloadSpeed, 10) > 0 ? ((totalLength - completedLength) / parseInt(status.downloadSpeed, 10)) * 1000 : 0, 
+                          uploaded: parseInt(status.uploadLength, 10) || 0,
+                          downloadSpeed: parseInt(status.downloadSpeed, 10) || 0,
+                          uploadSpeed: parseInt(status.uploadSpeed, 10) || 0,
+                          numPeers: parseInt(status.connections, 10) || 0,
+                          path: status.dir,
+                          ready: true,
+                          paused: status.status === 'paused',
+                          done: isComplete,
+                          downloadType: 'torrent',
+                          gameData: torrentInfo.gameData // 🚀 Pass gameData to store Auto-Resurrect
+                      };
+                      
+                      win.webContents.send('download-progress', torrentData, torrentInfo.gameData.title);
+                  }
+              }
+          } catch (error) {
+              console.warn('Erreur polling Aria2:', error.message);
+          }
+      }, 1000);
+  }
+
+  private async handleDownloadComplete(gid: string) {
+      // 1. Check if this is just a metadata (.torrent) download for a magnet link
+      try {
+          const status = await this.aria2Client.call('aria2.tellStatus', gid);
+          if (status && status.followedBy && status.followedBy.length > 0) {
+              const newGid = status.followedBy[0];
+              console.log(`🔗 Magnet vers Torrent: Bascule du GID ${gid} vers le nouveau GID réel ${newGid}`);
+              
+              let foundKey = null;
+              for (const [infoHash, torrentInfo] of this.activeTorrents.entries()) {
+                  if (torrentInfo.gid === gid) {
+                      foundKey = infoHash;
+                      break;
+                  }
+              }
+
+              if (foundKey) {
+                  const torrentInfo = this.activeTorrents.get(foundKey);
+                  // Aria2 will soon provide the real infoHash in `tellStatus`, but for now we track by newGid
+                  torrentInfo.gid = newGid;
+                  
+                  // Wait a beat to let aria2c register the new download, then fetch the real infoHash
+                  setTimeout(async () => {
+                      try {
+                          const newStatus = await this.aria2Client.call('aria2.tellStatus', newGid);
+                          if(newStatus && newStatus.infoHash) {
+                              torrentInfo.infoHash = newStatus.infoHash;
+                              this.activeTorrents.delete(foundKey);
+                              this.activeTorrents.set(newStatus.infoHash, torrentInfo);
+                              this.saveState();
+                          }
+                      } catch(e) {}
+                  }, 2000);
+
+                  // Clean up the memory record of the Magnet download
+                  try { await this.aria2Client.call('aria2.removeDownloadResult', gid); } catch(e) {}
+                  return; // Exit silently, this is just the metadata
+              }
+          }
+      } catch (error) {
+          // It's possible the GID is already gone or it's a normal completion, just proceed
+      }
+
+      // 2. Real Completion Check
+      // Find which torrent finished
+      for (const [infoHash, torrentInfo] of this.activeTorrents.entries()) {
+          if (torrentInfo.gid === gid) {
+              
+              console.log('🎉 Torrent terminé dans Aria2:', torrentInfo.gameData.title);
+              torrentInfo.isCompleting = true;
+              
+              const win = getMainWindow();
+              win?.webContents.send('download-done', torrentInfo.gameData.title);
+
+              // Remove from Aria2 but keep files (force remove)
+              try {
+                  // If it's seeding, removeDownloadResult fails. We MUST forceRemove to kill the seeding and release file handles.
+                  await this.aria2Client.call('aria2.forceRemove', gid);
+              } catch(e) {}
+              
+              try {
+                  // Clean up the memory record
+                  await this.aria2Client.call('aria2.removeDownloadResult', gid);
+              } catch(e) {}
+
+              this.activeTorrents.delete(infoHash);
+              this.saveState();
+              
+              // Remove .torrent file if it exists
+              if (torrentInfo.torrentFile && fs.existsSync(torrentInfo.torrentFile)) {
+                  try {
+                      fs.unlinkSync(torrentInfo.torrentFile);
+                  } catch(e) {}
+              }
+
+              // Petit délai pour laisser le temps à Aria2 et Windows Defender de libérer le fichier (File Lock)
+              console.log('⏳ Attente de 3s pour libération des handles de fichiers...');
+              setTimeout(() => {
+                  // Lancement de l'Installation (Extraction V2)
+                  console.log('🚀 Lancement de installService.installGame...');
+                  installService.installGame(torrentInfo.gameData, torrentInfo.savePath);
+              }, 3000);
+              
+              break;
+          }
+      }
+  }
+
+  private fetchTorrentFile(url: string): Promise<Buffer> {
+      return new Promise((resolve, reject) => {
+          const client = url.startsWith('https') ? https : http;
+          const request = client.get(url, { timeout: 10000 }, (res) => {
+              // Follow redirects
+              if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                  this.fetchTorrentFile(res.headers.location).then(resolve).catch(reject);
+                  return;
+              }
+              if (res.statusCode !== 200) {
+                  reject(new Error(`HTTP ${res.statusCode}`));
+                  return;
+              }
+              const chunks: Buffer[] = [];
+              res.on('data', (chunk: Buffer) => chunks.push(chunk));
+              res.on('end', () => resolve(Buffer.concat(chunks)));
+              res.on('error', reject);
+          });
+          request.on('error', reject);
+          request.on('timeout', () => { request.destroy(); reject(new Error('Timeout')); });
+      });
+  }
+
+  public destroy() {
+      if (this.pollInterval) clearInterval(this.pollInterval);
+      if (this.aria2Process) {
+          console.log('🛑 Kill du process Aria2c...');
+          this.aria2Process.kill();
+      }
+  }
+
 }
 
 export const torrentService = new TorrentService();

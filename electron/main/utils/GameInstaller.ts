@@ -23,30 +23,43 @@ export class GameInstaller {
 
   installGame(gamePath: string, gameData: Game): void {
     console.log('🔍 Recherche d\'éditeur pour source:', gameData.source);
+    console.log('📂 Chemin brut reçu:', gamePath);
     
-    // Essayer de trouver l'éditeur par source
     const editorName = this.getEditorName(gameData);
     const editor = this.getEditor(editorName);
     
-    if (editor && editor.verifyStructure(gamePath)) {
-      console.log('✅ Éditeur trouvé et structure vérifiée');
-      editor.installGame(gamePath, gameData);
-    } else {
-      // Fallback pour OnlineFix : essayer même si la structure n'est pas parfaite
-      if (this.isOnlineFixGame(gameData)) {
-        console.log('🔄 Tentative d\'installation OnlineFix en mode fallback');
-        const onlineFixEditor = this.editors['OnlineFix'];
-        if (onlineFixEditor) {
-          onlineFixEditor.installGame(gamePath, gameData);
-          return;
-        }
+    if (editor) {
+      // Essayer avec le chemin brut d'abord (OnlineFixEditor scanne récursivement)
+      if (editor.verifyStructure(gamePath)) {
+        console.log('✅ Structure vérifiée avec chemin brut');
+        editor.installGame(gamePath, gameData);
+        return;
       }
       
-      console.log('❌ Éditeur non supporté ou structure invalide');
-      const win = getMainWindow();
-      win?.webContents.send('error', `Éditeur non supporté: ${editorName}`);
-      win?.webContents.send('install-failed', gameData.id);
+      // Fallback: essayer avec getValidPath pour les éditeurs qui ont besoin d'un chemin drillé (FitGirl, P2P)
+      const { installService } = require('../services/installService');
+      const validPath = installService.getValidPath(gamePath);
+      if (validPath !== gamePath && editor.verifyStructure(validPath)) {
+        console.log('✅ Structure vérifiée avec chemin drillé:', validPath);
+        editor.installGame(validPath, gameData);
+        return;
+      }
     }
+    
+    // Fallback OnlineFix: essayer même si la structure n'est pas parfaite
+    if (this.isOnlineFixGame(gameData)) {
+      console.log('🔄 Tentative d\'installation OnlineFix en mode fallback');
+      const onlineFixEditor = this.editors['OnlineFix'];
+      if (onlineFixEditor) {
+        onlineFixEditor.installGame(gamePath, gameData);
+        return;
+      }
+    }
+    
+    console.log('❌ Éditeur non supporté ou structure invalide');
+    const win = getMainWindow();
+    win?.webContents.send('error', `Éditeur non supporté: ${editorName}`);
+    win?.webContents.send('install-failed', gameData.id);
   }
 
   private getEditor(editorName: string): EditorInterface | null {

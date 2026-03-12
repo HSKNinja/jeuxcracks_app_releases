@@ -288,6 +288,13 @@
   resolved "https://registry.npmjs.org/@tootallnate/once/-/once-2.0.0.tgz"
   integrity sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==
 
+"@types/adm-zip@^0.5.7":
+  version "0.5.7"
+  resolved "https://registry.npmjs.org/@types/adm-zip/-/adm-zip-0.5.7.tgz"
+  integrity sha512-DNEs/QvmyRLurdQPChqq0Md4zGvPwHerAJYWk9l2jCbD1VPpnzRJorOdiq4zsw09NFbYnhfsoEhWtxIzXpn2yw==
+  dependencies:
+    "@types/node" "*"
+
 "@types/cacheable-request@^6.0.1":
   version "6.0.3"
   resolved "https://registry.npmjs.org/@types/cacheable-request/-/cacheable-request-6.0.3.tgz"
@@ -346,14 +353,7 @@
   resolved "https://registry.npmjs.org/@types/ms/-/ms-2.1.0.tgz"
   integrity sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==
 
-"@types/node@*":
-  version "24.0.15"
-  resolved "https://registry.npmjs.org/@types/node/-/node-24.0.15.tgz"
-  integrity sha512-oaeTSbCef7U/z7rDeJA138xpG3NuKc64/rZ2qmUFkFJmnMsAPaluIifqyWd8hSSMxyP9oie3dLAqYPblag9KgA==
-  dependencies:
-    undici-types "~7.8.0"
-
-"@types/node@^18.0.0 || >=20.0.0", "@types/node@^20.14.10":
+"@types/node@*", "@types/node@^18.0.0 || >=20.0.0", "@types/node@^20.14.10":
   version "20.19.9"
   resolved "https://registry.npmjs.org/@types/node/-/node-20.19.9.tgz"
   integrity sha512-cuVNgarYWZqxRJDQHEB58GEONhOK79QVR/qYx4S7kcUObQvUwvFnYxJuuHUKm2aieN9X3yZB4LZsuYNU1Qphsw==
@@ -582,7 +582,7 @@
   resolved "https://registry.npmjs.org/@xmldom/xmldom/-/xmldom-0.8.10.tgz"
   integrity sha512-2WALfTl4xo2SkGCYRt6rDTFfk9R1czmBvUQy12gK2KuRKIpWEhcbbzy8EZXtz/jkRqHX8bFEc6FC1HjX4TUWYw==
 
-"7zip-bin@~5.2.0":
+"7zip-bin@^5.2.0", "7zip-bin@~5.2.0":
   version "5.2.0"
   resolved "https://registry.npmjs.org/7zip-bin/-/7zip-bin-5.2.0.tgz"
   integrity sha512-ukTPVhqG4jNzMro2qA9HSCSSVJN3aN7tlb+hfqYCt3ER0yWroeA2VR38MNrOHLQ/cVj+DaIMad0kFCtWWowh/A==
@@ -606,6 +606,11 @@ addr-to-ip-port@^1.0.1, addr-to-ip-port@^1.5.4:
   version "1.5.4"
   resolved "https://registry.npmjs.org/addr-to-ip-port/-/addr-to-ip-port-1.5.4.tgz"
   integrity sha512-ByxmJgv8vjmDcl3IDToxL2yrWFrRtFpZAToY0f46XFXl8zS081t7El5MXIodwm7RC6DhHBRoOSMLFSPKCtHukg==
+
+adm-zip@^0.5.16:
+  version "0.5.16"
+  resolved "https://registry.npmjs.org/adm-zip/-/adm-zip-0.5.16.tgz"
+  integrity sha512-TGw5yVi4saajsSEgz25grObGHEUaDrniwvA2qwSC060KfqGPdglhvPMA2lPIoxs3PQIItj2iag35fONcQqgUaQ==
 
 agent-base@6:
   version "6.0.2"
@@ -855,6 +860,14 @@ argparse@^2.0.1:
   version "2.0.1"
   resolved "https://registry.npmjs.org/argparse/-/argparse-2.0.1.tgz"
   integrity sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==
+
+aria2@^4.1.2:
+  version "4.1.2"
+  resolved "https://registry.npmjs.org/aria2/-/aria2-4.1.2.tgz"
+  integrity sha512-qTBr2RY8RZQmiUmbj2KXFvkErNxU4aTHZszszzwhE8svy2PEVX+IYR/c4Rp9Tuw4QkeU8cylGy6McV6Yl8i7Qw==
+  dependencies:
+    node-fetch "^2.6.1"
+    ws "^7.4.0"
 
 astral-regex@^1.0.0:
   version "1.0.0"
@@ -3399,6 +3412,16 @@ lodash.defaults@^4.2.0:
   resolved "https://registry.npmjs.org/lodash.defaults/-/lodash.defaults-4.2.0.tgz"
   integrity sha512-qjxPLHd3r5DnsdGacqOMU6pb/avJzdh9tFX2ymgoZE27BmjXrNy/y4LoaiTeAb+O3gL8AfpJGtqfX/ae2leYYQ==
 
+lodash.defaultsdeep@^4.6.1:
+  version "4.6.1"
+  resolved "https://registry.npmjs.org/lodash.defaultsdeep/-/lodash.defaultsdeep-4.6.1.tgz"
+  integrity sha512-3j8wdDzYuWO3lM3Reg03MuQR957t287Rpcxp1njpEa8oDrikb+FwGdW3n+FELh/A6qib6yPit0j/pv9G/yeAqA==
+
+lodash.defaultto@^4.14.0:
+  version "4.14.0"
+  resolved "https://registry.npmjs.org/lodash.defaultto/-/lodash.defaultto-4.14.0.tgz"
+  integrity sha512-G6tizqH6rg4P5j32Wy4Z3ZIip7OfG8YWWlPFzUFGcYStH1Ld0l1tWs6NevEQNEDnO1M3NZYjuHuraaFSN5WqeQ==
+
 lodash.difference@^4.5.0:
   version "4.5.0"
   resolved "https://registry.npmjs.org/lodash.difference/-/lodash.difference-4.5.0.tgz"
@@ -3414,6 +3437,16 @@ lodash.flatten@^4.4.0:
   resolved "https://registry.npmjs.org/lodash.flatten/-/lodash.flatten-4.4.0.tgz"
   integrity sha512-C5N2Z3DgnnKr0LOpv/hKCgKdb7ZZwafIrsesve6lmzvZIRZRGaZ/l6Q8+2W7NaT+ZwO3fFlSCzCzrDCFdJfZ4g==
 
+lodash.flattendeep@^4.4.0:
+  version "4.4.0"
+  resolved "https://registry.npmjs.org/lodash.flattendeep/-/lodash.flattendeep-4.4.0.tgz"
+  integrity sha512-uHaJFihxmJcEX3kT4I23ABqKKalJ/zDrDg0lsFtc1h+3uw49SIJ5beyhx5ExVRti3AvKoOJngIj7xz3oylPdWQ==
+
+lodash.isempty@^4.4.0:
+  version "4.4.0"
+  resolved "https://registry.npmjs.org/lodash.isempty/-/lodash.isempty-4.4.0.tgz"
+  integrity sha512-oKMuF3xEeqDltrGMfDxAPGIVMSSRv8tbRSODbrs4KGsRRLEhrW8N8Rd4DRgB2+621hY8A8XwwrTVhXWpxFvMzg==
+
 lodash.isequal@^4.5.0:
   version "4.5.0"
   resolved "https://registry.npmjs.org/lodash.isequal/-/lodash.isequal-4.5.0.tgz"
@@ -3423,6 +3456,11 @@ lodash.isplainobject@^4.0.6:
   version "4.0.6"
   resolved "https://registry.npmjs.org/lodash.isplainobject/-/lodash.isplainobject-4.0.6.tgz"
   integrity sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==
+
+lodash.negate@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.npmjs.org/lodash.negate/-/lodash.negate-3.0.2.tgz"
+  integrity sha512-JGJYYVslKYC0tRMm/7igfdHulCjoXjoganRNWM8AgS+RXfOvFnPkOveDhPI65F9aAypCX9QEEQoBqWf7Q6uAeA==
 
 lodash.union@^4.6.0:
   version "4.6.0"
@@ -3833,6 +3871,26 @@ nice-try@^1.0.4:
   resolved "https://registry.npmjs.org/nice-try/-/nice-try-1.0.5.tgz"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
 
+node-7z@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.npmjs.org/node-7z/-/node-7z-3.0.0.tgz"
+  integrity sha512-KIznWSxIkOYO/vOgKQfJEaXd7rgoFYKZbaurainCEdMhYc7V7mRHX+qdf2HgbpQFcdJL/Q6/XOPrDLoBeTfuZA==
+  dependencies:
+    debug "^4.3.2"
+    lodash.defaultsdeep "^4.6.1"
+    lodash.defaultto "^4.14.0"
+    lodash.flattendeep "^4.4.0"
+    lodash.isempty "^4.4.0"
+    lodash.negate "^3.0.2"
+    normalize-path "^3.0.0"
+
+node-fetch@^2.6.1:
+  version "2.7.0"
+  resolved "https://registry.npmjs.org/node-fetch/-/node-fetch-2.7.0.tgz"
+  integrity sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==
+  dependencies:
+    whatwg-url "^5.0.0"
+
 node-gyp-build@^4.2.0, node-gyp-build@^4.3.0:
   version "4.8.4"
   resolved "https://registry.npmjs.org/node-gyp-build/-/node-gyp-build-4.8.4.tgz"
@@ -3871,11 +3929,6 @@ node-ssdp@^2.2.0, node-ssdp@^2.7.1:
   dependencies:
     debug "^2.2.0"
     ip "^1.0.1"
-
-node-unrar-js@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.npmjs.org/node-unrar-js/-/node-unrar-js-2.0.2.tgz"
-  integrity sha512-hLNmoJzqaKJnod8yiTVGe9hnlNRHotUi0CreSv/8HtfRi/3JnRC8DvsmKfeGGguRjTEulhZK6zXX5PXoVuDZ2w==
 
 nodebmc@0.0.7:
   version "0.0.7"
@@ -5423,6 +5476,11 @@ torrent-piece@^2.0.1:
   resolved "https://registry.npmjs.org/torrent-piece/-/torrent-piece-2.0.1.tgz"
   integrity sha512-JLSOyvQVLI6JTWqioY4vFL0JkEUKQcaHQsU3loxkCvPTSttw8ePs2tFwsP4XIjw99Fz8EdOzt/4faykcbnPbCQ==
 
+tr46@~0.0.3:
+  version "0.0.3"
+  resolved "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
+  integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
+
 truncate-utf8-bytes@^1.0.0:
   version "1.0.2"
   resolved "https://registry.npmjs.org/truncate-utf8-bytes/-/truncate-utf8-bytes-1.0.2.tgz"
@@ -5729,6 +5787,11 @@ wcwidth@^1.0.1:
   dependencies:
     defaults "^1.0.3"
 
+webidl-conversions@^3.0.0:
+  version "3.0.1"
+  resolved "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-3.0.1.tgz"
+  integrity sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==
+
 webidl-conversions@^4.0.2:
   version "4.0.2"
   resolved "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-4.0.2.tgz"
@@ -5822,6 +5885,14 @@ webtorrent@^1.0.0, webtorrent@^1.3.2, webtorrent@1.9.7:
     ut_pex "^3.0.2"
   optionalDependencies:
     utp-native "^2.5.3"
+
+whatwg-url@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.npmjs.org/whatwg-url/-/whatwg-url-5.0.0.tgz"
+  integrity sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==
+  dependencies:
+    tr46 "~0.0.3"
+    webidl-conversions "^3.0.0"
 
 when-exit@^2.1.4:
   version "2.1.5"
@@ -5929,7 +6000,7 @@ wrtc@^0.4.6:
   optionalDependencies:
     domexception "^1.0.1"
 
-ws@^7.4.2, ws@^7.4.5:
+ws@^7.4.0, ws@^7.4.2, ws@^7.4.5:
   version "7.5.10"
   resolved "https://registry.npmjs.org/ws/-/ws-7.5.10.tgz"
   integrity sha512-+dbF1tHwZpXcbOJdVOkzLDxZP1ailvSxM6ZweXTegylPny803bFhA+vqBYw4s31NSAk4S2Qz+AKXK9a4wkdjcQ==

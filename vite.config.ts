@@ -62,19 +62,6 @@ export default defineConfig(({ command }) => {
               },
             },
           },
-        },
-        {
-          entry: 'electron/main/unrar.ts',
-          vite: {
-            build: {
-              sourcemap,
-              minify: isBuild,
-              outDir: 'dist-electron/main',
-              rollupOptions: {
-                external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}),
-              },
-            },
-          },
         }
       ]),
       // Use Node.js API in the Renderer-process

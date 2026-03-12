@@ -210,21 +210,28 @@ class LaunchService {
     const win = getMainWindow();
     const executables: string[] = [];
     this.collectExecutablesRecursively(path, executables, path);
-    // On envoie tous les .exe trouvés (chemin relatif)
-    // IMPORTANT: On doit passer userId à la fenetre pour qu'elle le renvoie lors du choix final,
-    // OU ALORS, on stocke userId quelque part.
-    // LE PLUS SIMPLE: La fenetre de choix renvoie 'launch-game' avec un exe spécifique.
-    // MAIS ici 'find-many-exe' est un event pour la popup de choix d'exe.
-    // La popup de choix va rappeller `save-exe-choice` ou relancer launch-game?
-    // Non, il semble que la logique de choix d'exe soit gérée coté front qui va re-trigger un launch-game avec l'exe choisi?
-    // Vérifions le front `game.vue`.
     
-    // Si c'est le front qui gère, il a déjà le userId.
-    // Si la logique de choix passe par IPC `launch-game` avec un nouvel argument exe, alors ça marchera car App.vue passe userId.
+    const gamePath = gameData.installPath || gameData.path || path;
     
-    // CEPENDANT, si `findEXE` échoue et ouvre `openFileDialog`, là on a besoin de userId.
-    
-    win?.webContents.send('find-many-exe', executables, gameData.id, gameData.path, gameData.title);
+    if (executables.length === 0) {
+      console.log('❌ Aucun .exe trouvé, ouverture du dialogue de sélection');
+      this.openFileDialog(path, gameData, userId);
+    } else if (executables.length === 1) {
+      // Auto-launch: un seul exe trouvé, pas besoin de popup
+      console.log('🚀 Un seul exécutable trouvé, lancement automatique:', executables[0]);
+      const exePath = join(path, executables[0]);
+      const exeDir = join(exePath, '..');
+      const exeFile = exePath.split(/[\\/]/).pop();
+      
+      // Sauvegarder le choix pour la prochaine fois
+      this.saveExeChoice(gameData.id, executables[0]);
+      
+      this.runEXE(exeDir, exeFile, gameData.id, userId);
+    } else {
+      // Multiple exe: ouvrir la popup de choix
+      console.log(`📋 ${executables.length} exécutables trouvés, affichage du sélecteur`);
+      win?.webContents.send('find-many-exe', executables, gameData.id, gamePath, gameData.title);
+    }
   };
   
   private saveExeChoice = (gameID: string, exeFile: string) => {
