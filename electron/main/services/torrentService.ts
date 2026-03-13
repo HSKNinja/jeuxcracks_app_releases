@@ -10,9 +10,21 @@ import Aria2 from 'aria2';
 
 // Ensure standard paths
 const isPackaged = app.isPackaged;
-const aria2cPath = isPackaged 
+let aria2cPath = isPackaged 
     ? join(process.resourcesPath, 'assets', 'aria2c', 'aria2c.exe')
     : join(__dirname, '../../assets/aria2c/aria2c.exe');
+
+// Production Fallback: electron-builder might put extraResources directly in resources/
+if (isPackaged && !fs.existsSync(aria2cPath)) {
+    const fallbackPath = join(process.resourcesPath, 'aria2c', 'aria2c.exe');
+    if (fs.existsSync(fallbackPath)) {
+        aria2cPath = fallbackPath;
+    }
+}
+console.log(`🔍 Path Aria2c résolu (${isPackaged ? 'PROD' : 'DEV'}): ${aria2cPath}`);
+if (isPackaged && !fs.existsSync(aria2cPath)) {
+    console.error('❌ CRITIQUE: aria2c.exe introuvable dans le package !');
+}
 
 export class TorrentService {
   private aria2Process: ChildProcess | null = null;
@@ -42,8 +54,8 @@ export class TorrentService {
   
   constructor() {
     this.aria2Client = new Aria2({
-      host: 'localhost',
-      port: 6800,
+      host: '127.0.0.1',
+      port: 16800,
       secure: false,
       secret: 'JeuxCracksV2',
       path: '/jsonrpc'
@@ -62,11 +74,13 @@ export class TorrentService {
     try {
       console.log('🚀 Démarrage du moteur Aria2c (V2 Hyper-Vitesse)...');
       
-      // Force kill any zombie aria2c process before starting a new one (fixes 1-in-2 launch bug)
+      // Force kill any zombie aria2c process before starting a new one
       try {
           const { execSync } = require('child_process');
           execSync('taskkill /F /IM aria2c.exe /T', { windowsHide: true, stdio: 'ignore' });
           console.log('🧹 Processus Aria2c fantôme nettoyé.');
+          // Wait for OS to release port 6800
+          await new Promise(r => setTimeout(r, 500));
       } catch (e) {
           // Normal if no process exists
       }
@@ -78,9 +92,11 @@ export class TorrentService {
 
       const args = [
         '--enable-rpc=true',
-        '--rpc-listen-all=false',
-        '--rpc-listen-port=6800',
+        '--rpc-listen-all=false', // Only listen on loopback for security
+        '--rpc-allow-origin-all=true',
+        '--rpc-listen-port=16800',
         '--rpc-secret=JeuxCracksV2',
+        '--no-conf=true', // Ignore any system-wide aria2.conf
         
         // --- 🚀 PERFORMANCE EXTREME (qBittorrent-like) ---
         '--max-concurrent-downloads=10',
@@ -141,14 +157,22 @@ export class TorrentService {
         console.log('✅ Connecté au serveur RPC Aria2c! Version:', ver.version);
       } catch(e) {
         console.error('❌ Connexion Aria2c échouée (auth test):', e.message);
+        
+        // If unauthorized, it means we are talking to the WRONG process. Kill again and retry?
+        if (e.message.includes('Unauthorized')) {
+            console.log('⚠️ Erreur d\'authentification - possible conflit de processus. Tentative de reconnexion...');
+        }
+
         console.log('🔄 Retry connexion dans 2s...');
         await new Promise(r => setTimeout(r, 2000));
         try {
-          await this.aria2Client.close();
-        } catch(e2) {}
-        await this.aria2Client.open();
-        const ver = await this.aria2Client.call('getVersion');
-        console.log('✅ Connecté au serveur RPC Aria2c (retry)! Version:', ver.version);
+          await this.aria2Client.close().catch(() => {});
+          await this.aria2Client.open();
+          const ver = await this.aria2Client.call('getVersion');
+          console.log('✅ Connecté au serveur RPC Aria2c (retry)! Version:', ver.version);
+        } catch(e2) {
+            console.error('❌ Échec critique Aria2c après retry:', e2.message);
+        }
       }
 
       // Load Metadatas
