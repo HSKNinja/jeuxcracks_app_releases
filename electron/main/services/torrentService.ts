@@ -32,24 +32,30 @@ export class TorrentService {
   private activeTorrents = new Map<string, any>(); // infoHash -> { gid, gameData, savePath }
   private torrentsMetadataFile = join(app.getPath('userData'), 'downloads', 'torrents_metav2.json');
   private pollInterval: NodeJS.Timeout | null = null;
-  
+  private isReady = false; // true une fois la connexion RPC Aria2c confirmée
+
   private downloadLimit = 0;
   private uploadLimit = 0;
 
+  // Liste de trackers publics actifs (basée sur ngosang/trackerslist).
+  // Les anciens trackers morts (coppersurfer.tk, zer0day.to, leechers-paradise...)
+  // ralentissaient la récupération des métadonnées des magnets.
   private globalTrackersArray = [
-    "udp://open.demonii.com:1337",
     "udp://tracker.opentrackr.org:1337/announce",
+    "udp://open.demonii.com:1337/announce",
+    "udp://open.stealth.si:80/announce",
+    "udp://tracker.torrent.eu.org:451/announce",
+    "udp://explodie.org:6969/announce",
+    "udp://exodus.desync.com:6969/announce",
+    "udp://tracker.dler.org:6969/announce",
+    "udp://opentracker.i2p.rocks:6969/announce",
     "udp://tracker.openbittorrent.com:6969/announce",
     "http://tracker.openbittorrent.com:80/announce",
-    "udp://tracker.torrent.eu.org:451/announce",
-    "udp://exodus.desync.com:6969/announce",
-    "udp://open.stealth.si:80/announce",
+    "udp://tracker.tiny-vps.com:6969/announce",
+    "udp://tracker-udp.gbitt.info:80/announce",
     "udp://tracker.moeking.me:6969/announce",
-    "udp://explodie.org:6969/announce",
-    "udp://tracker.zer0day.to:1337/announce",
-    "udp://tracker.leechers-paradise.org:6969/announce",
-    "udp://coppersurfer.tk:6969/announce",
-    "udp://tracker.internetwarriors.net:1337/announce"
+    "udp://p4p.arenabg.com:1337/announce",
+    "https://tracker.tamersunion.org:443/announce"
   ];
   
   constructor() {
@@ -70,10 +76,46 @@ export class TorrentService {
     this.initAria2();
   }
 
+  /**
+   * Exclut aria2c.exe de Windows Defender (une seule fois, mise en cache).
+   * En production, l'app tourne en administrateur : les téléchargeurs P2P comme aria2c
+   * sont souvent bloqués/quarantinés par l'antivirus, ce qui laisse les téléchargements
+   * bloqués à 0%. On applique l'exclusion AVANT de lancer le process.
+   */
+  private ensureAntivirusExclusion() {
+      try {
+          const cachePath = join(app.getPath('userData'), '.aria2_defender_cache');
+          if (fs.existsSync(cachePath)) return; // déjà fait
+
+          const aria2Dir = require('path').dirname(aria2cPath).replace(/'/g, "''");
+          const inner =
+              `Add-MpPreference -ExclusionProcess 'aria2c.exe' -ErrorAction SilentlyContinue; ` +
+              `Add-MpPreference -ExclusionPath '${aria2Dir}' -ErrorAction SilentlyContinue`;
+          const b64 = Buffer.from(inner, 'utf16le').toString('base64');
+
+          const { execSync } = require('child_process');
+          // L'app est lancée en admin (requestedExecutionLevel: requireAdministrator),
+          // donc Add-MpPreference s'exécute sans nouvelle invite UAC. Timeout de sécurité.
+          execSync(`powershell -WindowStyle Hidden -NoProfile -EncodedCommand ${b64}`, {
+              windowsHide: true,
+              timeout: 15000,
+              stdio: 'ignore'
+          });
+          fs.writeFileSync(cachePath, '1');
+          console.log('🛡️ Exclusion Defender ajoutée pour aria2c.exe');
+      } catch (e) {
+          // Non bloquant : si l'exclusion échoue (dev non-admin, autre AV...), on continue.
+          console.warn('⚠️ Exclusion Defender aria2c non appliquée (non bloquant).');
+      }
+  }
+
   private async initAria2() {
     try {
       console.log('🚀 Démarrage du moteur Aria2c (V2 Hyper-Vitesse)...');
-      
+
+      // Exclusion antivirus AVANT de démarrer aria2c (sinon Defender peut le bloquer en prod).
+      this.ensureAntivirusExclusion();
+
       // Force kill any zombie aria2c process before starting a new one
       try {
           const { execSync } = require('child_process');
@@ -154,6 +196,7 @@ export class TorrentService {
       // Verify connection works with a simple call
       try {
         const ver = await this.aria2Client.call('getVersion');
+        this.isReady = true;
         console.log('✅ Connecté au serveur RPC Aria2c! Version:', ver.version);
       } catch(e) {
         console.error('❌ Connexion Aria2c échouée (auth test):', e.message);
@@ -169,6 +212,7 @@ export class TorrentService {
           await this.aria2Client.close().catch(() => {});
           await this.aria2Client.open();
           const ver = await this.aria2Client.call('getVersion');
+          this.isReady = true;
           console.log('✅ Connecté au serveur RPC Aria2c (retry)! Version:', ver.version);
         } catch(e2) {
             console.error('❌ Échec critique Aria2c après retry:', e2.message);
@@ -190,8 +234,24 @@ export class TorrentService {
           console.log('✅ Événement RPC (BT): Téléchargement terminé (GID:', events.gid, ')');
           await this.handleDownloadComplete(events.gid);
       });
-      this.aria2Client.on('onDownloadError', ([events]) => {
+      this.aria2Client.on('onDownloadError', async ([events]) => {
           console.warn('❌ Événement RPC: Erreur téléchargement (GID:', events.gid, ')');
+          // Remonter l'erreur réelle à l'utilisateur au lieu de laisser un téléchargement figé à 0%.
+          try {
+              const status = await this.aria2Client.call('tellStatus', events.gid, [
+                  'errorCode', 'errorMessage'
+              ]);
+              let title = '';
+              for (const [, info] of this.activeTorrents.entries()) {
+                  if (info.gid === events.gid) { title = info.gameData?.title || ''; break; }
+              }
+              const reason = status?.errorMessage || `Code ${status?.errorCode || 'inconnu'}`;
+              const win = getMainWindow();
+              win?.webContents.send('error', `Téléchargement échoué${title ? ` (${title})` : ''} : ${reason}`);
+          } catch (e) {
+              const win = getMainWindow();
+              win?.webContents.send('error', 'Le téléchargement a échoué (erreur Aria2).');
+          }
       });
 
     } catch (e) {
@@ -217,6 +277,27 @@ export class TorrentService {
 
   public getLimits() {
       return { download: this.downloadLimit, upload: this.uploadLimit };
+  }
+
+  /**
+   * Attend que le moteur Aria2c soit réellement joignable avant d'ajouter un torrent.
+   * Sans cette garde, un téléchargement lancé pendant l'initialisation (ou si Aria2c
+   * démarre lentement en prod à cause de l'antivirus) échoue silencieusement et reste figé à 0%.
+   */
+  private async ensureReady(timeoutMs = 25000): Promise<boolean> {
+      if (this.isReady) return true;
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+          try {
+              await this.aria2Client.call('getVersion');
+              this.isReady = true;
+              return true;
+          } catch (e) {
+              // Pas encore prêt : on retente après une courte pause
+              await new Promise(r => setTimeout(r, 800));
+          }
+      }
+      return this.isReady;
   }
 
   private saveState() {
@@ -261,6 +342,16 @@ export class TorrentService {
   public startTorrent = async (_event, torrentFile: string | Buffer, savePath: string, gameData: any, isNewLaunch: boolean = true) => {
     try {
       console.log('🚀 Torrent V2: Ajout de', gameData.title);
+
+      // Garde: s'assurer qu'Aria2c est connecté avant d'ajouter le torrent.
+      const ready = await this.ensureReady();
+      if (!ready) {
+          console.error('❌ Aria2c indisponible: impossible de démarrer le téléchargement de', gameData.title);
+          const win = getMainWindow();
+          win?.webContents.send('error', "Le moteur de téléchargement (Aria2) n'a pas démarré. Redémarrez l'application ; si le problème persiste, vérifiez que votre antivirus/pare-feu ne bloque pas aria2c.exe.");
+          win?.webContents.send('download-done', gameData.title); // Retire le téléchargement fantôme figé à 0%
+          return;
+      }
 
       let gid = '';
 
