@@ -212,8 +212,8 @@ export const useSocialStore = defineStore('social', {
                 headers: { 'Authorization': `Bearer ${mainStore.tokens?.access}` }
             });
             if (res.ok) {
-                // Remove from local list
-                this.friends = this.friends.filter(f => f.id !== friendshipId);
+                // Remove from local list (on filtre bien par friendship_id, pas par id utilisateur)
+                this.friends = this.friends.filter(f => f.friendship_id !== friendshipId);
                 await this.fetchFriends(); // Refresh to be sure
             }
         } catch (e) { console.error('Failed to remove friend', e); }
@@ -286,6 +286,11 @@ export const useSocialStore = defineStore('social', {
     
     handleWsConnect() {
         this.isConnected = true;
+        // À chaque (re)connexion, on resynchronise amis et demandes.
+        // Cela permet de voir une amitié acceptée par l'autre partie sans
+        // avoir à redémarrer l'application (il n'existe pas d'event WS "FRIEND_ACCEPTED").
+        this.fetchFriends();
+        this.fetchRequests();
     },
     
     handleWsDisconnect() {
@@ -374,6 +379,10 @@ export const useSocialStore = defineStore('social', {
         const notificationStore = useNotificationStore();
         if (!this.isPanelOpen) {
             notificationStore.closePanel();
+            // À l'ouverture du panneau, on récupère des données fraîches pour qu'un ami
+            // ajouté/accepté pendant la session apparaisse immédiatement.
+            this.fetchFriends();
+            this.fetchRequests();
         }
         this.isPanelOpen = !this.isPanelOpen;
     },
