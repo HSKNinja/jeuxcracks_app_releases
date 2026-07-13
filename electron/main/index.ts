@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import './logger'; // DOIT rester avant les services pour capturer leurs logs (aria2, etc.)
 import { app, BrowserWindow, shell, ipcMain, dialog, Menu, Tray, nativeImage, session } from 'electron';
 import { release } from 'os';
 import { join, dirname } from 'path';
@@ -726,11 +727,17 @@ ipcMain.on('restart-app', () => {
   autoUpdater.quitAndInstall();
 });
 
-// Open URL in default browser (Stripe checkout, invoices, etc.)
-ipcMain.on('open-external', (_e, url: string) => {
-    if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
-        const { shell } = require('electron');
-        shell.openExternal(url);
+// Open URL in default browser (Stripe checkout, invoices, admin, etc.)
+ipcMain.on('open-external', async (_e, url: string) => {
+    try {
+        if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
+            await shell.openExternal(url);
+        } else {
+            console.warn('open-external: URL invalide ou non-http:', url);
+        }
+    } catch (e) {
+        // Ne jamais faire planter le process principal si l'ouverture échoue.
+        console.error('❌ open-external a échoué:', e);
     }
 });
 

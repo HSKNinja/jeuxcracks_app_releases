@@ -102,7 +102,7 @@ try {
     'set-download-limit', 'set-upload-limit', 'pause-torrent', 'resume-torrent',
     'cancel-torrent', 'remove-torrent', 'stop-torrent', 'download',
     'pause-download', 'stop-torrent-by-id', 'cancel-download', 'set-exe-file',
-    'retry-extraction'
+    'retry-extraction', 'cancel-extraction'
   ];
 
   const allowedInvokeChannels = [
@@ -121,7 +121,8 @@ try {
     'checking-for-update', 'update-not-available', 'update-available',
     'update-downloaded', 'update-error', 'download-progress', 'download-done',
     'torrent-error', 'verify-progress', 'verify-done', 'install-start',
-    'install-progress', 'install-done', 'install-failed', 'error', 'find-many-exe'
+    'install-progress', 'install-done', 'install-failed', 'error', 'find-many-exe',
+    'token-expired'
   ];
 
   contextBridge.exposeInMainWorld('electronAPI', {

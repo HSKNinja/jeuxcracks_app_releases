@@ -1,6 +1,7 @@
 import si from 'systeminformation';
 import { machineId } from 'node-machine-id';
 import { app } from 'electron';
+import { getMainWindow } from '..';
 
 const API_URL = 'https://api.jeuxcracks.fr/api/telemetry';
 
@@ -209,9 +210,10 @@ export class TelemetryService {
                      duration_session: durationSeconds
                  })
             });
-            // If 401, token may have expired — don't crash
+            // If 401, token may have expired — demander au renderer de rafraîchir immédiatement.
             if (res.status === 401) {
-                console.warn('⚠️ Heartbeat 401 — waiting for token refresh');
+                console.warn('⚠️ Heartbeat 401 — demande de refresh du token au renderer');
+                getMainWindow()?.webContents.send('token-expired');
             }
         } catch(e) { /* ignore silent fail */ }
     }

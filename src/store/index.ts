@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { useFetch } from '../utils/useFetch';
+import { API_CONFIG } from '../config/api';
 
 declare global {
   interface Window {
@@ -45,6 +46,37 @@ export const useMainStore = defineStore('main', {
       this.tokens = null;
       this.favorites = [];
       this.isOfflineMode = false;
+    },
+    /**
+     * Rafraîchit le token d'accès à partir du refresh token, SANS déconnexion.
+     * Appelé périodiquement (App.vue) pour garder la session vivante même si
+     * l'utilisateur ne fait aucun appel API (page téléchargements, etc.).
+     * Renvoie true si le token a été régénéré.
+     */
+    async refreshTokens(): Promise<boolean> {
+      if (!this.tokens?.refresh) return false;
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh: this.tokens.refresh }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // SimpleJWT renvoie { access } (et { refresh } si la rotation est activée)
+          this.setTokens({
+            access: data.access,
+            refresh: data.refresh || this.tokens.refresh,
+          });
+          this.isOfflineMode = false;
+          return true;
+        }
+        // refresh invalide/expiré : on ne déconnecte pas ici, la reconnexion se fera si besoin
+        return false;
+      } catch (e) {
+        // Erreur réseau : ne pas déconnecter (mode hors-ligne possible)
+        return false;
+      }
     },
     async verifyToken() {
       if (!this.tokens) return false;

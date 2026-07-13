@@ -4,6 +4,8 @@ import { FitgirlEditor } from './editors/FitgirlEditor';
 import { P2PEditor } from './editors/P2PEditor';
 import { BrowserWindow } from 'electron';
 import { getMainWindow } from '..';
+// Import ES (comme les éditeurs) : un require() dynamique ne résout pas dans le bundle Electron.
+import { installService } from '../services/installService';
 
 export class GameInstaller {
   private editors: { [key: string]: EditorInterface } = {};
@@ -25,7 +27,6 @@ export class GameInstaller {
     console.log('🔍 Recherche d\'éditeur pour source:', gameData.source);
     console.log('📂 Chemin brut reçu:', gamePath);
 
-    const { installService } = require('../services/installService');
     const editorName = this.getEditorName(gameData);
     const editor = this.getEditor(editorName);
 

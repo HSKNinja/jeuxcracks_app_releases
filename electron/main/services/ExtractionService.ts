@@ -338,6 +338,15 @@ class ExtractionService {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
+    // Ensure Dependencies (7-Zip) are present AVANT tout ce qui utilise 7z
+    // (waitForFileUnlock et run7z l'utilisent — sinon spawnSync('') plante).
+    await this.ensureDependencies();
+
+    // Vérifier que 7-Zip est bien disponible ; sinon message clair (les .rar exigent le vrai 7z.exe).
+    if (!this.get7zPath()) {
+      throw new Error("7-Zip est requis pour extraire ce jeu (.rar) mais n'a pas pu être installé. Installez 7-Zip (https://www.7-zip.org) puis relancez l'installation.");
+    }
+
     // Explicitly wait for OS / Anti-virus / Aria2c to release the file handles
     await this.waitForFileUnlock(archivePath, password, 20, 1000);
 
@@ -345,9 +354,6 @@ class ExtractionService {
     if (/\.zip\.\d{3}$/i.test(archivePath)) {
       return this.extractSplitZip(job);
     }
-
-    // Ensure Dependencies (7-Zip) are present
-    await this.ensureDependencies();
 
     // All other formats: use 7z directly
     const result = await this.run7z(job);
@@ -364,6 +370,12 @@ class ExtractionService {
   private async waitForFileUnlock(filePath: string, password?: string, maxAttempts = 15, delayMs = 2000): Promise<void> {
     const { spawnSync } = require('child_process');
     const sevenZipPath = this.get7zPath();
+
+    // Garde : sans binaire 7z, spawnSync('') planterait. On saute simplement le test de verrou.
+    if (!sevenZipPath) {
+        console.warn('⚠️ waitForFileUnlock: 7z introuvable — test de verrou ignoré.');
+        return;
+    }
 
     for (let i = 0; i < maxAttempts; i++) {
         const args = ['l'];
@@ -389,6 +401,11 @@ class ExtractionService {
     return new Promise((resolve, reject) => {
       const { archivePath, outputDir, password } = job.options;
       const sevenZipPath = this.get7zPath();
+
+      // Garde : sans 7z, spawn('') planterait avec une erreur cryptique.
+      if (!sevenZipPath) {
+        return reject(new Error("7-Zip introuvable : impossible d'extraire l'archive."));
+      }
 
       const args = [
         'x',                          // Extract with full paths

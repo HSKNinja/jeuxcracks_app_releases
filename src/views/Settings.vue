@@ -460,6 +460,41 @@
                   </div>
              </div>
 
+             <!-- ADMIN TAB (Staff only) -->
+             <div v-if="currentTab === 'admin' && isStaff" class="animate-fade-in">
+                  <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-8">
+                        <div class="flex items-center gap-3 mb-1">
+                            <h3 class="text-xl font-bold text-white">Espace Admin</h3>
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Staff</span>
+                        </div>
+                        <p class="text-zinc-400 text-sm mb-6">Gestion du catalogue via l'admin Django. Les boutons ouvrent ton navigateur (connexion admin requise).</p>
+
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <button @click="openAdmin('/Cracks/game/add/')" class="flex items-center gap-3 p-4 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-left hover:bg-indigo-600/20 hover:border-indigo-500/40 transition-all">
+                                <span class="text-2xl">➕</span>
+                                <div>
+                                    <div class="font-bold text-white text-sm">Ajouter un jeu</div>
+                                    <div class="text-xs text-zinc-500">Nouveau jeu dans le catalogue</div>
+                                </div>
+                            </button>
+                            <button @click="openAdmin('/Cracks/game/')" class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 text-left hover:bg-white/10 transition-all">
+                                <span class="text-2xl">📚</span>
+                                <div>
+                                    <div class="font-bold text-white text-sm">Gérer les jeux</div>
+                                    <div class="text-xs text-zinc-500">Éditer / supprimer des jeux existants</div>
+                                </div>
+                            </button>
+                            <button @click="openAdmin('/')" class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 text-left hover:bg-white/10 transition-all">
+                                <span class="text-2xl">🛠️</span>
+                                <div>
+                                    <div class="font-bold text-white text-sm">Admin complet</div>
+                                    <div class="text-xs text-zinc-500">Accès à l'ensemble de l'admin Django</div>
+                                </div>
+                            </button>
+                        </div>
+                  </div>
+             </div>
+
         </div>
 
     </div>
@@ -469,15 +504,31 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import LibraryManager from '../components/system/LibraryManager.vue';
 import Switch from '../components/ui/Switch.vue';
+import { useMainStore } from '../store';
 
-const tabs = [
-    { id: 'general', label: 'Général' },
-    { id: 'library', label: 'Bibliothèques' },
-    { id: 'downloads', label: 'Téléchargements' },
-    { id: 'account', label: 'Compte' }
-];
+const store = useMainStore();
+// Onglet/boutons Admin réservés aux membres du staff.
+const isStaff = computed(() => !!store.user?.is_staff);
+
+const tabs = computed(() => {
+    const base = [
+        { id: 'general', label: 'Général' },
+        { id: 'library', label: 'Bibliothèques' },
+        { id: 'downloads', label: 'Téléchargements' },
+        { id: 'account', label: 'Compte' },
+    ];
+    if (isStaff.value) base.push({ id: 'admin', label: 'Admin' });
+    return base;
+});
+
+// Ouvre l'admin Django dans le navigateur externe (le launcher n'écrit rien lui-même).
+const ADMIN_BASE = 'https://api.jeuxcracks.fr/admin';
+const openAdmin = (path: string) => {
+    if (window.electronAPI) window.electronAPI.send('open-external', `${ADMIN_BASE}${path}`);
+};
+
 const currentTab = ref('general');
-const appVersion = ref('1.0.32');
+const appVersion = ref('1.1.5');
 const electronVersion = ref('');
 
 const settings = reactive({

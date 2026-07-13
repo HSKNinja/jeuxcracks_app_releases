@@ -40,6 +40,19 @@ interface Download {
   chartData?: any;
 }
 
+// Garde anti-résurrection : quand l'utilisateur annule un téléchargement, un dernier
+// événement `download-progress` (polling aria2 toujours en vol) peut recréer l'entrée.
+// On mémorise brièvement les clés supprimées pour bloquer cette recréation fantôme.
+const recentlyRemoved = new Set<string>();
+function markRecentlyRemoved(...keys: (string | undefined | null)[]) {
+  keys.forEach((k) => {
+    if (k === undefined || k === null || k === '') return;
+    const key = String(k);
+    recentlyRemoved.add(key);
+    setTimeout(() => recentlyRemoved.delete(key), 8000);
+  });
+}
+
 export const useDownloadStore = defineStore('download', {
   state: () => ({
     downloads: [] as Download[],
@@ -58,8 +71,18 @@ export const useDownloadStore = defineStore('download', {
       this.initChartData(downloadData.title);
     },
     removeDownloadByTitle(title: string) {
-      const index = this.downloads.findIndex((dl) => dl.title === title);
-      this.downloads.splice(index, 1);
+      // Le paramètre peut être un titre OU un gameID selon l'appelant.
+      const index = this.downloads.findIndex((dl) => dl.title === title || dl.gameID === title);
+      if (index !== -1) {
+        const dl = this.downloads[index];
+        // Marquer AVANT de retirer pour bloquer toute résurrection par le polling.
+        markRecentlyRemoved(dl.title, dl.gameID);
+        this.downloads.splice(index, 1);
+      } else {
+        // Pas trouvé : on garde quand même la clé en garde (un event en vol pourrait arriver).
+        // NB: ne PAS faire splice(-1) ici — cela supprimerait le dernier téléchargement par erreur.
+        markRecentlyRemoved(title);
+      }
     },
     clearDownloads() {
       this.downloads = [];
@@ -83,6 +106,14 @@ export const useDownloadStore = defineStore('download', {
       
       // Auto-Create if missing (Resurrected from backend)
       if (index === -1) {
+        // Ne PAS ressusciter un téléchargement que l'utilisateur vient d'annuler/supprimer.
+        if (
+          recentlyRemoved.has(String(download.gameID)) ||
+          recentlyRemoved.has(String(download.title)) ||
+          recentlyRemoved.has(String(idOrTitle))
+        ) {
+          return;
+        }
         // console.log('⚠️ Download non trouvé (Ghost?), Création automatique:', idOrTitle);
         if (download && download.name) {
              const newDl: Download = {

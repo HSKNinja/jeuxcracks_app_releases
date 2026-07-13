@@ -225,6 +225,13 @@ if (window.electronAPI) {
     notify({ type: 'error', title: 'Erreur', text: err });
   });
 
+  // Le process principal (heartbeat télémétrie) a reçu un 401 → régénérer le token, sans déconnexion.
+  window.electronAPI.on('token-expired', async () => {
+    if (store.isAuthenticated) {
+      await store.refreshTokens();
+    }
+  });
+
   window.electronAPI.on('find-many-exe', (e: any, exes: any, gameID: any, gamePath: any, title: any) => {
     executables.value = exes;
     gameIDExe.value = gameID;
@@ -328,14 +335,24 @@ onMounted(async () => {
 
   // Trigger Telemetry Startup if already logged in
   if (store.isAuthenticated && store.tokens) {
+      // Rafraîchir le token dès le démarrage : une session persistée peut avoir un access expiré.
+      await store.refreshTokens();
 
       window.electronAPI?.send('auth-success', store.tokens.access);
-      
+
       // Init Social System
       await socialStore.initialize();
-      
+
       // Init Notification System
       await notificationStore.initialize();
+  }
+
+  // Garde la session vivante SANS déconnexion : rafraîchit le token toutes les 4 min.
+  // Sinon les heartbeats (télémétrie/WebSocket) finissent en 401 quand l'access token expire.
+  if (!(window as any).__tokenRefreshTimer) {
+      (window as any).__tokenRefreshTimer = setInterval(() => {
+          if (store.isAuthenticated) store.refreshTokens();
+      }, 4 * 60 * 1000);
   }
   
   if (!store.isAuthenticated && router.currentRoute.value.path !== '/login') {

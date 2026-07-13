@@ -140,7 +140,7 @@
                 </div>
                 <div>
                     <span class="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-600 block">Version</span>
-                    <span class="text-lg font-black text-white tracking-tight">v1.1.3</span>
+                    <span class="text-lg font-black text-white tracking-tight">v{{ appVersion }}</span>
                 </div>
             </div>
 
@@ -352,6 +352,8 @@ const revenue = ref<any>({});
 const monthlyGoal = ref(80);
 const totalGames = ref(0);
 const activeIndex = ref(0);
+// Version affichée sur l'accueil — lue depuis la vraie version de l'app (package.json).
+const appVersion = ref('1.1.5');
 
 // Computed
 const revenueProgress = computed(() => {
@@ -434,6 +436,15 @@ async function fetchGameRow(sort: string, count: number) {
 
 onMounted(async () => {
   loading.value = true;
+
+  // Récupère la version réelle de l'app (évite un badge codé en dur périmé).
+  try {
+    if ((window as any).electronAPI) {
+      const v = await (window as any).electronAPI.invoke('get-app-version');
+      if (v) appVersion.value = v;
+    }
+  } catch (e) { /* garde la valeur par défaut */ }
+
   try {
     // Background fetch for revenue
     JeuxCracksAPI.getMonthlyRevenue().then(res => {

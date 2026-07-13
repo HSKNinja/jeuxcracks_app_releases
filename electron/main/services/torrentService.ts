@@ -379,21 +379,42 @@ export class TorrentService {
           }
 
           if (!gid && torrentFile.startsWith('magnet:')) {
-              let finalMagnet = torrentFile;
-              for (const tr of this.globalTrackersArray) {
-                  const encodedTr = encodeURIComponent(tr);
-                  if (!finalMagnet.includes(encodedTr)) {
-                      finalMagnet += `&tr=${encodedTr}`;
+              // 1. PRIORITÉ: récupérer le .torrent (avec métadonnées intégrées) via un cache public.
+              //    Aria2 échoue souvent à récupérer les métadonnées d'un magnet sur les swarms
+              //    clairsemés (OnlineFix), ce qui laisse le téléchargement bloqué à 0%. Un client
+              //    comme qBittorrent y arrive grâce à une table DHT chaude ; ici on court-circuite
+              //    le problème en fournissant directement le .torrent à aria2.
+              try {
+                  const cachedTorrent = await this.fetchTorrentFromMagnetCache(torrentFile);
+                  if (cachedTorrent && cachedTorrent.length > 100) {
+                      gid = await this.aria2Client.call('aria2.addTorrent', cachedTorrent.toString('base64'), [], {
+                          dir: savePath,
+                          'bt-tracker': this.globalTrackersArray.join(',')
+                      });
+                      console.log('✅ .torrent récupéré via cache public (métadonnées instantanées) pour', gameData.title);
                   }
+              } catch (e) {
+                  console.warn('⚠️ Cache .torrent indisponible, fallback sur le magnet:', e.message);
               }
-              
-              gid = await this.aria2Client.call('aria2.addUri', [finalMagnet], {
-                  dir: savePath,
-                  'bt-tracker': this.globalTrackersArray.join(','),
-                  'bt-save-metadata': 'true',
-                  'bt-load-saved-metadata': 'true'
-              });
-              console.log('🧲 Magnet envoyé à Aria2 avec', this.globalTrackersArray.length, 'trackers injectés');
+
+              // 2. FALLBACK: ajouter le magnet directement (aria2 tentera les métadonnées via peers/DHT).
+              if (!gid) {
+                  let finalMagnet = torrentFile;
+                  for (const tr of this.globalTrackersArray) {
+                      const encodedTr = encodeURIComponent(tr);
+                      if (!finalMagnet.includes(encodedTr)) {
+                          finalMagnet += `&tr=${encodedTr}`;
+                      }
+                  }
+
+                  gid = await this.aria2Client.call('aria2.addUri', [finalMagnet], {
+                      dir: savePath,
+                      'bt-tracker': this.globalTrackersArray.join(','),
+                      'bt-save-metadata': 'true',
+                      'bt-load-saved-metadata': 'true'
+                  });
+                  console.log('🧲 Magnet envoyé à Aria2 (fallback) avec', this.globalTrackersArray.length, 'trackers injectés');
+              }
           }
       } else {
           // Physical Torrent File (.torrent)
@@ -747,6 +768,76 @@ export class TorrentService {
           request.on('error', reject);
           request.on('timeout', () => { request.destroy(); reject(new Error('Timeout')); });
       });
+  }
+
+  /**
+   * Extrait le info-hash (btih, hex 40 caractères) d'un lien magnet.
+   * Renvoie null si absent ou en base32 (non supporté par le cache).
+   */
+  private extractInfoHash(magnet: string): string | null {
+      const m = magnet.match(/xt=urn:btih:([a-fA-F0-9]{40})/i);
+      return m ? m[1].toUpperCase() : null;
+  }
+
+  /**
+   * Récupère le fichier .torrent (avec métadonnées) depuis un cache public à partir
+   * du info-hash d'un magnet. Permet à aria2 de démarrer immédiatement, sans dépendre
+   * de la récupération des métadonnées via les peers (qui échoue sur les swarms clairsemés).
+   * Renvoie un Buffer .torrent valide, ou null si indisponible.
+   */
+  private fetchTorrentFromMagnetCache(magnet: string): Promise<Buffer | null> {
+      const hash = this.extractInfoHash(magnet);
+      if (!hash) return Promise.resolve(null);
+
+      // Caches publics de .torrent par info-hash (essayés dans l'ordre).
+      const urls = [
+          `https://itorrents.org/torrent/${hash}.torrent`,
+          `https://torrage.info/torrent.php?h=${hash}`,
+      ];
+
+      // Récupère une URL en suivant les redirections (http OU https), sans jamais lever d'exception.
+      const fetchOnce = (url: string, redirects: number): Promise<Buffer | null> => {
+          return new Promise((resolve) => {
+              let settled = false;
+              const finish = (v: Buffer | null) => { if (!settled) { settled = true; resolve(v); } };
+              try {
+                  // Choisir le bon client selon le protocole (une redirection peut renvoyer du http:).
+                  const client = url.startsWith('https:') ? https : http;
+                  const req = client.get(url, { timeout: 12000, headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+                      const status = res.statusCode || 0;
+                      if (status >= 300 && status < 400 && res.headers.location && redirects < 4) {
+                          res.resume(); // vider le flux
+                          let next = res.headers.location;
+                          try { next = new URL(next, url).toString(); } catch (e) { /* garde tel quel */ }
+                          fetchOnce(next, redirects + 1).then(finish);
+                          return;
+                      }
+                      if (status !== 200) { res.resume(); return finish(null); }
+                      const chunks: Buffer[] = [];
+                      res.on('data', (d: Buffer) => chunks.push(d));
+                      res.on('end', () => {
+                          const buf = Buffer.concat(chunks);
+                          // Un vrai .torrent (bencode) commence par 'd' (0x64) — sinon c'est une page d'erreur HTML.
+                          finish(buf.length > 100 && buf[0] === 0x64 ? buf : null);
+                      });
+                      res.on('error', () => finish(null));
+                  });
+                  req.on('error', () => finish(null));
+                  req.on('timeout', () => { req.destroy(); finish(null); });
+              } catch (e) {
+                  // ex: ERR_INVALID_PROTOCOL levé de façon synchrone — on ne propage jamais.
+                  finish(null);
+              }
+          });
+      };
+
+      return (async () => {
+          for (const u of urls) {
+              const buf = await fetchOnce(u, 0);
+              if (buf) return buf;
+          }
+          return null;
+      })();
   }
 
   public destroy() {

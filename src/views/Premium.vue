@@ -199,8 +199,8 @@
                 </li>
             </ul>
 
-            <button @click="handlePlanAction('supporter')" 
-                    :disabled="actionLoading"
+            <button @click="handlePlanAction('supporter')"
+                    :disabled="actionLoading || !paymentsEnabled"
                     class="w-full py-3 rounded-xl font-bold text-sm transition-all shadow-lg disabled:opacity-50"
                     :class="getButtonClass('supporter')">
                 {{ getButtonLabel('supporter') }}
@@ -266,8 +266,8 @@
                 </li>
             </ul>
 
-            <button @click="handlePlanAction('vip')" 
-                    :disabled="actionLoading"
+            <button @click="handlePlanAction('vip')"
+                    :disabled="actionLoading || !paymentsEnabled"
                     class="w-full py-3 rounded-xl font-bold text-sm transition-all shadow-lg disabled:opacity-50"
                     :class="getButtonClass('vip')">
                 {{ getButtonLabel('vip') }}
@@ -366,13 +366,14 @@
                           class="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors resize-none mb-4"></textarea>
 
                 <!-- Submit -->
-                <button @click="submitDonation" 
-                        :disabled="!donationAmount || donationAmount < 1 || actionLoading"
+                <button @click="submitDonation"
+                        :disabled="!paymentsEnabled || !donationAmount || donationAmount < 1 || actionLoading"
                         class="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-sm transition-all shadow-lg shadow-pink-500/10 disabled:opacity-40 disabled:cursor-not-allowed mt-auto">
                     <span v-if="actionLoading" class="flex items-center justify-center gap-2">
                         <div class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                         Redirection...
                     </span>
+                    <span v-else-if="!paymentsEnabled">Bientôt disponible</span>
                     <span v-else>Donner {{ donationAmount || 0 }}€ ❤️</span>
                 </button>
             </div>
@@ -487,6 +488,10 @@ const { notify } = useNotification();
 const loading = ref(true);
 const actionLoading = ref(false);
 const billingPeriod = ref<'monthly' | 'quarterly' | 'yearly'>('monthly');
+
+// Interrupteur global : abonnements payants désactivés temporairement.
+// Passer à true pour réactiver les achats d'abonnement (Supporter / VIP).
+const paymentsEnabled = ref(false);
 
 const billingOptions = [
     { id: 'monthly' as const, label: 'Mensuel' },
@@ -620,6 +625,7 @@ const currentPlanType = computed(() => subscription.value?.plan?.plan_type || nu
 const isSubscribed = computed(() => subscription.value && subscription.value.status !== 'none' && subscription.value.is_active_subscription);
 
 const getButtonLabel = (planType: string) => {
+    if (!paymentsEnabled.value) return 'Bientôt disponible';
     if (!isSubscribed.value) return planType === 'supporter' ? 'Devenir Supporter ☕' : 'Devenir VIP 👑';
     
     // Convert current plan_type ('basic', 'pro') to frontend logic format ('supporter', 'vip')
@@ -635,8 +641,9 @@ const getButtonLabel = (planType: string) => {
 };
 
 const getButtonClass = (planType: string) => {
+    if (!paymentsEnabled.value) return 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700';
     const currentFrontendType = currentPlanType.value === 'basic' ? 'supporter' : (currentPlanType.value === 'pro' ? 'vip' : currentPlanType.value);
-    
+
     if (isSubscribed.value && currentFrontendType === planType) {
         return 'bg-zinc-800 text-zinc-500 cursor-default border border-zinc-700';
     }
@@ -657,8 +664,14 @@ const openCheckout = async (checkoutUrl: string) => {
 };
 
 const handlePlanAction = async (planType: string) => {
+    // Abonnements désactivés temporairement : on bloque toute tentative d'achat.
+    if (!paymentsEnabled.value) {
+        notify({ type: 'info', title: 'Bientôt disponible', text: 'Les abonnements seront activés prochainement. Merci de votre patience !' });
+        return;
+    }
+
     const currentFrontendType = currentPlanType.value === 'basic' ? 'supporter' : (currentPlanType.value === 'pro' ? 'vip' : currentPlanType.value);
-    
+
     if (isSubscribed.value && currentFrontendType === planType) return; // Already on this plan
     
     const plan = getPlanByType(planType);
@@ -728,6 +741,11 @@ const reactivate = async () => {
 };
 
 const submitDonation = async () => {
+    // Paiements désactivés temporairement : les dons sont aussi bloqués.
+    if (!paymentsEnabled.value) {
+        notify({ type: 'info', title: 'Bientôt disponible', text: 'Les dons seront activés prochainement. Merci de votre soutien !' });
+        return;
+    }
     if (!donationAmount.value || donationAmount.value < 1) return;
     actionLoading.value = true;
     try {

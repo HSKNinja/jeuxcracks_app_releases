@@ -66,7 +66,7 @@
                          </div>
 
                          <!-- Middle: Stats Grid -->
-                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 my-4">
+                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 my-4">
                              <div class="flex flex-col">
                                  <span class="text-[10px] uppercase text-zinc-500 font-bold tracking-wider mb-0.5">Vitesse</span>
                                  <span class="text-sm font-mono text-white flex items-center gap-1.5">
@@ -78,6 +78,12 @@
                                  <span class="text-[10px] uppercase text-zinc-500 font-bold tracking-wider mb-0.5">Avancement</span>
                                  <span class="text-sm font-mono text-zinc-300">
                                      {{ formatSize(dl.data?.downloaded) }} <span class="text-zinc-600">/</span> {{ formatTotalSize(dl) }}
+                                 </span>
+                             </div>
+                             <div class="flex flex-col">
+                                 <span class="text-[10px] uppercase text-zinc-500 font-bold tracking-wider mb-0.5">Sources</span>
+                                 <span class="text-sm font-mono" :class="(dl.data?.numPeers || 0) > 0 ? 'text-green-400' : 'text-red-400'">
+                                     {{ dl.data?.numPeers || 0 }} peers
                                  </span>
                              </div>
                              <div class="hidden sm:flex flex-col">
@@ -146,10 +152,18 @@
                                   <h4 class="text-xl md:text-2xl font-black text-white leading-tight truncate group-hover:text-green-400 transition-colors duration-300" :title="install.title">{{ install.title }}</h4>
                               </div>
                               
-                              <span class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tabular-nums flex-shrink-0"
-                                    v-if="(install.progress || 0) > 0">
-                                  {{ Math.round(install.progress || 0) }}<span class="text-sm text-zinc-600 ml-0.5">%</span>
-                              </span>
+                              <div class="flex items-center gap-3 flex-shrink-0">
+                                  <span class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tabular-nums"
+                                        v-if="(install.progress || 0) > 0">
+                                      {{ Math.round(install.progress || 0) }}<span class="text-sm text-zinc-600 ml-0.5">%</span>
+                                  </span>
+                                  <!-- Retirer une installation bloquée -->
+                                  <button @click="dismissInstall(install)"
+                                          class="p-2 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-all active:scale-95"
+                                          title="Retirer">
+                                      <XMarkIcon class="w-5 h-5" />
+                                  </button>
+                              </div>
                           </div>
                           
                           <!-- Progress -->
@@ -265,6 +279,20 @@ const togglePause = (dl: any) => {
     }
     
     downloadStore.togglePause(dl.title); 
+};
+
+const dismissInstall = (install: any) => {
+    // Retire une installation bloquée (ex: fantôme resté à « Validation en cours »).
+    if (confirm(`Retirer l'installation de ${install.title} de la liste ?`)) {
+        // Tenter d'annuler l'extraction côté main (sans erreur si non supporté)
+        if ((window as any).electronAPI && install.id != null) {
+            try { (window as any).electronAPI.send('cancel-extraction', install.id); } catch (e) {}
+        }
+        if (install.id != null) installStore.removeInstallById(install.id);
+        else installStore.removeInstallByTitle(install.title);
+    }
+    window.focus();
+    document.body.focus();
 };
 
 const cancelDownload = (dl: any) => {

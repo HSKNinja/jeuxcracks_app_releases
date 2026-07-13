@@ -375,6 +375,11 @@ export const useSocialStore = defineStore('social', {
         this.markAsRead(friendId); // Sync with server
     },
 
+    closeChat() {
+        // Ferme la fenêtre de chat (le template s'affiche tant que activeChatId est défini).
+        this.activeChatId = null;
+    },
+
     togglePanel() {
         const notificationStore = useNotificationStore();
         if (!this.isPanelOpen) {

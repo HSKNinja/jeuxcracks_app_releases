@@ -16,6 +16,10 @@ class InstallService {
     ipcMain.on('set-exe-file', this.setEXEFile);
     ipcMain.handle('scan-unextracted-games', this.scanUnextractedGames);
     ipcMain.on('retry-extraction', this.retryExtraction);
+    // Annulation best-effort d'une extraction en cours (bouton "Retirer" côté UI).
+    ipcMain.on('cancel-extraction', (_, gameId: any) => {
+      try { extractionService.cancelByGameId(String(gameId)); } catch (e) { /* non supporté / déjà fini */ }
+    });
   }
 
   private isGameInstalled(_, gameID: string) {
@@ -43,8 +47,16 @@ class InstallService {
     const win = getMainWindow();
     win?.webContents.send('install-start', newInstall);
 
-    // Passer le chemin brut — l'éditeur s'occupera de trouver les fichiers
-    this.gameInstaller.installGame(path, gameData);
+    // Passer le chemin brut — l'éditeur s'occupera de trouver les fichiers.
+    // Garde-fou : si installGame lève (ex: éditeur manquant, erreur de bundle), on notifie
+    // l'échec pour ne pas laisser un « fantôme » bloqué à « Validation en cours ».
+    try {
+      this.gameInstaller.installGame(path, gameData);
+    } catch (e: any) {
+      console.error('❌ Erreur lors du démarrage de l\'installation:', e);
+      win?.webContents.send('error', `Erreur d'installation (${gameData.title}): ${e?.message || e}`);
+      win?.webContents.send('install-failed', gameData.id);
+    }
   };
 
   // ==========================================
@@ -72,26 +84,42 @@ class InstallService {
   // ==========================================
 
   public scanUnextractedGames = async () => {
-    const downloadsPath = join(app.getPath('userData'), 'downloads');
-    if (!fs.existsSync(downloadsPath)) return [];
-
-    const items = fs.readdirSync(downloadsPath, { withFileTypes: true });
     const unextracted: { title: string, path: string }[] = [];
+    const seenPaths = new Set<string>();
     const installedGames = libraryService.getInstalledGames();
+    const installedPaths = new Set(
+      installedGames.map((g: any) => (g.installPath || '').replace(/\\/g, '/').toLowerCase()).filter(Boolean)
+    );
 
-    for (const item of items) {
-      if (item.isDirectory()) {
-         const title = item.name;
-         
-         // Check if already installed
-         if (installedGames.some((g: any) => g.title.toLowerCase() === title.toLowerCase())) continue;
-         
-         unextracted.push({
-             title: title,
-             path: join(downloadsPath, title)
-         });
+    // On scanne le dossier de téléchargement par défaut ET tous les dossiers de bibliothèque,
+    // car les jeux peuvent être téléchargés dans une bibliothèque custom (ex: E:\Jeux).
+    const roots = [
+      join(app.getPath('userData'), 'downloads'),
+      ...libraryService.getLibraries().map((l: any) => l.path),
+    ];
+
+    for (const root of roots) {
+      if (!root || !fs.existsSync(root)) continue;
+      let items: fs.Dirent[] = [];
+      try { items = fs.readdirSync(root, { withFileTypes: true }); } catch { continue; }
+
+      for (const item of items) {
+        if (!item.isDirectory()) continue;
+        const title = item.name;
+        const fullPath = join(root, title);
+        const normalized = fullPath.replace(/\\/g, '/').toLowerCase();
+
+        if (seenPaths.has(normalized)) continue;
+        seenPaths.add(normalized);
+
+        // Déjà installé (par titre ou par chemin d'installation) → on ignore.
+        if (installedGames.some((g: any) => g.title.toLowerCase() === title.toLowerCase())) continue;
+        if (installedPaths.has(normalized)) continue;
+
+        unextracted.push({ title, path: fullPath });
       }
     }
+
     return unextracted;
   };
 
