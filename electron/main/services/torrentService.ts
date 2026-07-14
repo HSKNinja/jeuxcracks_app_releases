@@ -29,10 +29,17 @@ if (isPackaged && !fs.existsSync(aria2cPath)) {
 export class TorrentService {
   private aria2Process: ChildProcess | null = null;
   private aria2Client: Aria2;
+  // Client WebTorrent (CJS) partagé, créé à la demande. Sert UNIQUEMENT à résoudre les
+  // métadonnées (magnet → .torrent). WebTorrent a une DHT bien plus robuste qu'aria2 et
+  // récupère les métadonnées même sur des swarms clairsemés (OnlineFix), là où aria2 reste figé à 0%.
+  private webTorrentClient: any = null;
   private activeTorrents = new Map<string, any>(); // infoHash -> { gid, gameData, savePath }
   private torrentsMetadataFile = join(app.getPath('userData'), 'downloads', 'torrents_metav2.json');
   private pollInterval: NodeJS.Timeout | null = null;
   private isReady = false; // true une fois la connexion RPC Aria2c confirmée
+  private isShuttingDown = false; // true pendant l'extinction de l'app (empêche la reprise auto)
+  private reconnecting = false; // true pendant une (re)connexion en cours (empêche les relances concurrentes)
+  private healthInterval: NodeJS.Timeout | null = null; // watchdog: relance aria2c s'il meurt
 
   private downloadLimit = 0;
   private uploadLimit = 0;
@@ -82,64 +89,150 @@ export class TorrentService {
    * sont souvent bloqués/quarantinés par l'antivirus, ce qui laisse les téléchargements
    * bloqués à 0%. On applique l'exclusion AVANT de lancer le process.
    */
-  private ensureAntivirusExclusion() {
-      try {
-          const cachePath = join(app.getPath('userData'), '.aria2_defender_cache');
-          if (fs.existsSync(cachePath)) return; // déjà fait
+  private ensureAntivirusExclusion(): Promise<void> {
+      return new Promise((resolve) => {
+          try {
+              const cachePath = join(app.getPath('userData'), '.aria2_defender_cache');
+              if (fs.existsSync(cachePath)) return resolve(); // déjà fait
 
-          const aria2Dir = require('path').dirname(aria2cPath).replace(/'/g, "''");
-          const inner =
-              `Add-MpPreference -ExclusionProcess 'aria2c.exe' -ErrorAction SilentlyContinue; ` +
-              `Add-MpPreference -ExclusionPath '${aria2Dir}' -ErrorAction SilentlyContinue`;
-          const b64 = Buffer.from(inner, 'utf16le').toString('base64');
+              const aria2Dir = require('path').dirname(aria2cPath).replace(/'/g, "''");
+              const inner =
+                  `Add-MpPreference -ExclusionProcess 'aria2c.exe' -ErrorAction SilentlyContinue; ` +
+                  `Add-MpPreference -ExclusionPath '${aria2Dir}' -ErrorAction SilentlyContinue`;
+              const b64 = Buffer.from(inner, 'utf16le').toString('base64');
 
-          const { execSync } = require('child_process');
-          // L'app est lancée en admin (requestedExecutionLevel: requireAdministrator),
-          // donc Add-MpPreference s'exécute sans nouvelle invite UAC. Timeout de sécurité.
-          execSync(`powershell -WindowStyle Hidden -NoProfile -EncodedCommand ${b64}`, {
-              windowsHide: true,
-              timeout: 15000,
-              stdio: 'ignore'
-          });
-          fs.writeFileSync(cachePath, '1');
-          console.log('🛡️ Exclusion Defender ajoutée pour aria2c.exe');
-      } catch (e) {
-          // Non bloquant : si l'exclusion échoue (dev non-admin, autre AV...), on continue.
-          console.warn('⚠️ Exclusion Defender aria2c non appliquée (non bloquant).');
-      }
+              const { execFile } = require('child_process');
+              // Async (execFile) → ne gèle PAS le thread principal (contrairement à execSync 15s).
+              // L'app est lancée en admin (requestedExecutionLevel: requireAdministrator),
+              // donc Add-MpPreference s'exécute sans nouvelle invite UAC.
+              execFile('powershell', ['-WindowStyle', 'Hidden', '-NoProfile', '-EncodedCommand', b64],
+                  { windowsHide: true, timeout: 15000 },
+                  (err: any) => {
+                      if (err) {
+                          console.warn('⚠️ Exclusion Defender aria2c non appliquée (non bloquant).');
+                      } else {
+                          try { fs.writeFileSync(cachePath, '1'); } catch (e) {}
+                          console.log('🛡️ Exclusion Defender ajoutée pour aria2c.exe');
+                      }
+                      resolve(); // on continue quoi qu'il arrive
+                  });
+          } catch (e) {
+              // Non bloquant : si l'exclusion échoue (dev non-admin, autre AV...), on continue.
+              console.warn('⚠️ Exclusion Defender aria2c non appliquée (non bloquant).');
+              resolve();
+          }
+      });
   }
 
   private async initAria2() {
     try {
       console.log('🚀 Démarrage du moteur Aria2c (V2 Hyper-Vitesse)...');
 
-      // Exclusion antivirus AVANT de démarrer aria2c (sinon Defender peut le bloquer en prod).
-      this.ensureAntivirusExclusion();
+      // Exclusion antivirus AVANT de démarrer aria2c (async → ne gèle plus le thread principal
+      // 15s au 1er lancement). Sans elle, Defender peut bloquer/quarantiner aria2c.exe.
+      await this.ensureAntivirusExclusion();
 
-      // Force kill any zombie aria2c process before starting a new one
-      try {
-          const { execSync } = require('child_process');
-          execSync('taskkill /F /IM aria2c.exe /T', { windowsHide: true, stdio: 'ignore' });
-          console.log('🧹 Processus Aria2c fantôme nettoyé.');
-          // Wait for OS to release port 6800
-          await new Promise(r => setTimeout(r, 500));
-      } catch (e) {
-          // Normal if no process exists
-      }
+      // (Re)lance aria2c + établit la connexion RPC. La reprise automatique (si aria2c meurt)
+      // et le watchdog ci-dessous garantissent qu'on n'a JAMAIS besoin de redémarrer l'app.
+      await this.launchAndConnect(true);
 
+      // Load Metadatas
+      this.loadState();
+
+      // Start polling
+      this.startPolling();
+
+      // Watchdog: si aria2c meurt (crash, antivirus) ou n'est pas connecté, on le relance
+      // automatiquement en tâche de fond. C'est ce qui supprime le "il faut redémarrer l'app".
+      this.startHealthCheck();
+
+      // Listeners
+      this.aria2Client.on('onDownloadComplete', async ([events]) => {
+          console.log('✅ Événement RPC: Téléchargement terminé (GID:', events.gid, ')');
+          await this.handleDownloadComplete(events.gid);
+      });
+      this.aria2Client.on('onBtDownloadComplete', async ([events]) => {
+          console.log('✅ Événement RPC (BT): Téléchargement terminé (GID:', events.gid, ')');
+          await this.handleDownloadComplete(events.gid);
+      });
+      this.aria2Client.on('onDownloadError', async ([events]) => {
+          console.warn('❌ Événement RPC: Erreur téléchargement (GID:', events.gid, ')');
+          // Remonter l'erreur réelle à l'utilisateur au lieu de laisser un téléchargement figé à 0%.
+          try {
+              const status = await this.aria2Client.call('tellStatus', events.gid, [
+                  'errorCode', 'errorMessage', 'status', 'dir', 'files'
+              ]);
+              // 🔎 LOG DIAGNOSTIC: afficher le vrai code/message d'aria2 dans la console.
+              console.error('🔎 Détail erreur Aria2 → code:', status?.errorCode, '| message:', status?.errorMessage, '| dir:', status?.dir);
+
+              let title = '';
+              let erroredInfo: any = null;
+              let erroredKey: string | null = null;
+              for (const [key, info] of this.activeTorrents.entries()) {
+                  if (info.gid === events.gid) { title = info.gameData?.title || ''; erroredInfo = info; erroredKey = key; break; }
+              }
+
+              const errorCode = String(status?.errorCode ?? '');
+
+              // ℹ️ DOUBLON (code 12): le torrent est DÉJÀ enregistré dans aria2 et se télécharge.
+              // C'est un doublon inoffensif (ex: repris au démarrage par loadState PUIS re-cliqué).
+              // Retenter donnerait le même infohash → même erreur. On abandonne le doublon en
+              // silence : le téléchargement d'origine continue. Aucune erreur affichée.
+              if (errorCode === '12') {
+                  console.log('ℹ️ Doublon Aria2 (code 12) ignoré, le téléchargement d\'origine continue:', title || events.gid);
+                  try { await this.aria2Client.call('aria2.removeDownloadResult', events.gid); } catch (e) {}
+                  // Retirer l'entrée en doublon uniquement si un autre suivi existe déjà pour ce jeu.
+                  if (erroredKey && erroredInfo) {
+                      const sameGameTracked = Array.from(this.activeTorrents.entries())
+                          .some(([k, i]) => k !== erroredKey && String(i.gameData?.id) === String(erroredInfo.gameData?.id));
+                      if (sameGameTracked) { this.activeTorrents.delete(erroredKey); this.saveState(); }
+                  }
+                  return;
+              }
+
+              // 🔁 AUTO-RÉCUPÉRATION: si le .torrent (souvent issu du cache public itorrents, peu fiable)
+              // échoue instantanément alors qu'on a le magnet d'origine, on relance via le résolveur
+              // WebTorrent qui produit un .torrent garanti conforme au magnet. Une seule tentative.
+              const originalMagnet = typeof erroredInfo?.torrentFile === 'string' && erroredInfo.torrentFile.startsWith('magnet:')
+                  ? erroredInfo.torrentFile : null;
+              if (originalMagnet && !erroredInfo.recoveredViaWebTorrent) {
+                  console.log('🔁 Auto-récupération: le .torrent a échoué, nouvelle tentative via WebTorrent pour', title);
+                  erroredInfo.recoveredViaWebTorrent = true;
+                  try { await this.aria2Client.call('aria2.removeDownloadResult', events.gid); } catch (e) {}
+                  if (erroredKey) { this.activeTorrents.delete(erroredKey); this.saveState(); }
+                  // Relance en forçant le passage par WebTorrent (le cache a déjà prouvé qu'il échoue).
+                  this.startTorrent(null, originalMagnet, erroredInfo.savePath, erroredInfo.gameData, false, true);
+                  return; // ne pas remonter d'erreur à l'utilisateur : on retente en silence
+              }
+
+              const reason = status?.errorMessage || `Code ${status?.errorCode || 'inconnu'}`;
+              const win = getMainWindow();
+              win?.webContents.send('error', `Téléchargement échoué${title ? ` (${title})` : ''} : ${reason}`);
+          } catch (e) {
+              const win = getMainWindow();
+              win?.webContents.send('error', 'Le téléchargement a échoué (erreur Aria2).');
+          }
+      });
+
+    } catch (e) {
+      console.error('❌ Impossible de démarrer Aria2c:', e);
+    }
+  }
+
+  /** Construit les arguments de lancement d'aria2c (identiques à chaque (re)lancement). */
+  private buildAria2Args(): string[] {
       const dhtPath = join(app.getPath('userData'), 'dht.dat');
       const dht6Path = join(app.getPath('userData'), 'dht6.dat');
-      
       const globalTrackers = this.globalTrackersArray.join(",");
 
-      const args = [
+      return [
         '--enable-rpc=true',
         '--rpc-listen-all=false', // Only listen on loopback for security
         '--rpc-allow-origin-all=true',
         '--rpc-listen-port=16800',
         '--rpc-secret=JeuxCracksV2',
         '--no-conf=true', // Ignore any system-wide aria2.conf
-        
+
         // --- 🚀 PERFORMANCE EXTREME (qBittorrent-like) ---
         '--max-concurrent-downloads=10',
         '--max-connection-per-server=16',
@@ -149,7 +242,7 @@ export class TorrentService {
         '--bt-request-peer-speed-limit=10M',
         '--file-allocation=none',
         '--seed-time=0',
-        
+
         // --- 🌍 RESEAU ET TRACKERS ---
         `--bt-tracker=${globalTrackers}`,
         '--bt-save-metadata=true',
@@ -166,97 +259,96 @@ export class TorrentService {
         "--dht-entry-point=router.utorrent.com:6881",
         "--enable-peer-exchange=true",
         "--listen-port=6881-6999",
-        
+
         // --- ⏱️ TIMEOUTS ---
         "--bt-tracker-connect-timeout=5",
         '--bt-tracker-interval=15',
-        
+
         // --- 📁 FICHIERS ---
         '--continue=true',
         '--allow-overwrite=true',
         '--auto-file-renaming=false',
         `--dir=${app.getPath('downloads')}`
       ];
+  }
 
-      this.aria2Process = spawn(aria2cPath, args, { windowsHide: true });
-      
-      this.aria2Process.on('error', (err) => {
-        console.error('❌ Erreur process Aria2c:', err);
-      });
-
-      this.aria2Process.on('exit', (code) => {
-        console.log(`🛑 Aria2c s'est arrêté (Code: ${code})`);
-      });
-
-      // Wait a moment for aria2c to start its RPC server
-      await new Promise(r => setTimeout(r, 1500));
-      
-      await this.aria2Client.open();
-      
-      // Verify connection works with a simple call
+  /**
+   * (Re)lance le process aria2c et établit la connexion RPC. Idempotent et sûr à rappeler :
+   * c'est le cœur de l'auto-réparation. Le handler 'exit' relance automatiquement aria2c s'il
+   * meurt (crash, antivirus), et le watchdog (startHealthCheck) rattrape tout état non-prêt —
+   * si bien que l'utilisateur n'a JAMAIS besoin de redémarrer l'application.
+   *
+   * @param killZombies tue d'abord tout aria2c fantôme (nécessaire pour libérer le port RPC).
+   */
+  private async launchAndConnect(killZombies = true): Promise<boolean> {
+      if (this.reconnecting) return this.isReady; // une (re)connexion est déjà en cours
+      this.reconnecting = true;
       try {
-        const ver = await this.aria2Client.call('getVersion');
-        this.isReady = true;
-        console.log('✅ Connecté au serveur RPC Aria2c! Version:', ver.version);
-      } catch(e) {
-        console.error('❌ Connexion Aria2c échouée (auth test):', e.message);
-        
-        // If unauthorized, it means we are talking to the WRONG process. Kill again and retry?
-        if (e.message.includes('Unauthorized')) {
-            console.log('⚠️ Erreur d\'authentification - possible conflit de processus. Tentative de reconnexion...');
-        }
+          this.isReady = false;
 
-        console.log('🔄 Retry connexion dans 2s...');
-        await new Promise(r => setTimeout(r, 2000));
-        try {
-          await this.aria2Client.close().catch(() => {});
-          await this.aria2Client.open();
-          const ver = await this.aria2Client.call('getVersion');
-          this.isReady = true;
-          console.log('✅ Connecté au serveur RPC Aria2c (retry)! Version:', ver.version);
-        } catch(e2) {
-            console.error('❌ Échec critique Aria2c après retry:', e2.message);
-        }
-      }
-
-      // Load Metadatas
-      this.loadState();
-      
-      // Start polling
-      this.startPolling();
-
-      // Listeners
-      this.aria2Client.on('onDownloadComplete', async ([events]) => {
-          console.log('✅ Événement RPC: Téléchargement terminé (GID:', events.gid, ')');
-          await this.handleDownloadComplete(events.gid);
-      });
-      this.aria2Client.on('onBtDownloadComplete', async ([events]) => {
-          console.log('✅ Événement RPC (BT): Téléchargement terminé (GID:', events.gid, ')');
-          await this.handleDownloadComplete(events.gid);
-      });
-      this.aria2Client.on('onDownloadError', async ([events]) => {
-          console.warn('❌ Événement RPC: Erreur téléchargement (GID:', events.gid, ')');
-          // Remonter l'erreur réelle à l'utilisateur au lieu de laisser un téléchargement figé à 0%.
-          try {
-              const status = await this.aria2Client.call('tellStatus', events.gid, [
-                  'errorCode', 'errorMessage'
-              ]);
-              let title = '';
-              for (const [, info] of this.activeTorrents.entries()) {
-                  if (info.gid === events.gid) { title = info.gameData?.title || ''; break; }
-              }
-              const reason = status?.errorMessage || `Code ${status?.errorCode || 'inconnu'}`;
-              const win = getMainWindow();
-              win?.webContents.send('error', `Téléchargement échoué${title ? ` (${title})` : ''} : ${reason}`);
-          } catch (e) {
-              const win = getMainWindow();
-              win?.webContents.send('error', 'Le téléchargement a échoué (erreur Aria2).');
+          if (killZombies) {
+              try {
+                  const { execSync } = require('child_process');
+                  execSync('taskkill /F /IM aria2c.exe /T', { windowsHide: true, stdio: 'ignore' });
+                  await new Promise(r => setTimeout(r, 500)); // laisser l'OS libérer le port 16800
+              } catch (e) { /* normal si aucun process */ }
           }
-      });
 
-    } catch (e) {
-      console.error('❌ Impossible de démarrer Aria2c:', e);
-    }
+          this.aria2Process = spawn(aria2cPath, this.buildAria2Args(), { windowsHide: true });
+
+          this.aria2Process.on('error', (err) => {
+              console.error('❌ Erreur process Aria2c:', err);
+          });
+
+          this.aria2Process.on('exit', (code) => {
+              console.log(`🛑 Aria2c s'est arrêté (Code: ${code})`);
+              this.isReady = false;
+              this.aria2Process = null;
+              // 🔁 REPRISE AUTOMATIQUE: si l'app ne s'éteint pas, on relance aria2c. C'est
+              // ce qui règle le cas "1er lancement bloqué par l'antivirus" sans redémarrage.
+              if (!this.isShuttingDown) {
+                  console.log('♻️ Redémarrage automatique d\'Aria2c dans 1.5s...');
+                  setTimeout(() => { this.launchAndConnect(true).catch(() => {}); }, 1500);
+              }
+          });
+
+          // Plusieurs tentatives de connexion (le serveur RPC peut être lent à démarrer au 1er
+          // lancement, disque froid / scan antivirus). Bien plus robuste que l'unique retry d'avant.
+          for (let attempt = 1; attempt <= 6 && !this.isReady; attempt++) {
+              if (!this.aria2Process) break; // le process est mort entre-temps → le handler 'exit' relancera
+              await new Promise(r => setTimeout(r, attempt === 1 ? 1500 : 1200));
+              try {
+                  await this.aria2Client.close().catch(() => {});
+                  await this.aria2Client.open();
+                  const ver = await this.aria2Client.call('getVersion');
+                  this.isReady = true;
+                  console.log(`✅ Connecté au serveur RPC Aria2c ! Version: ${ver.version} (tentative ${attempt})`);
+              } catch (e) {
+                  console.warn(`⏳ Aria2c pas encore prêt (tentative ${attempt}):`, e?.message);
+              }
+          }
+
+          if (!this.isReady) {
+              console.error('❌ Connexion Aria2c non établie après plusieurs tentatives (le watchdog réessaiera).');
+          }
+          return this.isReady;
+      } finally {
+          this.reconnecting = false;
+      }
+  }
+
+  /**
+   * Watchdog: vérifie périodiquement qu'aria2c est vivant et connecté. S'il est mort ou
+   * déconnecté (et que l'app ne s'éteint pas), il le relance en tâche de fond. Garantit
+   * qu'un téléchargement finit toujours par pouvoir démarrer, sans redémarrer l'app.
+   */
+  private startHealthCheck() {
+      if (this.healthInterval) clearInterval(this.healthInterval);
+      this.healthInterval = setInterval(() => {
+          if (this.isShuttingDown || this.reconnecting || this.isReady) return;
+          console.log('🩺 Watchdog: Aria2c indisponible, tentative de relance automatique...');
+          this.launchAndConnect(true).catch(() => {});
+      }, 8000);
   }
 
   public setDownloadLimit(bytes: number) {
@@ -293,7 +385,14 @@ export class TorrentService {
               this.isReady = true;
               return true;
           } catch (e) {
-              // Pas encore prêt : on retente après une courte pause
+              // Pas prêt. Si le process aria2c est mort (ou jamais démarré), on le RELANCE
+              // au lieu de seulement tenter de reconnecter — c'est ce qui permet à un
+              // téléchargement de démarrer sans redémarrer l'app.
+              if (!this.aria2Process && !this.reconnecting && !this.isShuttingDown) {
+                  console.log('🔧 ensureReady: process Aria2c absent, relance...');
+                  await this.launchAndConnect(true);
+                  if (this.isReady) return true;
+              }
               await new Promise(r => setTimeout(r, 800));
           }
       }
@@ -339,7 +438,7 @@ export class TorrentService {
      }
   }
 
-  public startTorrent = async (_event, torrentFile: string | Buffer, savePath: string, gameData: any, isNewLaunch: boolean = true) => {
+  public startTorrent = async (_event, torrentFile: string | Buffer, savePath: string, gameData: any, isNewLaunch: boolean = true, forceWebTorrent: boolean = false) => {
     try {
       console.log('🚀 Torrent V2: Ajout de', gameData.title);
 
@@ -359,8 +458,26 @@ export class TorrentService {
           // Magnet URI or .torrent URL
           // Ensure save directory exists before sending to Aria2c
           try { fs.mkdirSync(savePath, { recursive: true }); } catch(e) {}
-          
-          if (torrentFile.toLowerCase().endsWith('.torrent')) {
+
+          // 🔗 DÉDOUBLONNAGE: si ce torrent est DÉJÀ en cours dans aria2 (repris au démarrage
+          // par loadState, double-clic, etc.), on s'y rattache au lieu de créer un doublon
+          // (qui déclencherait l'erreur "InfoHash already registered", code 12).
+          if (torrentFile.startsWith('magnet:')) {
+              const btih = this.extractInfoHash(torrentFile);
+              const existing = await this.findExistingByInfoHash(btih);
+              if (existing && existing.gid) {
+                  // Une entrée de suivi existe-t-elle déjà pour ce gid ? Si oui, ne rien dupliquer.
+                  const alreadyTracked = Array.from(this.activeTorrents.values()).some((i: any) => i.gid === existing.gid);
+                  if (alreadyTracked) {
+                      console.log('🔗 Torrent déjà suivi dans Aria2, aucun doublon créé pour', gameData.title);
+                      return;
+                  }
+                  console.log('🔗 Torrent déjà actif dans Aria2, rattachement (pas de doublon) pour', gameData.title);
+                  gid = existing.gid;
+              }
+          }
+
+          if (!gid && torrentFile.toLowerCase().endsWith('.torrent')) {
               // Direct URL to a .torrent file
               try {
                   console.log(`🌐 Téléchargement du fichier .torrent depuis: ${torrentFile}`);
@@ -384,20 +501,43 @@ export class TorrentService {
               //    clairsemés (OnlineFix), ce qui laisse le téléchargement bloqué à 0%. Un client
               //    comme qBittorrent y arrive grâce à une table DHT chaude ; ici on court-circuite
               //    le problème en fournissant directement le .torrent à aria2.
-              try {
-                  const cachedTorrent = await this.fetchTorrentFromMagnetCache(torrentFile);
-                  if (cachedTorrent && cachedTorrent.length > 100) {
-                      gid = await this.aria2Client.call('aria2.addTorrent', cachedTorrent.toString('base64'), [], {
-                          dir: savePath,
-                          'bt-tracker': this.globalTrackersArray.join(',')
-                      });
-                      console.log('✅ .torrent récupéré via cache public (métadonnées instantanées) pour', gameData.title);
+              //    forceWebTorrent = on saute le cache (il vient de produire un .torrent qui a échoué).
+              if (!forceWebTorrent) {
+                  try {
+                      const cachedTorrent = await this.fetchTorrentFromMagnetCache(torrentFile);
+                      if (cachedTorrent && cachedTorrent.length > 100) {
+                          gid = await this.aria2Client.call('aria2.addTorrent', cachedTorrent.toString('base64'), [], {
+                              dir: savePath,
+                              'bt-tracker': this.globalTrackersArray.join(',')
+                          });
+                          console.log('✅ .torrent récupéré via cache public (métadonnées instantanées) pour', gameData.title);
+                      }
+                  } catch (e) {
+                      console.warn('⚠️ Cache .torrent indisponible, fallback sur WebTorrent:', e.message);
                   }
-              } catch (e) {
-                  console.warn('⚠️ Cache .torrent indisponible, fallback sur le magnet:', e.message);
+              } else {
+                  console.log('⏭️ Cache public sauté (forceWebTorrent) pour', gameData.title);
               }
 
-              // 2. FALLBACK: ajouter le magnet directement (aria2 tentera les métadonnées via peers/DHT).
+              // 2. RÉSOLVEUR WEBTORRENT: récupérer les métadonnées via la DHT robuste de WebTorrent,
+              //    puis fournir le .torrent complet à aria2. C'est le levier principal contre les
+              //    téléchargements figés à 0% : WebTorrent trouve les métadonnées là où aria2 échoue.
+              if (!gid) {
+                  try {
+                      const wtTorrent = await this.resolveMetadataViaWebTorrent(torrentFile);
+                      if (wtTorrent && wtTorrent.length > 100) {
+                          gid = await this.aria2Client.call('aria2.addTorrent', wtTorrent.toString('base64'), [], {
+                              dir: savePath,
+                              'bt-tracker': this.globalTrackersArray.join(',')
+                          });
+                          console.log('✅ .torrent résolu via WebTorrent (DHT) pour', gameData.title);
+                      }
+                  } catch (e) {
+                      console.warn('⚠️ Résolution WebTorrent échouée, fallback magnet direct:', e.message);
+                  }
+              }
+
+              // 3. FALLBACK: ajouter le magnet directement (aria2 tentera les métadonnées via peers/DHT).
               if (!gid) {
                   let finalMagnet = torrentFile;
                   for (const tr of this.globalTrackersArray) {
@@ -747,6 +887,107 @@ export class TorrentService {
       }
   }
 
+  /**
+   * Retourne le client WebTorrent partagé (créé à la première utilisation).
+   * En environnement Electron/Node, WebTorrent dispose nativement de la DHT, du PEX,
+   * du LSD et des trackers — tout ce qu'il faut pour trouver les métadonnées d'un magnet.
+   */
+  private getWebTorrentClient(): any {
+      if (!this.webTorrentClient) {
+          try {
+              const WebTorrent = require('webtorrent');
+              this.webTorrentClient = new WebTorrent();
+              this.webTorrentClient.on('error', (e: any) => {
+                  // Erreurs non bloquantes du client (reset de peer, etc.) — on ne crash pas.
+                  console.warn('⚠️ WebTorrent client (non bloquant):', e?.message || e);
+              });
+              console.log('🌱 Client WebTorrent initialisé (résolution des métadonnées).');
+          } catch (e) {
+              console.error('❌ WebTorrent indisponible:', (e as any)?.message);
+              return null;
+          }
+      }
+      return this.webTorrentClient;
+  }
+
+  /**
+   * Résout un lien magnet en fichier .torrent complet (métadonnées) via WebTorrent,
+   * SANS télécharger la moindre donnée du jeu : on capture le .torrent dès que l'événement
+   * 'metadata' se déclenche, puis on détruit immédiatement le torrent. aria2 reçoit ensuite
+   * un .torrent complet et démarre instantanément au lieu de rester figé à 0%.
+   *
+   * @returns un Buffer .torrent valide, ou null si les métadonnées ne sont pas trouvées à temps.
+   */
+  private resolveMetadataViaWebTorrent(magnet: string, timeoutMs = 45000): Promise<Buffer | null> {
+      return new Promise((resolve) => {
+          const client = this.getWebTorrentClient();
+          if (!client) return resolve(null);
+
+          // Si ce magnet est déjà en cours de résolution/ajout dans le client, réutiliser l'instance
+          // (WebTorrent refuse les doublons d'infoHash et émettrait une erreur sinon).
+          const existing = (() => {
+              try { return client.get(magnet); } catch (e) { return null; }
+          })();
+
+          let settled = false;
+          let torrentRef: any = existing || null;
+          const finish = (buf: Buffer | null) => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(timer);
+              // On ne détruit que les torrents qu'on a nous-mêmes ajoutés ici.
+              if (torrentRef && !existing) {
+                  try { torrentRef.destroy(); } catch (e) {}
+              }
+              resolve(buf);
+          };
+
+          const timer = setTimeout(() => {
+              console.warn('⌛ WebTorrent: métadonnées non résolues dans le délai imparti.');
+              finish(null);
+          }, timeoutMs);
+
+          const onMetadata = (t: any) => {
+              try {
+                  const buf: Buffer = t.torrentFile;
+                  if (buf && buf.length > 100) {
+                      console.log('✅ Métadonnées résolues via WebTorrent (.torrent obtenu).');
+                      finish(Buffer.from(buf));
+                  } else {
+                      finish(null);
+                  }
+              } catch (e) {
+                  finish(null);
+              }
+          };
+
+          try {
+              if (existing) {
+                  if (existing.metadata) return onMetadata(existing);
+                  existing.once('metadata', () => onMetadata(existing));
+                  existing.once('error', () => finish(null));
+                  return;
+              }
+
+              // Stockage dans un dossier temporaire : comme on détruit dès 'metadata'
+              // (avant tout téléchargement de pièces), aucune donnée du jeu n'est écrite.
+              torrentRef = client.add(magnet, {
+                  announce: this.globalTrackersArray,
+                  path: join(app.getPath('userData'), 'wt_meta_tmp')
+              });
+
+              torrentRef.once('metadata', () => onMetadata(torrentRef));
+              torrentRef.once('error', (e: any) => {
+                  console.warn('⚠️ WebTorrent torrent:', e?.message || e);
+                  finish(null);
+              });
+          } catch (e) {
+              console.warn('⚠️ WebTorrent add a échoué:', (e as any)?.message);
+              finish(null);
+          }
+      });
+  }
+
   private fetchTorrentFile(url: string): Promise<Buffer> {
       return new Promise((resolve, reject) => {
           const client = url.startsWith('https') ? https : http;
@@ -777,6 +1018,26 @@ export class TorrentService {
   private extractInfoHash(magnet: string): string | null {
       const m = magnet.match(/xt=urn:btih:([a-fA-F0-9]{40})/i);
       return m ? m[1].toUpperCase() : null;
+  }
+
+  /**
+   * Recherche un téléchargement déjà présent dans aria2 (actif ou en attente) pour un infohash
+   * donné. Sert à éviter les doublons (erreur code 12) quand le même torrent est ajouté deux fois
+   * (ex: repris au démarrage par loadState PUIS re-cliqué par l'utilisateur).
+   * On ignore volontairement les téléchargements 'stopped' (terminés/en erreur) pour ne pas
+   * se rattacher à un échec.
+   */
+  private async findExistingByInfoHash(infoHash: string | null): Promise<any | null> {
+      if (!infoHash) return null;
+      const target = infoHash.toLowerCase();
+      try {
+          const active = await this.aria2Client.call('aria2.tellActive') || [];
+          const waiting = await this.aria2Client.call('aria2.tellWaiting', 0, 100) || [];
+          const all = [...active, ...waiting];
+          return all.find((d: any) => (d.infoHash || '').toLowerCase() === target) || null;
+      } catch (e) {
+          return null;
+      }
   }
 
   /**
@@ -841,7 +1102,17 @@ export class TorrentService {
   }
 
   public async destroy() {
+      // Marquer l'extinction AVANT tout : empêche le handler 'exit' d'aria2c et le watchdog
+      // de relancer aria2c pendant qu'on l'éteint volontairement.
+      this.isShuttingDown = true;
+      if (this.healthInterval) { clearInterval(this.healthInterval); this.healthInterval = null; }
       if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
+
+      // Fermer proprement le client WebTorrent (libère la DHT, les sockets et le dossier temp).
+      if (this.webTorrentClient) {
+          try { this.webTorrentClient.destroy(); } catch (e) { /* déjà arrêté */ }
+          this.webTorrentClient = null;
+      }
 
       // Extinction PROPRE d'aria2c : la commande RPC `shutdown` déclenche la sauvegarde
       // de la table DHT (dht.dat). Sans ça (kill brutal), la DHT repart à froid à chaque

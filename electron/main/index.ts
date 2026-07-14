@@ -768,7 +768,11 @@ app.on('before-quit', async (e) => {
         const shutdown = TelemetryService.getInstance().sendShutdown();
         
         await Promise.race([shutdown, timeout]);
-        
+
+        // Extinction propre d'aria2c (sauvegarde DHT + arrêt du watchdog) quelle que soit
+        // la façon de quitter — évite que le watchdog relance aria2c pendant l'extinction.
+        try { await torrentService.destroy(); } catch (e) { /* ignore */ }
+
         isQuitting = true;
         app.quit();
     }
