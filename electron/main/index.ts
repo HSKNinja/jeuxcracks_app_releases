@@ -291,9 +291,10 @@ ipcMain.on('maximize-window', () => {
     win?.maximize();
   }
 });
-ipcMain.on('close-window', () => {
+ipcMain.on('close-window', async () => {
   console.log('close');
-  torrentService.destroy();
+  // Attendre l'extinction propre d'aria2c (sauvegarde DHT) avant de quitter.
+  try { await torrentService.destroy(); } catch (e) { /* ignore */ }
   app.quit();
 });
 ipcMain.handle('open-navigator', async (e, url) => {

@@ -200,19 +200,26 @@
 
                     <div class="w-full h-px bg-white/5 my-6"></div>
 
-                    <div class="flex flex-col md:flex-row gap-6 md:items-center justify-between opacity-50 select-none pointer-events-none">
+                    <div class="flex flex-col md:flex-row gap-6 md:items-center justify-between">
                         <div class="flex items-start gap-4">
-                            <div class="w-10 h-10 rounded-full bg-[#5865F2]/10 flex items-center justify-center border border-[#5865F2]/20 text-[#5865F2] shrink-0 mt-0.5">
-                                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
+                            <div class="w-10 h-10 rounded-full bg-[#5865F2]/10 flex items-center justify-center border border-[#5865F2]/20 text-[#5865F2] shrink-0 mt-0.5 overflow-hidden">
+                                <img v-if="discordLinked && discordAvatar" :src="discordAvatar" class="w-full h-full object-cover" alt="avatar" />
+                                <svg v-else class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
                             </div>
                             <div>
-                                <h4 class="text-base font-medium text-white flex items-center gap-2">Discord <span class="bg-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Bientôt</span></h4>
-                                <p class="text-sm text-zinc-500 mt-1 max-w-sm">Liez votre compte Discord pour trouver vos amis jouant sur JeuxCracks et récupérer automatiquement votre avatar.</p>
+                                <h4 class="text-base font-medium text-white flex items-center gap-2">
+                                    Discord
+                                    <span v-if="discordLinked" class="bg-green-500/10 text-green-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Lié</span>
+                                </h4>
+                                <p v-if="discordLinked" class="text-sm text-zinc-400 mt-1">Connecté en tant que <span class="text-white font-medium">@{{ discordUsername }}</span></p>
+                                <p v-else class="text-sm text-zinc-500 mt-1 max-w-sm">Liez votre compte Discord pour trouver vos amis jouant sur JeuxCracks et récupérer automatiquement votre avatar.</p>
                             </div>
                         </div>
-                        <button disabled class="px-5 py-2.5 bg-[#111] border border-white/5 text-zinc-500 text-sm font-medium rounded-lg cursor-not-allowed shrink-0 whitespace-nowrap">
-                            Connecter
+                        <button v-if="!discordLinked" @click="connectDiscord" :disabled="discordConnecting" class="px-5 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-sm font-medium rounded-lg transition-colors shrink-0 whitespace-nowrap disabled:opacity-60 flex items-center gap-2">
+                            <span v-if="discordConnecting" class="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                            {{ discordConnecting ? 'En attente...' : 'Connecter' }}
                         </button>
+                        <span v-else class="px-5 py-2.5 text-green-400 text-sm font-medium shrink-0 whitespace-nowrap flex items-center gap-1.5">✓ Compte lié</span>
                     </div>
                 </div>
             </div>
@@ -465,7 +472,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useMainStore } from '../store';
 import { useThemeStore } from '../store/theme';
 import { useRouter } from 'vue-router';
@@ -535,6 +542,68 @@ watch(isPasswordModalOpen, (isOpen) => {
 // Actions
 import { useNotification } from '@kyvg/vue3-notification';
 const { notify } = useNotification();
+
+// --- Liaison Discord ---
+const discordConnecting = ref(false);
+let discordPoll: ReturnType<typeof setInterval> | null = null;
+
+// Détection tolérante : selon le backend, les champs Discord peuvent avoir des noms/formes variés.
+const discordData = computed(() => {
+    const u: any = store.user || {};
+    const id = u.discord_id || u.discordId || u.discord_user_id || u.discord?.id || null;
+    const username =
+        u.discord_username || u.discord_tag || u.discord_name ||
+        u.discord?.username || u.discord?.global_name || '';
+    let avatar =
+        u.discord_avatar || u.discord_avatar_url || u.discord_avatar_hash ||
+        u.discord?.avatar_url || u.discord?.avatar || '';
+    // Si l'avatar n'est qu'un hash (pas une URL), on reconstruit l'URL du CDN Discord.
+    if (avatar && !String(avatar).startsWith('http') && id) {
+        avatar = `https://cdn.discordapp.com/avatars/${id}/${avatar}.png`;
+    }
+    return { id, username, avatar };
+});
+
+const discordLinked = computed(() => !!discordData.value.id);
+const discordUsername = computed(() => discordData.value.username);
+const discordAvatar = computed(() => discordData.value.avatar);
+
+const connectDiscord = () => {
+    const token = store.tokens?.access;
+    if (!token) {
+        notify({ type: 'error', title: 'Erreur', text: 'Reconnecte-toi puis réessaie.' });
+        return;
+    }
+    // Ouvre le flux OAuth Discord (géré côté backend) dans le navigateur.
+    if (window.electronAPI) {
+        window.electronAPI.send('open-external', `${API_CONFIG.BASE_URL}/auth/discord/login/?token=${encodeURIComponent(token)}`);
+    }
+    notify({ type: 'info', title: 'Discord', text: 'Autorise l\'accès dans ton navigateur, puis reviens ici.' });
+
+    // Poll le profil pour détecter la liaison (le backend écrit discord_id sur le compte).
+    discordConnecting.value = true;
+    let elapsed = 0;
+    if (discordPoll) clearInterval(discordPoll);
+    discordPoll = setInterval(async () => {
+        elapsed += 3;
+        try { await store.fetchUser(); } catch (e) { /* ignore */ }
+        if (discordLinked.value) {
+            if (discordPoll) clearInterval(discordPoll);
+            discordPoll = null;
+            discordConnecting.value = false;
+            notify({ type: 'success', title: 'Discord lié', text: `Connecté en tant que @${discordUsername.value}` });
+        } else if (elapsed >= 120) {
+            // Abandon après 2 min sans liaison détectée.
+            if (discordPoll) clearInterval(discordPoll);
+            discordPoll = null;
+            discordConnecting.value = false;
+        }
+    }, 3000);
+};
+
+onUnmounted(() => {
+    if (discordPoll) clearInterval(discordPoll);
+});
 
 const logout = () => { store.logout(); router.push('/login'); };
 const deleteAccount = () => { isDeleteModalOpen.value = true; };

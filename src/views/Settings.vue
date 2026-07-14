@@ -470,14 +470,14 @@
                         <p class="text-zinc-400 text-sm mb-6">Gestion du catalogue via l'admin Django. Les boutons ouvrent ton navigateur (connexion admin requise).</p>
 
                         <div class="grid gap-3 sm:grid-cols-2">
-                            <button @click="openAdmin('/Cracks/game/add/')" class="flex items-center gap-3 p-4 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-left hover:bg-indigo-600/20 hover:border-indigo-500/40 transition-all">
+                            <button @click="openAdmin('/catalogue/game/add/')" class="flex items-center gap-3 p-4 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-left hover:bg-indigo-600/20 hover:border-indigo-500/40 transition-all">
                                 <span class="text-2xl">➕</span>
                                 <div>
                                     <div class="font-bold text-white text-sm">Ajouter un jeu</div>
                                     <div class="text-xs text-zinc-500">Nouveau jeu dans le catalogue</div>
                                 </div>
                             </button>
-                            <button @click="openAdmin('/Cracks/game/')" class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 text-left hover:bg-white/10 transition-all">
+                            <button @click="openAdmin('/catalogue/game/')" class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 text-left hover:bg-white/10 transition-all">
                                 <span class="text-2xl">📚</span>
                                 <div>
                                     <div class="font-bold text-white text-sm">Gérer les jeux</div>

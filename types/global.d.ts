@@ -10,6 +10,10 @@ interface User {
   date_joined: string;
   temporary_group_name?: string;
   profile_picture?: string;
+  // Discord (renseignés après liaison OAuth côté backend)
+  discord_id?: string;
+  discord_username?: string;
+  discord_avatar?: string;
 }
 
 // Interface pour les tokens JWT

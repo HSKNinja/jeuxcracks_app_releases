@@ -840,11 +840,27 @@ export class TorrentService {
       })();
   }
 
-  public destroy() {
-      if (this.pollInterval) clearInterval(this.pollInterval);
+  public async destroy() {
+      if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
+
+      // Extinction PROPRE d'aria2c : la commande RPC `shutdown` déclenche la sauvegarde
+      // de la table DHT (dht.dat). Sans ça (kill brutal), la DHT repart à froid à chaque
+      // session → découverte des seeders lente. Une DHT persistée se réchauffe comme qBittorrent.
+      try {
+          if (this.aria2Client) {
+              await Promise.race([
+                  this.aria2Client.call('shutdown'),
+                  new Promise((r) => setTimeout(r, 2500)),
+              ]);
+              console.log('🛑 Aria2c arrêté proprement (DHT sauvegardée).');
+          }
+      } catch (e) {
+          /* ignore — on tue le process en fallback ci-dessous */
+      }
+
       if (this.aria2Process) {
-          console.log('🛑 Kill du process Aria2c...');
-          this.aria2Process.kill();
+          try { this.aria2Process.kill(); } catch (e) { /* déjà arrêté */ }
+          this.aria2Process = null;
       }
   }
 
