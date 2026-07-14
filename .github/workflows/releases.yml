@@ -1,0 +1,33 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'          # Se déclenche quand on pousse un tag comme v2.0.1
+  workflow_dispatch:  # Permet aussi de lancer le build À LA MAIN depuis l'onglet Actions
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    permissions:
+      contents: write   # Nécessaire pour publier la release dans CE repo
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install   # 'install' (et non 'ci') : tolérant si package-lock.json n'est pas à jour
+
+      - name: Build & Publish
+        env:
+          # Token AUTOMATIQUE de GitHub Actions : suffit pour publier une release
+          # DANS LE MÊME repo que celui où tourne le workflow. Aucun secret à créer.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run publish
