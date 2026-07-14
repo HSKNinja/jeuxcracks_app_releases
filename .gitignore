@@ -24,6 +24,9 @@ lerna-debug.log*
 .env.local
 .env.*.local
 
+# Token GitHub local (NE JAMAIS committer)
+gh_token.txt
+
 # IDE
 .vscode/*
 !.vscode/extensions.json

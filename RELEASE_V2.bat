@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 :: --- CONFIGURATION ---
 set "VERSION_V2=2.0.0"
-set "REPO_RELEASES=https://github.com/Wasmata/jeuxcracks_app_releases/releases"
+set "REPO_RELEASES=https://github.com/HSKNinja/jeuxcracks_app_releases/releases"
 
 :: --- COLORS (ANSI ESCAPE CODES) ---
 set "ESC="
@@ -69,20 +69,41 @@ if %errorlevel% neq 0 (
     goto :error
 )
 
-:: --- STEP 4: GIT PUSH ---
-echo %WHITE%[3/4] %GRAY%Envoi vers GitHub (Tags inclus)...%RESET%
+:: --- STEP 3: GIT PUSH (non bloquant) ---
+echo %WHITE%[3/4] %GRAY%Envoi du code vers GitHub (Tags inclus)...%RESET%
 git push origin %BRANCH% --tags
 if %errorlevel% neq 0 (
-    echo %RED%[X] Erreur : Push echoue.%RESET%
+    echo %YELLOW%[!] Push git echoue (repo distant absent/inaccessible). On continue vers la publication.%RESET%
+)
+
+:: --- STEP 4: BUILD & PUBLICATION LOCALE (avec TON token GitHub) ---
+echo %WHITE%[4/4] %GRAY%Build et publication de l'installeur...%RESET%
+
+:: Le token est lu depuis un fichier LOCAL non commite (gh_token.txt).
+:: S'il n'existe pas, on le demande. Le token n'est JAMAIS ecrit dans ce .bat.
+if exist "%~dp0gh_token.txt" (
+    set /p GH_TOKEN=<"%~dp0gh_token.txt"
+) else (
+    echo %YELLOW%[!] gh_token.txt introuvable a la racine du projet.%RESET%
+    set /p "GH_TOKEN=Colle ton token GitHub (ghp_...) : "
+)
+
+if "%GH_TOKEN%"=="" (
+    echo %RED%[X] Aucun token fourni. Publication annulee.%RESET%
     goto :error
 )
 
-:: --- STEP 5: SUCCESS ---
+call npm run publish
+if %errorlevel% neq 0 (
+    echo %RED%[X] Erreur : build ou publication echouee.%RESET%
+    goto :error
+)
+
+:: --- SUCCESS ---
 echo.
-echo %GREEN%[SUCCESS] %BOLD%La mise a jour a ete envoyee avec succes !%RESET%
+echo %GREEN%[SUCCESS] %BOLD%Installeur publie avec succes !%RESET%
 echo.
-echo %CYAN%Suivi de la release : %RESET%%WHITE%%REPO_RELEASES%%RESET%
-echo %GRAY%(Attendez quelques minutes que les Actions GitHub se terminent)%RESET%
+echo %CYAN%Ta release : %RESET%%WHITE%%REPO_RELEASES%%RESET%
 echo.
 echo %BLUE%================================================================%RESET%
 pause

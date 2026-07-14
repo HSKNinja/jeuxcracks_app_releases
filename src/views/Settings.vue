@@ -547,7 +547,7 @@ const changelogLoading = ref(false);
 const loadChangelog = async () => {
     changelogLoading.value = true;
     try {
-        const res = await fetch('https://api.github.com/repos/Wasmata/jeuxcracks_app_releases/releases?per_page=30');
+        const res = await fetch('https://api.github.com/repos/HSKNinja/jeuxcracks_app_releases/releases?per_page=30');
         if (res.ok) {
             const releases = await res.json();
             changelog.value = releases.map((r: any) => ({

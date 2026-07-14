@@ -82,7 +82,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "Wasmata",
+        "owner": "HSKNinja",
         "repo": "jeuxcracks_app_releases",
         "releaseType": "release"
       }
