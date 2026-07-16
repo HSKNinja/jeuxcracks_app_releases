@@ -77,7 +77,10 @@ export class TransmissionService {
         ipcMain.on('resume-torrent', this.resumeTorrent);
         ipcMain.on('stop-torrent', (e, infoHash, savePath) => this.stopTorrent(e, infoHash, savePath));
         ipcMain.on('stop-torrent-by-id', (e, gameID) => this.stopTorrentByGameId(e, gameID));
-        this.init();
+        // Différer l'init APRÈS le chargement du module : sinon getMainWindow() accède à la
+        // variable `win` de index.ts avant sa déclaration (TDZ « Cannot access 'win' before
+        // initialization »). app.whenReady() garantit qu'on démarre une fois l'app prête.
+        app.whenReady().then(() => this.init());
     }
 
     // ── Cycle de vie du daemon ────────────────────────────────────────────
@@ -143,7 +146,10 @@ export class TransmissionService {
                 try { fs.unlinkSync(msiPath); } catch (e) {}
                 return true;
             }
+            // Diagnostic : lister les .exe présents pour savoir ce que contient réellement le MSI.
+            const exes = this.findAllByExt(extractDir, '.exe').map(p => p.split(/[\\/]/).pop());
             console.error('❌ transmission-daemon.exe introuvable après extraction du MSI.');
+            console.error('   Exécutables trouvés:', exes.join(', ') || '(aucun)');
             return false;
         } catch (e: any) {
             console.error('❌ Échec téléchargement/extraction Transmission:', e?.message);
@@ -170,6 +176,21 @@ export class TransmissionService {
             }
         } catch (e) { /* ignore */ }
         return null;
+    }
+
+    /** Liste récursive de tous les fichiers ayant une extension donnée sous `dir`. */
+    private findAllByExt(dir: string, ext: string): string[] {
+        const out: string[] = [];
+        try {
+            if (!fs.existsSync(dir)) return out;
+            const low = ext.toLowerCase();
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                const full = join(dir, entry.name);
+                if (entry.isDirectory()) out.push(...this.findAllByExt(full, ext));
+                else if (entry.name.toLowerCase().endsWith(low)) out.push(full);
+            }
+        } catch (e) { /* ignore */ }
+        return out;
     }
 
     /** Télécharge une URL vers un fichier, en suivant les redirections (GitHub → CDN). */
