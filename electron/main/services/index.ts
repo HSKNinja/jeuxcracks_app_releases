@@ -1,5 +1,6 @@
 import './downloadService';
 import './installService';
-import './torrentService';
+// Moteur de téléchargement : Transmission-daemon (remplace aria2 / torrentService).
+import './transmissionService';
 import './launchService';
 import './gameStatsService';

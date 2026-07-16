@@ -5,7 +5,9 @@ import { release } from 'os';
 import { join, dirname } from 'path';
 import { rootPath } from 'electron-root-path';
 import * as fs from 'fs/promises';
-import { torrentService } from './services/torrentService';
+// Moteur de téléchargement : Transmission-daemon (remplace aria2).
+// Pour revenir à aria2, remettre : import { torrentService } from './services/torrentService';
+import { transmissionService as torrentService } from './services/transmissionService';
 import { libraryService } from './services/libraryService';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';

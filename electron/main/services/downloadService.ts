@@ -2,7 +2,9 @@ const Downloader = require('nodejs-file-downloader');
 import { BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import * as fs from 'fs';
-import { torrentService } from './torrentService';
+// Moteur de téléchargement : Transmission-daemon (remplace aria2).
+// Pour revenir à aria2, remettre : import { torrentService } from './torrentService';
+import { transmissionService as torrentService } from './transmissionService';
 import { installService } from './installService';
 import { getMainWindow } from '..';
 
