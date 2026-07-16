@@ -1,34 +1,21 @@
-=== BINAIRE TRANSMISSION-DAEMON REQUIS ICI ===
+=== MOTEUR TRANSMISSION ===
 
-Le launcher utilise transmission-daemon comme moteur de telechargement.
-Tu dois placer le binaire Windows + ses DLL dans CE dossier (assets/transmission/).
+Le launcher TELECHARGE AUTOMATIQUEMENT transmission-daemon au premier lancement
+s'il ne le trouve pas : il recupere le MSI officiel de Transmission, l'extrait
+sans l'installer (msiexec /a), et met le binaire dans %APPDATA%/<app>/transmission-bin/.
 
---- Comment l'obtenir ---
+=> Tu n'as normalement RIEN a faire.
 
-1. Telecharge Transmission pour Windows (version Qt/daemon) :
-   https://transmissionbt.com/download
-   (ou les builds : https://github.com/transmission/transmission/releases)
+--- Optionnel : bundler le binaire (evite le telechargement au 1er lancement) ---
 
-2. Installe-le (ou ouvre le .zip portable si dispo).
+Si tu veux embarquer le binaire directement dans l'app (pour que ca marche hors-ligne
+ou sans le telechargement initial), place ici :
+  - transmission-daemon.exe
+  - tous les .dll a cote (depuis un dossier d'installation Transmission)
 
-3. Va dans le dossier d'installation (ex: C:\Program Files\Transmission\).
+Le launcher utilisera en priorite le binaire bundle ici s'il est present.
 
-4. COPIE dans ce dossier (assets/transmission/) AU MINIMUM :
-   - transmission-daemon.exe
-   - TOUS les fichiers .dll presents a cote (libcrypto*.dll, libssl*.dll,
-     libcurl*.dll, libevent*.dll, zlib*.dll, etc.)
+--- Source ---
 
-   En cas de doute, copie TOUT le contenu du dossier d'installation Transmission ici.
-
---- Verification ---
-
-Depuis ce dossier, ouvre un terminal et lance :
-   transmission-daemon.exe --version
-
-Si ca affiche une version, c'est bon. Si ca reclame une DLL manquante,
-copie aussi cette DLL depuis le dossier d'installation Transmission.
-
---- Note ---
-
-Le fichier settings.json du daemon est genere automatiquement par l'app
-(dans %APPDATA%/<app>/transmission-config/), ne le mets PAS ici.
+MSI officiel utilise pour le telechargement auto :
+  https://github.com/transmission/transmission/releases/download/4.1.3/transmission-4.1.3-x64.msi

@@ -2,19 +2,31 @@ import { ipcMain, app } from 'electron';
 import { installService } from './installService';
 import * as fs from 'fs';
 import * as http from 'http';
-import { join } from 'path';
+import * as https from 'https';
+import { join, dirname } from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { getMainWindow } from '..';
 
-// Chemin du binaire transmission-daemon (+ ses DLLs) bundlé dans assets/transmission/.
+// Installeur MSI officiel de Transmission (Windows). Le launcher le télécharge au 1er
+// lancement s'il ne trouve pas le binaire, puis l'EXTRAIT sans l'installer via
+// `msiexec /a` (installation administrative = décompression silencieuse).
+const TRANSMISSION_MSI_URL = 'https://github.com/transmission/transmission/releases/download/4.1.3/transmission-4.1.3-x64.msi';
+
+// Dossier INSCRIPTIBLE où on télécharge le binaire s'il n'est pas bundlé (les ressources
+// packagées sont en lecture seule). On y écrit aussi lors du dev.
+const userDataBinDir = join(app.getPath('userData'), 'transmission-bin');
+const userDataDaemon = join(userDataBinDir, 'transmission-daemon.exe');
+
+// Chemin du binaire : d'abord bundlé (assets/transmission/), sinon le dossier userData (téléchargé).
 const isPackaged = app.isPackaged;
-let daemonPath = isPackaged
+const bundledDaemon = isPackaged
     ? join(process.resourcesPath, 'assets', 'transmission', 'transmission-daemon.exe')
     : join(__dirname, '../../assets/transmission/transmission-daemon.exe');
-if (isPackaged && !fs.existsSync(daemonPath)) {
-    const fallback = join(process.resourcesPath, 'transmission', 'transmission-daemon.exe');
-    if (fs.existsSync(fallback)) daemonPath = fallback;
-}
+const bundledFallback = join(process.resourcesPath, 'transmission', 'transmission-daemon.exe');
+
+let daemonPath = fs.existsSync(bundledDaemon)
+    ? bundledDaemon
+    : (isPackaged && fs.existsSync(bundledFallback) ? bundledFallback : userDataDaemon);
 
 const RPC_HOST = '127.0.0.1';
 const RPC_PORT = 9091;
@@ -36,6 +48,8 @@ export class TransmissionService {
     private isShuttingDown = false;
     private reconnecting = false;
     private binaryMissingLogged = false; // évite le spam quand le binaire n'est pas installé
+    private downloadingBinary = false;   // téléchargement du binaire en cours
+    private lastBinaryAttempt = 0;        // dernier essai de téléchargement (cooldown)
 
     // hashString (minuscule) -> { transmissionId, gameData, savePath, magnet, isCompleting, addedAt, retryCount }
     private active = new Map<string, any>();
@@ -71,9 +85,8 @@ export class TransmissionService {
     private async init() {
         try {
             console.log('🚀 Démarrage du moteur Transmission...');
-            if (isPackaged && !fs.existsSync(daemonPath)) {
-                console.error('❌ CRITIQUE: transmission-daemon.exe introuvable:', daemonPath);
-            }
+            // Télécharge le binaire au 1er lancement s'il est absent.
+            await this.ensureBinary();
             await this.ensureAntivirusExclusion();
             await this.launchAndConnect(true);
             this.loadState();
@@ -82,6 +95,104 @@ export class TransmissionService {
         } catch (e) {
             console.error('❌ Impossible de démarrer Transmission:', e);
         }
+    }
+
+    /**
+     * S'assure que transmission-daemon.exe est présent. S'il manque (ni bundlé, ni déjà
+     * téléchargé), télécharge le MSI officiel et l'EXTRAIT sans l'installer (msiexec /a),
+     * puis pointe daemonPath sur le binaire extrait. Une seule fois (mis en cache ensuite).
+     */
+    private async ensureBinary(): Promise<boolean> {
+        if (fs.existsSync(daemonPath)) return true;
+
+        // Peut-être déjà extrait lors d'un lancement précédent ?
+        const cached = this.findFile(userDataBinDir, 'transmission-daemon.exe');
+        if (cached) { daemonPath = cached; return true; }
+
+        // Anti-concurrence + cooldown : ne pas re-télécharger le MSI en boucle (watchdog).
+        if (this.downloadingBinary) return false;
+        if (this.lastBinaryAttempt !== 0 && Date.now() - this.lastBinaryAttempt < 60000) return false;
+        this.downloadingBinary = true;
+        this.lastBinaryAttempt = Date.now();
+
+        const win = getMainWindow();
+        try {
+            fs.mkdirSync(userDataBinDir, { recursive: true });
+            const msiPath = join(userDataBinDir, 'transmission.msi');
+
+            console.log('⬇️ 1er lancement : téléchargement du moteur Transmission...');
+            win?.webContents.send('info', 'Installation du moteur de téléchargement… (une seule fois)');
+            await this.downloadToFile(TRANSMISSION_MSI_URL, msiPath);
+
+            console.log('📦 Extraction du MSI (sans installation)...');
+            const extractDir = join(userDataBinDir, 'extracted');
+            try { fs.rmSync(extractDir, { recursive: true, force: true }); } catch (e) {}
+            fs.mkdirSync(extractDir, { recursive: true });
+
+            // msiexec /a = administrative install = décompresse sans installer, en silence.
+            const { execFileSync } = require('child_process');
+            execFileSync('msiexec', ['/a', msiPath, '/qn', `TARGETDIR=${extractDir}`], {
+                windowsHide: true, timeout: 180000, stdio: 'ignore',
+            });
+
+            const found = this.findFile(extractDir, 'transmission-daemon.exe');
+            if (found) {
+                daemonPath = found;
+                this.binaryMissingLogged = false;
+                console.log('✅ Moteur Transmission prêt:', found);
+                try { fs.unlinkSync(msiPath); } catch (e) {}
+                return true;
+            }
+            console.error('❌ transmission-daemon.exe introuvable après extraction du MSI.');
+            return false;
+        } catch (e: any) {
+            console.error('❌ Échec téléchargement/extraction Transmission:', e?.message);
+            win?.webContents.send('error', "Impossible d'installer le moteur de téléchargement (vérifie ta connexion). Nouvel essai automatique.");
+            return false;
+        } finally {
+            this.downloadingBinary = false;
+        }
+    }
+
+    /** Recherche récursive d'un fichier par nom (insensible à la casse) sous `dir`. */
+    private findFile(dir: string, name: string): string | null {
+        try {
+            if (!fs.existsSync(dir)) return null;
+            const target = name.toLowerCase();
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                const full = join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    const nested = this.findFile(full, name);
+                    if (nested) return nested;
+                } else if (entry.name.toLowerCase() === target) {
+                    return full;
+                }
+            }
+        } catch (e) { /* ignore */ }
+        return null;
+    }
+
+    /** Télécharge une URL vers un fichier, en suivant les redirections (GitHub → CDN). */
+    private downloadToFile(url: string, dest: string, redirects = 0): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const client = url.startsWith('https') ? https : http;
+            const req = client.get(url, { headers: { 'User-Agent': 'JeuxCracks-Launcher' } }, (res) => {
+                const status = res.statusCode || 0;
+                if (status >= 300 && status < 400 && res.headers.location && redirects < 5) {
+                    res.resume();
+                    const next = new URL(res.headers.location, url).toString();
+                    this.downloadToFile(next, dest, redirects + 1).then(resolve).catch(reject);
+                    return;
+                }
+                if (status !== 200) { res.resume(); return reject(new Error(`HTTP ${status}`)); }
+                const file = fs.createWriteStream(dest);
+                res.pipe(file);
+                file.on('finish', () => file.close(() => resolve()));
+                file.on('error', (e) => { try { fs.unlinkSync(dest); } catch (_) {} reject(e); });
+            });
+            req.on('error', reject);
+            req.setTimeout(180000, () => { req.destroy(); reject(new Error('Timeout téléchargement')); });
+        });
     }
 
     private configDir(): string {
@@ -188,9 +299,13 @@ export class TransmissionService {
 
     private startHealthCheck() {
         if (this.healthInterval) clearInterval(this.healthInterval);
-        this.healthInterval = setInterval(() => {
+        this.healthInterval = setInterval(async () => {
             if (this.isShuttingDown || this.reconnecting || this.isReady) return;
-            if (!fs.existsSync(daemonPath)) return; // binaire absent : rien à relancer (déjà signalé)
+            // Binaire absent : retenter le téléchargement (respecte le cooldown interne).
+            if (!fs.existsSync(daemonPath)) {
+                const ok = await this.ensureBinary();
+                if (!ok) return;
+            }
             console.log('🩺 Watchdog: Transmission indisponible, relance...');
             this.launchAndConnect(true).catch(() => {});
         }, 8000);
