@@ -123,7 +123,13 @@ export function useFetch(url: string, method?: string, body?: any, customHeaders
 
                     if (refreshResponse.ok) {
                         const newTokens = await refreshResponse.json();
-                        store.setTokens(newTokens);
+                        // Préserver le refresh token si le backend ne le renvoie pas (rotation désactivée) :
+                        // sinon setTokens l'écrase → le PROCHAIN 401 n'a plus de refresh token
+                        // → déconnexion. C'est la cause du "ça refresh pas / ça me déconnecte".
+                        store.setTokens({
+                            access: newTokens.access,
+                            refresh: newTokens.refresh || tokens.refresh,
+                        });
 
                         processQueue(null, newTokens.access);
                         isRefreshing = false;
