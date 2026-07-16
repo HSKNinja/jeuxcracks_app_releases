@@ -34,6 +34,11 @@
                      <input v-model="form.password" type="password" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none" placeholder="••••••••" required />
                  </div>
 
+                 <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer select-none pt-1">
+                     <input v-model="rememberMe" type="checkbox" class="accent-indigo-500 w-3.5 h-3.5" />
+                     Se souvenir de moi
+                 </label>
+
                  <div v-if="error" class="p-2 bg-red-900/20 border border-red-900/50 rounded-lg text-red-400 text-xs text-center break-words">
                      {{ error }}
                  </div>
@@ -55,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMainStore } from '../store';
 import { useNotification } from '@kyvg/vue3-notification';
@@ -70,6 +75,23 @@ const store = useMainStore();
 const form = ref({ username: '', password: '' });
 const loading = ref(false);
 const error = ref('');
+const rememberMe = ref(true);
+
+// Clé de stockage local des identifiants (option "Se souvenir de moi").
+// Note: le mot de passe est stocké en clair localement — acceptable ici pour le confort
+// (re-connexion en 1 clic après expiration de session), mais ce n'est pas du chiffrement.
+const REMEMBER_KEY = 'jc_saved_login';
+
+onMounted(() => {
+    try {
+        const saved = JSON.parse(localStorage.getItem(REMEMBER_KEY) || 'null');
+        if (saved && saved.username) {
+            form.value.username = saved.username;
+            form.value.password = saved.password || '';
+            rememberMe.value = true;
+        }
+    } catch (e) { /* données corrompues : on ignore */ }
+});
 
 const minimize = () => { window.electronAPI?.minimize(); };
 const maximize = () => { window.electronAPI?.maximize(); };
@@ -103,7 +125,17 @@ const handleLogin = async () => {
             
             // 3. Save to Store
             store.login({ user, tokens });
-            
+
+            // Mémorise (ou efface) les identifiants selon la case "Se souvenir de moi".
+            if (rememberMe.value) {
+                localStorage.setItem(REMEMBER_KEY, JSON.stringify({
+                    username: form.value.username,
+                    password: form.value.password
+                }));
+            } else {
+                localStorage.removeItem(REMEMBER_KEY);
+            }
+
             router.push('/');
         } else {
             console.error('No access token in response:', tokens);

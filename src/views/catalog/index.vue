@@ -257,7 +257,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useFetch } from '../../utils/useFetch';
 import { 
@@ -305,12 +305,34 @@ watch(() => route.query.q, (newQ) => {
     }
 });
 
+// Rafraîchissement automatique du catalogue (pour voir les nouveaux jeux sans redémarrer l'app).
+let catalogRefreshTimer: number | null = null;
+const onWindowFocus = () => {
+    // On ne rafraîchit que sur la 1re page sans recherche active, pour ne pas casser
+    // la pagination ou une recherche en cours. Silencieux = pas de clignotement.
+    if (pagination.value.page === 1 && !searchQuery.value.trim()) {
+        fetchGames(true);
+    }
+};
+
 onMounted(() => {
     if (route.query.q) {
         searchQuery.value = route.query.q as string;
     }
     fetchStats();
     fetchGames();
+
+    // 1) Quand tu reviens sur la fenêtre du launcher (ex: après avoir ajouté un jeu sur le site).
+    window.addEventListener('focus', onWindowFocus);
+    // 2) Polling léger toutes les 60s tant qu'on est sur le catalogue.
+    catalogRefreshTimer = window.setInterval(() => {
+        if (document.visibilityState === 'visible') onWindowFocus();
+    }, 60000);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('focus', onWindowFocus);
+    if (catalogRefreshTimer !== null) { clearInterval(catalogRefreshTimer); catalogRefreshTimer = null; }
 });
 
 const fetchStats = async () => {
@@ -444,10 +466,14 @@ const { notify } = useNotification();
 // ... existing code ...
 
 // Fetch Logic - Uses new search API
-const fetchGames = async () => {
-    loading.value = true;
-    games.value = [];
-    
+const fetchGames = async (silent = false) => {
+    // silent = rafraîchissement en arrière-plan : on ne vide pas la liste ni n'affiche
+    // le spinner, pour éviter le clignotement quand on recharge automatiquement.
+    if (!silent) {
+        loading.value = true;
+        games.value = [];
+    }
+
     try {
         const isSearch = !!searchQuery.value.trim();
         const baseUrl = isSearch ? '/api/engine/search/' : '/api/engine/games/';

@@ -668,17 +668,28 @@ async function fetchVersionsAndShowModal() {
         
         let allVersions: any[] = game.value.versions || [];
 
-        // Process versions: Find Magnet links
+        // Process versions: détection ROBUSTE des liens de téléchargement.
+        // On ne se fie plus au seul libellé link_type === 'magnet' (trop strict : masquait
+        // des versions qui EXISTENT). On reconnaît un magnet par le contenu de l'URI, et on
+        // accepte un lien direct (DDL) en secours pour ne jamais afficher "Aucune version" à tort.
         versions.value = allVersions.map(v => {
-            const magnet = v.download_links?.find((l:any) => l.link_type === 'magnet');
+            const links: any[] = v.download_links || [];
+            const isMagnet = (l:any) => (l?.uri || '').startsWith('magnet:') || /magnet|torrent/i.test(l?.link_type || '');
+            const isDirect = (l:any) => /^https?:\/\//i.test(l?.uri || '') && !isMagnet(l);
+
+            const magnet = links.find(isMagnet);
+            const direct = links.find(isDirect);
+            const chosen = magnet || direct;
+
             return {
                 ...v,
                 magnet_url: magnet?.uri,
+                download_url: chosen?.uri,
+                download_kind: magnet ? 'torrent' : (direct ? 'direct' : null),
                 has_magnet: !!magnet,
-                // Assuming API sends is_latest, or we logic it here (e.g. first one)
-                // For now rely on API or sorting
+                has_download: !!chosen,
             };
-        }).filter(v => v.has_magnet); // Only keep versions with magnet
+        }).filter(v => v.has_download); // garder toute version ayant AU MOINS un lien (magnet OU direct)
         
         // Sort/Flag Latest
         // If API doesn't flag, assume first is latest or sort by ID desc/Date
@@ -710,8 +721,10 @@ async function selectVersion(version: any) {
 
 // Start download with specific version
 async function startDownload(version: any) {
-  if (!version || !version.magnet_url) {
-      notify({ type: 'error', title: 'Erreur', text: 'Lien magnet invalide.' });
+  // Accepte un magnet OU un lien direct (download_url), plus seulement le magnet.
+  const dlUrl = version?.download_url || version?.magnet_url;
+  if (!version || !dlUrl) {
+      notify({ type: 'error', title: 'Erreur', text: 'Aucun lien de téléchargement valide.' });
       return;
   }
   
@@ -724,7 +737,7 @@ async function startDownload(version: any) {
       console.warn("Failed to increment download count", e);
   }
   
-  let URL = version.magnet_url;
+  let URL = dlUrl;
   if (URL.startsWith('/')) URL = 'https://api.jeuxcracks.fr' + URL;
   
   // Use source from selected version if available, otherwise fallback
@@ -740,7 +753,8 @@ async function startDownload(version: any) {
     informations: { credit: game.value?.developer },
   };
   
-  downloadType.value = 'torrent'; // Force torrent/magnet
+  // Type réel du téléchargement : torrent (magnet) OU direct (lien HTTP), selon la version.
+  downloadType.value = version.download_kind || (URL.startsWith('magnet:') ? 'torrent' : 'direct');
   window.electronAPI?.send('download', URL, destPath.value, downloadType.value, gameData);
   
   const downloadData = {
