@@ -47,9 +47,10 @@
             
             <!-- Background Image (Replaces Video) -->
             <div class="absolute inset-0 select-none pointer-events-none">
-                <img 
-                    :src="game?.background || game?.header" 
+                <img
+                    :src="game?.background || game?.header"
                     class="w-full h-full object-cover animate-pan-zoom"
+                    @error="onHeroImgError"
                 />
                 
                 <!-- Gradient Vignettes -->
@@ -885,7 +886,14 @@ async function fetchData(id: string | string[]) {
         if (!headerImg && data.steam_app_id) {
             headerImg = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${data.steam_app_id}/header.jpg`;
         }
-        
+
+        // 🖼️ Bandeau HAUTE RÉSOLUTION : Steam expose une image "library_hero" en 1920×620,
+        // bien plus nette que le header_image (460×215) étiré. Fallback géré par @error sur l'<img>.
+        let heroImg = '';
+        if (data.steam_app_id) {
+            heroImg = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${data.steam_app_id}/library_hero.jpg`;
+        }
+
         // Get size from versions
         let detectedSize = data.total_size || 0;
         if (data.versions && data.versions.length > 0) {
@@ -899,7 +907,7 @@ async function fetchData(id: string | string[]) {
             title: data.display_name || data.title || '',
             slug: data.slug || '',
             header: headerImg || '/assets/placeholder.webp',
-            background: headerImg || '/assets/placeholder.webp',
+            background: heroImg || headerImg || (data.metadata?.screenshots?.[0]) || '/assets/placeholder.webp',
             video: data.metadata?.trailers?.[0] || '',
             description: data.metadata?.description || data.description || 'Aucune description disponible.',
             descriptionShort: data.metadata?.short_description || '',
@@ -974,6 +982,19 @@ async function isInstalled(id: string) {
 // Open screenshot in new window for full view
 function openScreenshot(url: string) {
     window.open(url, '_blank');
+}
+
+// Repli du bandeau haute résolution : si library_hero n'existe pas pour ce jeu (404),
+// on bascule vers le header, puis un screenshot, puis le placeholder. Se termine sans boucle.
+function onHeroImgError(e: Event) {
+    const img = e.target as HTMLImageElement;
+    const candidates = [
+        game.value?.header,
+        game.value?.screenshots?.[0],
+        '/assets/placeholder.webp',
+    ].filter(Boolean) as string[];
+    const next = candidates.find(c => c && c !== img.src);
+    if (next) img.src = next;
 }
 
 function prettyBites(bytes: number) {
