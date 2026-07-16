@@ -26,9 +26,10 @@
             >
                 <!-- BG Image -->
                 <div class="absolute inset-0 bg-black">
-                    <img 
-                        :src="trendingGames[activeIndex].header" 
-                        class="w-full h-full object-cover animate-pan-zoom opacity-50" 
+                    <img
+                        :src="trendingGames[activeIndex].hero || trendingGames[activeIndex].header"
+                        class="w-full h-full object-cover animate-pan-zoom opacity-50"
+                        @error="onHeroError"
                     />
                     <div class="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent"></div>
                     <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/30 to-transparent"></div>
@@ -385,6 +386,14 @@ function nextSlide() {
     resetTimer();
 }
 
+// Repli si l'image HD (library_hero) n'existe pas pour ce jeu : on retombe sur le header.
+function onHeroError(e: Event) {
+    const img = e.target as HTMLImageElement;
+    const g = trendingGames.value[activeIndex.value];
+    const fallback = g?.header || '/assets/placeholder.webp';
+    if (fallback && img.src !== fallback) img.src = fallback;
+}
+
 function resetTimer() {
     clearInterval(slideTimer);
     if (trendingGames.value.length === 0) return;
@@ -417,11 +426,17 @@ async function fetchGameRow(sort: string, count: number) {
         return await Promise.all(results.map(async (g: any) => {
             const detail: any = await useFetch(`/api/engine/games/${g.slug}/`);
             const meta = detail?.metadata;
+            const appid = detail?.steam_app_id;
+            // Bandeau HD (library_hero 1920×620) pour le grand carrousel de l'accueil.
+            const hero = appid
+                ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`
+                : (meta?.header_image || detail?.header || '/assets/placeholder.webp');
             return {
                 id: detail?.id || g.id,
                 slug: detail?.slug || g.slug,
                 title: detail?.display_name || g.display_name,
                 header: meta?.header_image || detail?.header || '/assets/placeholder.webp',
+                hero,
                 descriptionShort: stripHtml(meta?.short_description || detail?.description || ''),
                 views: detail?.views || g.views || 0,
                 categories: meta?.genres || detail?.categories || [],
