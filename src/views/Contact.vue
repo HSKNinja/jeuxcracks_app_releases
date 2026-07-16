@@ -179,6 +179,8 @@
           <a href="#" class="text-primary hover:text-primary/80 transition-colors">Chouette</a>
           &
           <a href="#" class="text-primary hover:text-primary/80 transition-colors">Upsilon</a>
+          &
+          <a href="#" class="text-primary hover:text-primary/80 transition-colors">Nyosix</a>
         </p>
       </div>
     </div>

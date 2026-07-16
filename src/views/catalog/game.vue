@@ -765,6 +765,8 @@ async function startDownload(version: any) {
   const isValidMagnet = /^magnet:\?.*xt=urn:btih:[a-z0-9]{32,40}/i.test(dlUrl);
   const isValidHttp = /^https?:\/\//i.test(dlUrl) || dlUrl.startsWith('/');
   if (!isValidMagnet && !isValidHttp) {
+      // 🔎 DIAGNOSTIC: afficher le lien EXACT reçu pour comprendre pourquoi il est rejeté.
+      console.warn('⚠️ Lien de téléchargement invalide rejeté pour', game.value?.title, '→', JSON.stringify(dlUrl));
       notify({
           type: 'error',
           title: 'Téléchargement indisponible',

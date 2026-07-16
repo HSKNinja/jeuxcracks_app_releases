@@ -41,7 +41,7 @@
         <section>
             <h2 class="text-xl font-bold text-white mb-4">Contact</h2>
             <p>
-                All notices should be sent to: <a href="mailto:dmca@jeuxcracks.com" class="text-indigo-400 font-bold hover:underline">dmca@jeuxcracks.com</a>
+                All notices should be sent to: <a href="mailto:dmca@jeuxcracks.fr" class="text-indigo-400 font-bold hover:underline">dmca@jeuxcracks.fr</a>
             </p>
         </section>
     </div>

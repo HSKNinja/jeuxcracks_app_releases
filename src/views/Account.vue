@@ -349,7 +349,7 @@
                 <li>Lien(s) concerné(s)</li>
             </ul>
             <p>
-                Contact : <span class="text-indigo-400 select-all">upsilon@jeuxcracks.fr</span>
+                Contact : <span class="text-indigo-400 select-all">nyosix@jeuxcracks.fr</span>
             </p>
             <p>
                 Nous examinerons chaque notification sérieusement avec suppression du contenu sous 72 heures si avéré.
