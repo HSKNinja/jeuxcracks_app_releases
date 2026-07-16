@@ -140,9 +140,10 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  // Initialize Store (ESM workaround)
+  // Initialize Store — electron-store v8 (CJS) : require() se résout dans l'asar packagé,
+  // contrairement à import() dynamique (ESM) qui échouait en prod (ERR_MODULE_NOT_FOUND).
   try {
-      const { default: StoreVal } = await import('electron-store');
+      const StoreVal = require('electron-store');
       store = new StoreVal();
   } catch(e) { console.error('Failed to load electron-store', e); }
 

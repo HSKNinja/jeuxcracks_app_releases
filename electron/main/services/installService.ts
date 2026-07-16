@@ -237,7 +237,7 @@ class InstallService {
     
     // Native OS notification (if enabled)
     try {
-        const { default: Store } = await import('electron-store');
+        const Store = require('electron-store'); // v8 CJS : require() marche dans l'asar packagé
         const storeInst: any = new Store();
         const settings = storeInst.get('settings') || {};
         if (settings.notifications !== false) {
