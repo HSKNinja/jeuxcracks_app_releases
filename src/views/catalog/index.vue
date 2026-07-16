@@ -495,7 +495,10 @@ const fetchGames = async (silent = false) => {
         const sortMapping: Record<string, string> = {
             'relevance': 'views,downloads_count', // Mixed fields for Django OrderingFilter
             'popular': 'likes',
-            'newest': 'new',
+            // "Nouveautés" = ordre d'insertion en base (-id) = les DERNIERS jeux ajoutés au
+            // catalogue, en tête. Plus fiable que 'new' (basé sur la date de la source, souvent
+            // ancienne), qui enterrait les jeux qu'on vient d'ajouter.
+            'newest': '-id',
             'views': 'views',
             'downloads': 'downloads_count'
         };
