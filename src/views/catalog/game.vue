@@ -681,19 +681,15 @@ async function fetchVersionsAndShowModal() {
         const firstString = (arr:any[], test:(s:string)=>boolean) =>
             (arr.find((s:any) => typeof s === 'string' && test(s)) as string) || '';
 
-        versions.value = allVersions.map(v => {
+        // Détecte le lien d'une version depuis toutes les formes possibles (champs modèle + download_links).
+        const detectVersion = (v:any) => {
             const links: any[] = v.download_links || [];
-
-            // Magnet : d'abord les champs du modèle, sinon le tableau download_links.
             const magnet =
                 firstString([v.download_torrent, v.download_magnet, v.torrent, v.magnet], s => s.startsWith('magnet:')) ||
                 linkUri(links.find(isMagnetLink));
-
-            // Lien direct (DDL) en secours : champ du modèle, sinon download_links.
             const direct =
                 firstString([v.download_direct, v.direct], s => /^https?:\/\//i.test(s)) ||
                 linkUri(links.find(isDirectLink));
-
             const chosen = magnet || direct;
             return {
                 ...v,
@@ -703,14 +699,27 @@ async function fetchVersionsAndShowModal() {
                 has_magnet: !!magnet,
                 has_download: !!chosen,
             };
-        }).filter(v => v.has_download); // garder toute version ayant AU MOINS un lien (magnet OU direct)
+        };
 
-        // 🔎 DIAGNOSTIC: des versions existent côté API mais aucune n'a de lien exploitable ?
-        // On logue la structure brute pour identifier le vrai nom des champs (retirer plus tard).
-        if (allVersions.length > 0 && versions.value.length === 0) {
-            console.warn('⚠️ Versions reçues mais aucun lien détecté. Structure brute de la 1re version:',
-                JSON.stringify(allVersions[0], null, 2));
+        let mapped = allVersions.map(detectVersion).filter(v => v.has_download);
+
+        // FALLBACK CLÉ : l'API met les liens de téléchargement dans l'endpoint /download/
+        // (dernière version + liens), PAS dans les versions du détail. Si le détail n'a aucun
+        // lien, on récupère la dernière version avec son magnet via /download/.
+        if (mapped.length === 0 && game.value?.slug) {
+            try {
+                const dl: any = await useFetch(`/api/engine/games/${game.value.slug}/download/`, 'GET');
+                if (dl && (dl.id || dl.download_links || dl.download_torrent || dl.torrent)) {
+                    const d = detectVersion(dl);
+                    if (d.has_download) mapped = [d];
+                    else console.warn('⚠️ /download/ ne contient pas de lien exploitable:', JSON.stringify(dl, null, 2));
+                }
+            } catch (e) {
+                console.warn('⚠️ Récupération /download/ échouée:', e);
+            }
         }
+
+        versions.value = mapped;
 
         // Sort/Flag Latest
         // If API doesn't flag, assume first is latest or sort by ID desc/Date
@@ -749,15 +758,9 @@ async function startDownload(version: any) {
       return;
   }
   
-  // Increment download count on backend
-  try {
-      if (game.value?.slug) {
-         await useFetch(`/api/engine/games/${game.value.slug}/download/`, 'GET');
-      }
-  } catch (e) {
-      console.warn("Failed to increment download count", e);
-  }
-  
+  // NB : le compteur de téléchargement est déjà incrémenté par l'appel à /download/
+  // fait au moment d'ouvrir le sélecteur de version (évite un double comptage).
+
   let URL = dlUrl;
   if (URL.startsWith('/')) URL = 'https://api.jeuxcracks.fr' + URL;
   
