@@ -35,6 +35,7 @@ export class TransmissionService {
     private isReady = false;
     private isShuttingDown = false;
     private reconnecting = false;
+    private binaryMissingLogged = false; // évite le spam quand le binaire n'est pas installé
 
     // hashString (minuscule) -> { transmissionId, gameData, savePath, magnet, isCompleting, addedAt, retryCount }
     private active = new Map<string, any>();
@@ -123,6 +124,22 @@ export class TransmissionService {
 
     private async launchAndConnect(killZombies = true): Promise<boolean> {
         if (this.reconnecting) return this.isReady;
+
+        // Binaire absent : inutile de spawn/retry en boucle (spam). On loggue UNE fois,
+        // on prévient l'utilisateur, et on sort. Le watchdog reprendra dès que le binaire
+        // est présent (ex: après une réinstallation qui l'inclut dans assets/transmission/).
+        if (!fs.existsSync(daemonPath)) {
+            if (!this.binaryMissingLogged) {
+                this.binaryMissingLogged = true;
+                console.error(`❌ transmission-daemon.exe INTROUVABLE : ${daemonPath}`);
+                console.error('   → Place le binaire + ses DLL dans assets/transmission/ (voir README.txt).');
+                const win = getMainWindow();
+                win?.webContents.send('error', "Moteur de téléchargement introuvable (Transmission). Réinstalle l'application ou contacte le support.");
+            }
+            this.isReady = false;
+            return false;
+        }
+
         this.reconnecting = true;
         try {
             this.isReady = false;
@@ -173,6 +190,7 @@ export class TransmissionService {
         if (this.healthInterval) clearInterval(this.healthInterval);
         this.healthInterval = setInterval(() => {
             if (this.isShuttingDown || this.reconnecting || this.isReady) return;
+            if (!fs.existsSync(daemonPath)) return; // binaire absent : rien à relancer (déjà signalé)
             console.log('🩺 Watchdog: Transmission indisponible, relance...');
             this.launchAndConnect(true).catch(() => {});
         }, 8000);
