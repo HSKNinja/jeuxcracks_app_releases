@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { useFetch } from '../utils/useFetch';
 import { API_CONFIG } from '../config/api';
+import router from '../router';
 
 declare global {
   interface Window {
@@ -46,6 +47,13 @@ export const useMainStore = defineStore('main', {
       this.tokens = null;
       this.favorites = [];
       this.isOfflineMode = false;
+      // Rediriger immédiatement vers la connexion quand la session meurt (token/refresh expirés),
+      // même sans navigation — sinon l'utilisateur reste bloqué sur une page pleine de 401.
+      try {
+        if (router.currentRoute.value.name !== 'Login') {
+          router.push({ name: 'Login' }).catch(() => {});
+        }
+      } catch (e) { /* routeur pas encore prêt : ignore */ }
     },
     /**
      * Rafraîchit le token d'accès à partir du refresh token, SANS déconnexion.
