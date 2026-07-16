@@ -518,8 +518,10 @@ const fetchGames = async (silent = false) => {
             const rawGames = res.results.filter((g: any) => g.steam_app_id || g.metadata);
             
             games.value = rawGames.map((g: any) => {
-                // Prioritize metadata header image since we want landscape, fallback to generating it from steam_app_id
-                let header = g.metadata?.header_image;
+                // Utiliser l'URL header_image renvoyée par l'API (elle gère les cas "coming soon"
+                // comme Forza, dont l'URL n'est PAS le chemin standard header.jpg → sinon 404).
+                // On ne reconstruit l'URL depuis steam_app_id qu'en dernier recours (jeu non enrichi).
+                let header = g.header_image || g.metadata?.header_image;
                 if (!header && g.steam_app_id) {
                     header = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.steam_app_id}/header.jpg`;
                 }

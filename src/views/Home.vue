@@ -435,7 +435,7 @@ async function fetchGameRow(sort: string, count: number) {
                 id: detail?.id || g.id,
                 slug: detail?.slug || g.slug,
                 title: detail?.display_name || g.display_name,
-                header: meta?.header_image || detail?.header || '/assets/placeholder.webp',
+                header: g.header_image || meta?.header_image || detail?.header || '/assets/placeholder.webp',
                 hero,
                 descriptionShort: stripHtml(meta?.short_description || detail?.description || ''),
                 views: detail?.views || g.views || 0,

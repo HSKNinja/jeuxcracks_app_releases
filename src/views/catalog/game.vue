@@ -882,7 +882,7 @@ async function fetchData(id: string | string[]) {
         configurationSystemMinimal.value = data.metadata?.pc_requirements?.minimum || "Données non disponibles";
         configurationSystemRecommended.value = data.metadata?.pc_requirements?.recommended || "Données non disponibles";
         
-        let headerImg = data.metadata?.header_image;
+        let headerImg = data.header_image || data.metadata?.header_image;
         if (!headerImg && data.steam_app_id) {
             headerImg = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${data.steam_app_id}/header.jpg`;
         }
