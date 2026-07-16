@@ -13,6 +13,7 @@ export class TelemetryService {
     private authToken: string | null = null;
     private heartbeatInterval: NodeJS.Timeout | null = null;
     public startupSent: boolean = false;
+    private startupInFlight: boolean = false; // garde anti-envois concurrents (évite les doublons 400)
 
     static getInstance(): TelemetryService {
         if (!TelemetryService.instance) {
@@ -128,9 +129,18 @@ export class TelemetryService {
         // Éviter double-envoi si déjà fait dans cette session
         if (this.startupSent) return;
 
+        // Garde anti-concurrence : le garde startupSent ci-dessus ne suffit pas car il n'est
+        // mis à true qu'APRÈS le fetch. Sans ce verrou, plusieurs appels partent avant que le
+        // 1er réponde → tous sauf un échouent en 400 (session_uuid déjà pris). Les retries
+        // internes (retryCount>0) ne sont volontairement PAS bloqués.
+        if (retryCount === 0) {
+            if (this.startupInFlight) return;
+            this.startupInFlight = true;
+        }
+
         this.authToken = token;
         if (!this.sessionUuid) this.sessionUuid = this.generateUUID();
-        
+
         try {
             console.log('📊 Gathering hardware info...');
             const payload = await this.gatherHardwareInfo();
@@ -158,7 +168,15 @@ export class TelemetryService {
 
             if (!response.ok) {
                 const text = await response.text();
-                console.warn(`⚠️ Telemetry endpoint returned ${response.status}:`, text.substring(0, 200));
+                // 400 "session_uuid déjà existante" = la session A DÉJÀ été créée (course entre
+                // appels, ou relance rapide). Ce n'est pas une vraie erreur : on considère le
+                // démarrage comme suivi, on démarre le heartbeat, et on NE pollue PAS les logs.
+                if (response.status === 400 && text.includes('session_uuid')) {
+                    this.startupSent = true;
+                    this.startHeartbeat();
+                } else {
+                    console.warn(`⚠️ Telemetry endpoint returned ${response.status}:`, text.substring(0, 200));
+                }
             } else {
                 const data = await response.json();
                 console.log('✅ Telemetry sent successfully:', data);
@@ -171,6 +189,9 @@ export class TelemetryService {
             if (retryCount < 1) {
                 setTimeout(() => this.sendStartup(this.authToken || token, retryCount + 1), 5000);
             }
+        } finally {
+            // Libère le verrou de l'envoi initial (le garde startupSent bloque déjà les suivants en cas de succès).
+            if (retryCount === 0) this.startupInFlight = false;
         }
     }
 
