@@ -758,7 +758,21 @@ async function startDownload(version: any) {
       notify({ type: 'error', title: 'Erreur', text: 'Aucun lien de téléchargement valide.' });
       return;
   }
-  
+
+  // Valider le lien AVANT de lancer : un jeu "à venir" (coming soon) ou mal renseigné peut
+  // avoir un magnet vide/invalide → sinon WebTorrent et aria2 crachent une erreur technique
+  // ("Invalid torrent identifier" / "No URI to download"). On affiche un message clair à la place.
+  const isValidMagnet = /^magnet:\?.*xt=urn:btih:[a-z0-9]{32,40}/i.test(dlUrl);
+  const isValidHttp = /^https?:\/\//i.test(dlUrl) || dlUrl.startsWith('/');
+  if (!isValidMagnet && !isValidHttp) {
+      notify({
+          type: 'error',
+          title: 'Téléchargement indisponible',
+          text: "Ce jeu n'a pas encore de lien de téléchargement valide (jeu à venir ou non renseigné).",
+      });
+      return;
+  }
+
   // NB : le compteur de téléchargement est déjà incrémenté par l'appel à /download/
   // fait au moment d'ouvrir le sélecteur de version (évite un double comptage).
 
