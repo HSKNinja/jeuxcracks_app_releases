@@ -668,29 +668,50 @@ async function fetchVersionsAndShowModal() {
         
         let allVersions: any[] = game.value.versions || [];
 
-        // Process versions: détection ROBUSTE des liens de téléchargement.
-        // On ne se fie plus au seul libellé link_type === 'magnet' (trop strict : masquait
-        // des versions qui EXISTENT). On reconnaît un magnet par le contenu de l'URI, et on
-        // accepte un lien direct (DDL) en secours pour ne jamais afficher "Aucune version" à tort.
+        // Process versions: détection EXHAUSTIVE des liens de téléchargement.
+        // L'API peut renvoyer le lien sous plusieurs formes selon la version du backend :
+        //   - champs du modèle : download_torrent / download_direct (cas le plus courant)
+        //   - tableau download_links au format {uri, link_type} OU {url, type}
+        // On ratissait trop étroit avant (seulement download_links + link_type='magnet'),
+        // d'où des "Aucune version" alors que le magnet EXISTE côté admin.
+        const linkUri = (l:any) => String(l?.uri || l?.url || '');
+        const linkType = (l:any) => String(l?.link_type || l?.type || '').toLowerCase();
+        const isMagnetLink = (l:any) => linkUri(l).startsWith('magnet:') || /magnet|torrent/.test(linkType(l));
+        const isDirectLink = (l:any) => /^https?:\/\//i.test(linkUri(l)) && !isMagnetLink(l);
+        const firstString = (arr:any[], test:(s:string)=>boolean) =>
+            (arr.find((s:any) => typeof s === 'string' && test(s)) as string) || '';
+
         versions.value = allVersions.map(v => {
             const links: any[] = v.download_links || [];
-            const isMagnet = (l:any) => (l?.uri || '').startsWith('magnet:') || /magnet|torrent/i.test(l?.link_type || '');
-            const isDirect = (l:any) => /^https?:\/\//i.test(l?.uri || '') && !isMagnet(l);
 
-            const magnet = links.find(isMagnet);
-            const direct = links.find(isDirect);
+            // Magnet : d'abord les champs du modèle, sinon le tableau download_links.
+            const magnet =
+                firstString([v.download_torrent, v.download_magnet, v.torrent, v.magnet], s => s.startsWith('magnet:')) ||
+                linkUri(links.find(isMagnetLink));
+
+            // Lien direct (DDL) en secours : champ du modèle, sinon download_links.
+            const direct =
+                firstString([v.download_direct, v.direct], s => /^https?:\/\//i.test(s)) ||
+                linkUri(links.find(isDirectLink));
+
             const chosen = magnet || direct;
-
             return {
                 ...v,
-                magnet_url: magnet?.uri,
-                download_url: chosen?.uri,
+                magnet_url: magnet || undefined,
+                download_url: chosen || undefined,
                 download_kind: magnet ? 'torrent' : (direct ? 'direct' : null),
                 has_magnet: !!magnet,
                 has_download: !!chosen,
             };
         }).filter(v => v.has_download); // garder toute version ayant AU MOINS un lien (magnet OU direct)
-        
+
+        // 🔎 DIAGNOSTIC: des versions existent côté API mais aucune n'a de lien exploitable ?
+        // On logue la structure brute pour identifier le vrai nom des champs (retirer plus tard).
+        if (allVersions.length > 0 && versions.value.length === 0) {
+            console.warn('⚠️ Versions reçues mais aucun lien détecté. Structure brute de la 1re version:',
+                JSON.stringify(allVersions[0], null, 2));
+        }
+
         // Sort/Flag Latest
         // If API doesn't flag, assume first is latest or sort by ID desc/Date
         if (versions.value.length > 0) {
