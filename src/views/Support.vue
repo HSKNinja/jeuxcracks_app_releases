@@ -238,7 +238,7 @@
                 >
                   Fermer
                 </button>
-                <button 
+                <button
                   v-if="selectedTicket.status === 'closed'"
                   @click="reopenTicket(selectedTicket.id)"
                   class="px-2.5 py-1 rounded text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors"
@@ -246,6 +246,15 @@
                   Rouvrir
                 </button>
               </template>
+              <!-- Supprimer (uniquement quand le ticket est fermé) -->
+              <button
+                v-if="selectedTicket.status === 'closed'"
+                @click="deleteTicket(selectedTicket.id)"
+                class="px-2.5 py-1 rounded text-[10px] font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-colors flex items-center gap-1"
+              >
+                <TrashIcon class="w-3 h-3" />
+                Supprimer
+              </button>
             </div>
           </div>
         </div>
@@ -393,10 +402,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { 
+import {
   MagnifyingGlassIcon, PlusIcon, XMarkIcon,
-  PencilSquareIcon, PaperAirplaneIcon, 
-  ChatBubbleLeftRightIcon, ChevronDownIcon 
+  PencilSquareIcon, PaperAirplaneIcon,
+  ChatBubbleLeftRightIcon, ChevronDownIcon, TrashIcon
 } from '@heroicons/vue/24/solid';
 import { LifebuoyIcon } from '@heroicons/vue/24/outline';
 import { useNotification } from '@kyvg/vue3-notification';
@@ -675,6 +684,18 @@ async function changeStatus(id: string, newStatus: string) {
 
 function closeTicket(id: string) { changeStatus(id, 'closed'); }
 function reopenTicket(id: string) { changeStatus(id, 'open'); }
+
+async function deleteTicket(id: string) {
+    if (!window.confirm('Supprimer définitivement ce ticket ? Cette action est irréversible.')) return;
+    try {
+        await (JeuxCracksAPI as any).deleteTicket(Number(id));
+        tickets.value = tickets.value.filter(t => t.id !== id);
+        if (selectedTicketId.value === id) selectedTicketId.value = null;
+        notify({ type: 'info', title: 'Ticket supprimé' });
+    } catch (e) {
+        notify({ type: 'error', title: 'Erreur', text: 'Impossible de supprimer le ticket.' });
+    }
+}
 
 // ---- Helpers ----
 function getStatusDot(status: string) {

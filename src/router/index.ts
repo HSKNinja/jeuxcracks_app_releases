@@ -138,6 +138,11 @@ const router = createRouter({
     routes,
 });
 
+// Anti-spam: on ne rafraîchit le profil utilisateur qu'une fois toutes les 5 minutes,
+// au lieu d'un appel API à chaque navigation.
+let lastUserFetch = 0;
+const USER_REFRESH_MS = 5 * 60 * 1000;
+
 router.beforeEach((to, from, next) => {
     const store = useMainStore()
     const isAuthenticated = store.isAuthenticated
@@ -154,8 +159,10 @@ router.beforeEach((to, from, next) => {
         return
     }
 
-    // Refresh user data periodically or on navigation to critical pages
-    if (isAuthenticated) {
+    // Rafraîchit les données utilisateur — mais PAS à chaque navigation (c'était un appel
+    // API par changement de page). On limite à 1 rafraîchissement toutes les 5 minutes.
+    if (isAuthenticated && Date.now() - lastUserFetch > USER_REFRESH_MS) {
+        lastUserFetch = Date.now();
         // We catch errors to avoid blocking navigation if API fails
         store.fetchUser().catch(e => {
             console.error('Bg user fetch error', e);

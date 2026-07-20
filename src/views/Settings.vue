@@ -2,18 +2,20 @@
     <div class="h-full flex flex-col p-4 md:p-8 overflow-hidden">
         
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-white tracking-tight">Paramètres</h1>
-            <p class="text-zinc-500 text-sm">Configuration générale du launcher.</p>
+            <h1 class="text-3xl font-black tracking-tighter uppercase bg-gradient-to-r from-white to-indigo-300/70 bg-clip-text text-transparent">Paramètres</h1>
+            <p class="text-zinc-500 text-sm mt-1">Configuration générale du launcher.</p>
         </div>
 
         <!-- Tabs -->
-        <div class="flex items-center gap-2 mb-6 border-b border-white/5 pb-1">
-            <button 
-                v-for="tab in tabs" 
+        <div class="flex items-center gap-2 mb-6 p-1 bg-white/[0.03] border border-white/5 rounded-2xl w-fit">
+            <button
+                v-for="tab in tabs"
                 :key="tab.id"
                 @click="currentTab = tab.id"
-                class="px-4 py-2 rounded-t-lg transition-colors font-bold text-sm border-b-2"
-                :class="currentTab === tab.id ? 'text-indigo-400 border-indigo-500 bg-indigo-500/5' : 'text-zinc-500 border-transparent hover:text-zinc-300 hover:bg-white/5'"
+                class="px-4 py-2 rounded-xl transition-all duration-200 font-bold text-sm"
+                :class="currentTab === tab.id
+                    ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25'
+                    : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5'"
             >
                 {{ tab.label }}
             </button>
@@ -24,8 +26,8 @@
             <!-- GENERAL TAB -->
             <div v-if="currentTab === 'general'" class="space-y-6 animate-fade-in">
                 <!-- App Behavior -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Comportement</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-5 pl-3 border-l-2 border-indigo-500/70">Comportement</h3>
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                              <div>
@@ -52,8 +54,8 @@
                 </div>
 
                 <!-- Notifications -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Notifications</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-5 pl-3 border-l-2 border-indigo-500/70">Notifications</h3>
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <div>
@@ -73,7 +75,7 @@
                 </div>
 
                 <!-- Langue -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="font-medium text-zinc-200">Langue de l'interface</div>
@@ -88,8 +90,8 @@
                 </div>
 
                 <!-- App Info -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">À propos</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-5 pl-3 border-l-2 border-indigo-500/70">À propos</h3>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
                             <div class="text-[10px] text-zinc-500 uppercase font-bold mb-1">Version</div>
@@ -114,8 +116,8 @@
                 </div>
 
                 <!-- Changelog -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Journal des mises à jour</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-5 pl-3 border-l-2 border-indigo-500/70">Journal des mises à jour</h3>
                     <div v-if="changelogLoading" class="py-8 text-center">
                         <div class="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-2"></div>
                         <div class="text-xs text-zinc-500">Chargement depuis GitHub...</div>
@@ -140,8 +142,8 @@
                 <LibraryManager />
 
                 <!-- Disk Usage -->
-                <div v-if="diskStats.length > 0" class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-1">Saturation des Disques</h3>
+                <div v-if="diskStats.length > 0" class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-1 pl-3 border-l-2 border-indigo-500/70">Saturation des Disques</h3>
                     <p class="text-zinc-500 text-xs mb-4">Utilisation globale de chaque disque contenant une bibliothèque.</p>
                     
                     <div class="space-y-3">
@@ -164,8 +166,8 @@
                 </div>
 
                 <!-- Auto-Scan & Verification -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Scan & Vérification</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-5 pl-3 border-l-2 border-indigo-500/70">Scan & Vérification</h3>
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <div>
@@ -193,8 +195,8 @@
                 </div>
 
                 <!-- Cache & Temp Files -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Cache & Fichiers Temporaires</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-5 pl-3 border-l-2 border-indigo-500/70">Cache & Fichiers Temporaires</h3>
                     <div class="space-y-4">
                         <div class="flex items-center justify-between bg-zinc-900/50 rounded-xl p-4 border border-white/5">
                             <div>
@@ -236,8 +238,8 @@
             <div v-if="currentTab === 'downloads'" class="space-y-6 animate-fade-in">
                 
                 <!-- Bandwidth Limits -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-1">Limites de Bande Passante</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-1 pl-3 border-l-2 border-indigo-500/70">Limites de Bande Passante</h3>
                     <p class="text-zinc-500 text-xs mb-6">Définissez une limite pour ne pas saturer votre connexion. 0 = Illimité.</p>
 
                     <div class="grid gap-6 md:grid-cols-2">
@@ -265,8 +267,8 @@
                 </div>
 
                 <!-- Download Behavior -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Comportement</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-5 pl-3 border-l-2 border-indigo-500/70">Comportement</h3>
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <div>
@@ -313,8 +315,8 @@
                 </div>
 
                 <!-- Seeding -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Partage (Seeding)</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-5 pl-3 border-l-2 border-indigo-500/70">Partage (Seeding)</h3>
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <div>
@@ -351,8 +353,8 @@
                 </div>
 
                 <!-- Scheduled Downloads -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Planification</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-5 pl-3 border-l-2 border-indigo-500/70">Planification</h3>
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <div>
@@ -385,9 +387,9 @@
                 </div>
 
                 <!-- P2P Advanced -->
-                <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-6">
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors">
                     <div class="flex items-center justify-between mb-4 cursor-pointer" @click="showP2P = !showP2P">
-                        <h3 class="text-lg font-bold text-white">Peer-to-Peer (Avancé)</h3>
+                        <h3 class="text-lg font-bold text-white pl-3 border-l-2 border-indigo-500/70">Peer-to-Peer (Avancé)</h3>
                         <div class="text-zinc-500 text-sm transition-transform" :class="showP2P ? 'rotate-180' : ''">▼</div>
                     </div>
                     <div v-if="showP2P" class="space-y-4">
@@ -451,7 +453,7 @@
 
              <!-- ACCOUNT TAB (Redirect/Link) -->
              <div v-if="currentTab === 'account'" class="animate-fade-in">
-                  <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-8 text-center">
+                  <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-8 hover:border-white/10 transition-colors text-center">
                         <h3 class="text-xl font-bold text-white mb-2">Gestion du Compte</h3>
                         <p class="text-zinc-400 text-sm mb-6">Pour modifier votre profil, avatar ou mot de passe, rendez-vous sur la page dédiée.</p>
                         <router-link to="/account" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-colors">
@@ -462,7 +464,7 @@
 
              <!-- ADMIN TAB (Staff only) -->
              <div v-if="currentTab === 'admin' && isStaff" class="animate-fade-in">
-                  <div class="bg-[#0f0f0f] border border-white/5 rounded-3xl p-8">
+                  <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-8 hover:border-white/10 transition-colors">
                         <div class="flex items-center gap-3 mb-1">
                             <h3 class="text-xl font-bold text-white">Espace Admin</h3>
                             <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Staff</span>

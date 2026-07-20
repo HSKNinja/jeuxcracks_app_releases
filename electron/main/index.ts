@@ -41,7 +41,77 @@ const indexHtml = join(process.env.DIST, 'index.html');
 
 console.log('test', join(dirname(''), 'assets', 'logo.webp'));
 
+// ── Splash screen (petite fenêtre animée au démarrage) ────────────────
+let splash: BrowserWindow | null = null;
+let splashShownAt = 0;
+
+function createSplash() {
+  try {
+    splash = new BrowserWindow({
+      width: 340,
+      height: 360,
+      frame: false,
+      transparent: true,
+      resizable: false,
+      center: true,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      show: true,
+      webPreferences: { contextIsolation: true, nodeIntegration: false },
+    });
+    splash.setMenu(null);
+
+    // Logo embarqué en base64 → aucun souci de chemin dev/prod.
+    const logoPath = app.isPackaged
+      ? join(process.resourcesPath, 'assets', 'logo.png')
+      : join(__dirname, '../../assets/logo.png');
+    let logoSrc = '';
+    try {
+      const { readFileSync } = require('fs');
+      logoSrc = 'data:image/png;base64,' + readFileSync(logoPath).toString('base64');
+    } catch (e) { /* pas de logo : le splash s'affiche sans image */ }
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+      html,body{margin:0;height:100%;background:transparent;overflow:hidden;
+        font-family:'Segoe UI',system-ui,sans-serif;-webkit-user-select:none;cursor:default;}
+      .card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;border-radius:26px;border:1px solid rgba(255,255,255,.06);
+        background:radial-gradient(120% 120% at 50% 30%,#17171f 0%,#0b0b0f 60%,#09090b 100%);
+        box-shadow:0 24px 70px rgba(0,0,0,.65);animation:fade .5s ease;}
+      .wrap{position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;}
+      .ring{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;
+        border-top-color:#6366f1;border-right-color:#8b5cf6;animation:spin 1s linear infinite;}
+      .ring2{position:absolute;inset:14px;border-radius:50%;border:2px solid transparent;
+        border-bottom-color:#3b82f6;opacity:.6;animation:spin 1.6s linear infinite reverse;}
+      .logo{width:92px;height:92px;object-fit:contain;
+        animation:pulse 2s ease-in-out infinite;filter:drop-shadow(0 0 14px rgba(99,102,241,.45));}
+      .title{margin-top:24px;color:#fff;font-weight:800;letter-spacing:3px;font-size:17px;}
+      .sub{margin-top:7px;color:#8b8b95;font-size:10px;letter-spacing:2px;text-transform:uppercase;}
+      .bar{margin-top:18px;width:130px;height:3px;background:rgba(255,255,255,.08);
+        border-radius:99px;overflow:hidden;}
+      .bar::before{content:'';display:block;width:38%;height:100%;border-radius:99px;
+        background:linear-gradient(90deg,#6366f1,#8b5cf6);animation:slide 1.3s ease-in-out infinite;}
+      @keyframes spin{to{transform:rotate(360deg);}}
+      @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}}
+      @keyframes slide{0%{transform:translateX(-120%);}100%{transform:translateX(360%);}}
+      @keyframes fade{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+    </style></head><body><div class="card">
+      <div class="wrap"><div class="ring"></div><div class="ring2"></div>
+        ${logoSrc ? `<img class="logo" src="${logoSrc}"/>` : ''}</div>
+      <div class="title">JEUXCRACKS</div>
+      <div class="sub">Chargement…</div>
+      <div class="bar"></div>
+    </div></body></html>`;
+
+    splash.loadURL('data:text/html;charset=UTF-8,' + encodeURIComponent(html));
+    splashShownAt = Date.now();
+  } catch (e) {
+    console.warn('⚠️ Splash non affiché:', (e as any)?.message);
+  }
+}
+
 async function createWindow() {
+  createSplash(); // fenêtre de démarrage animée, fermée dès que l'app est prête
   const savedBounds = store ? store.get('windowBounds') : null;
 
   win = new BrowserWindow({
@@ -97,8 +167,14 @@ async function createWindow() {
   });
 
   win.once('ready-to-show', () => {
-    win?.show();
-    win?.focus();
+    // Garder le splash visible au moins ~1,4s pour un effet fluide, puis basculer.
+    const elapsed = Date.now() - splashShownAt;
+    const wait = Math.max(0, 1400 - elapsed);
+    setTimeout(() => {
+      if (splash && !splash.isDestroyed()) { splash.close(); splash = null; }
+      win?.show();
+      win?.focus();
+    }, wait);
   });
 
   if (app.isPackaged) {
@@ -226,6 +302,29 @@ app.whenReady().then(async () => {
   ipcMain.on('check-for-update', () => {
     autoUpdater.checkForUpdatesAndNotify();
   });
+
+  // ── Vérification AUTOMATIQUE des mises à jour ──────────────────────────
+  // Avant, il fallait relancer l'app pour qu'une MAJ soit détectée. Maintenant on vérifie
+  // au démarrage PUIS toutes les 30 minutes, même si le launcher reste ouvert en continu.
+  const UPDATE_CHECK_INTERVAL = 30 * 60 * 1000; // 30 min
+  let updateCheckBusy = false;
+  const runUpdateCheck = async (reason: string) => {
+    if (!app.isPackaged) return;   // en dev, electron-updater ne fait rien de toute façon
+    if (updateCheckBusy) return;   // évite les vérifications concurrentes
+    updateCheckBusy = true;
+    try {
+      console.log(`🔄 Vérification de mise à jour (${reason})...`);
+      await autoUpdater.checkForUpdatesAndNotify();
+    } catch (e: any) {
+      console.warn('⚠️ Vérification de mise à jour échouée:', e?.message);
+    } finally {
+      updateCheckBusy = false;
+    }
+  };
+
+  // Premier check 10s après le lancement (ne ralentit pas le démarrage), puis en boucle.
+  setTimeout(() => runUpdateCheck('démarrage'), 10_000);
+  setInterval(() => runUpdateCheck('périodique'), UPDATE_CHECK_INTERVAL);
 
   // Notifie le renderer si une mise à jour est dispo/téléchargée
   // Notifie le renderer si une mise à jour est dispo/téléchargée
@@ -557,15 +656,29 @@ ipcMain.handle('get-library-stats', async () => {
         
         let free = 0, total = 0;
         try {
-            const { execSync } = require('child_process');
-            const output = execSync(`wmic logicaldisk where "DeviceID='${drive}'" get FreeSpace,Size /format:csv`, { encoding: 'utf8' });
-            const lines = output.trim().split('\n').filter((l: string) => l.trim());
-            if (lines.length > 1) {
-                const parts = lines[lines.length - 1].split(',');
-                free = parseInt(parts[1]) || 0;
-                total = parseInt(parts[2]) || 0;
-            }
-        } catch { /* silent */ }
+            // Voie rapide : fs.statfs = instantané. Remplace wmic qui prenait 1-3s PAR DISQUE
+            // en synchrone et gelait l'application ("Ne répond pas").
+            const st: any = await (fs as any).statfs(lib.path);
+            const bsize = Number(st.bsize) || 0;
+            total = Number(st.blocks) * bsize;
+            free = Number(st.bavail ?? st.bfree) * bsize;
+        } catch {
+            // Repli : wmic, mais en ASYNCHRONE (ne bloque plus le process principal).
+            try {
+                const { exec } = require('child_process');
+                const output: string = await new Promise((resolve, reject) => {
+                    exec(`wmic logicaldisk where "DeviceID='${drive}'" get FreeSpace,Size /format:csv`,
+                        { windowsHide: true, timeout: 8000 },
+                        (err: any, stdout: string) => (err ? reject(err) : resolve(stdout)));
+                });
+                const lines = output.trim().split('\n').filter((l: string) => l.trim());
+                if (lines.length > 1) {
+                    const parts = lines[lines.length - 1].split(',');
+                    free = parseInt(parts[1]) || 0;
+                    total = parseInt(parts[2]) || 0;
+                }
+            } catch { /* silent */ }
+        }
         
         const used = total - free;
         const percent = total > 0 ? Math.round((used / total) * 100) : 0;
@@ -583,7 +696,10 @@ ipcMain.handle('get-library-stats', async () => {
 });
 
 ipcMain.handle('get-cache-sizes', async () => {
-    const { readdirSync, statSync, readFileSync, existsSync } = require('fs');
+    // Scans en ASYNCHRONE : les versions synchrones parcouraient toute la bibliothèque
+    // et gelaient l'application ("Ne répond pas") pendant des dizaines de secondes.
+    const { readdir, stat } = require('fs/promises');
+    const { readFileSync, existsSync } = require('fs');
     const cachePath = join(app.getPath('userData'), 'Cache');
     
     const TEMP_EXTENSIONS = ['.rar', '.torrent', '.tmp', '.part', '.zip', '.7z', '.gz', '.tar'];
@@ -599,33 +715,33 @@ ipcMain.handle('get-cache-sizes', async () => {
     } catch {}
     
     // Count temp files across all libraries
-    const getTempSize = (dir: string): number => {
+    const getTempSize = async (dir: string): Promise<number> => {
         try {
             let size = 0;
-            const items = readdirSync(dir, { withFileTypes: true });
+            const items = await readdir(dir, { withFileTypes: true });
             for (const item of items) {
                 if (item.isFile()) {
                     const ext = item.name.substring(item.name.lastIndexOf('.')).toLowerCase();
                     if (TEMP_EXTENSIONS.includes(ext)) {
-                        try { size += statSync(join(dir, item.name)).size; } catch {}
+                        try { size += (await stat(join(dir, item.name))).size; } catch {}
                     }
                 }
                 if (item.isDirectory()) {
-                    size += getTempSize(join(dir, item.name));
+                    size += await getTempSize(join(dir, item.name));
                 }
             }
             return size;
         } catch { return 0; }
     };
 
-    const getDirSize = (dir: string): number => {
+    const getDirSize = async (dir: string): Promise<number> => {
         try {
             let size = 0;
-            const items = readdirSync(dir, { withFileTypes: true });
+            const items = await readdir(dir, { withFileTypes: true });
             for (const item of items) {
                 const fullPath = join(dir, item.name);
-                if (item.isDirectory()) size += getDirSize(fullPath);
-                else try { size += statSync(fullPath).size; } catch {}
+                if (item.isDirectory()) size += await getDirSize(fullPath);
+                else try { size += (await stat(fullPath)).size; } catch {}
             }
             return size;
         } catch { return 0; }
@@ -633,12 +749,12 @@ ipcMain.handle('get-cache-sizes', async () => {
 
     let totalTemp = 0;
     for (const libPath of libraryPaths) {
-        totalTemp += getTempSize(libPath);
+        totalTemp += await getTempSize(libPath);
     }
 
     return {
         temp: totalTemp,
-        imageCache: getDirSize(cachePath),
+        imageCache: await getDirSize(cachePath),
     };
 });
 

@@ -133,9 +133,13 @@ export class TransmissionService {
             fs.mkdirSync(extractDir, { recursive: true });
 
             // msiexec /a = administrative install = décompresse sans installer, en silence.
-            const { execFileSync } = require('child_process');
-            execFileSync('msiexec', ['/a', msiPath, '/qn', `TARGETDIR=${extractDir}`], {
-                windowsHide: true, timeout: 180000, stdio: 'ignore',
+            // ASYNCHRONE : une extraction MSI synchrone bloquait le process principal
+            // (fenêtre « Ne répond pas ») pendant toute la durée de la décompression.
+            const { execFile } = require('child_process');
+            await new Promise<void>((resolve, reject) => {
+                execFile('msiexec', ['/a', msiPath, '/qn', `TARGETDIR=${extractDir}`],
+                    { windowsHide: true, timeout: 180000 },
+                    (err: any) => (err ? reject(err) : resolve()));
             });
 
             const found = this.findFile(extractDir, 'transmission-daemon.exe');
@@ -277,9 +281,13 @@ export class TransmissionService {
             this.isReady = false;
             if (killZombies) {
                 try {
-                    const { execSync } = require('child_process');
-                    execSync('taskkill /F /IM transmission-daemon.exe /T', { windowsHide: true, stdio: 'ignore' });
-                    await new Promise(r => setTimeout(r, 500));
+                    // ASYNCHRONE : évite de bloquer le process principal (le watchdog rappelle
+                    // cette fonction toutes les 8s tant que le daemon n'est pas prêt).
+                    const { exec } = require('child_process');
+                    await new Promise<void>((resolve) => {
+                        exec('taskkill /F /IM transmission-daemon.exe /T', { windowsHide: true }, () => resolve());
+                    });
+                    await new Promise(r => setTimeout(r, 500)); // laisser l'OS libérer le port RPC
                 } catch (e) { /* normal si aucun process */ }
             }
 

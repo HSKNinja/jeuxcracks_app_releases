@@ -17,91 +17,81 @@
     <!-- ═══════════════════════════════════════════ -->
     <!-- 1. HERO SLIDER                             -->
     <!-- ═══════════════════════════════════════════ -->
-    <section class="relative w-full h-[55vh] min-h-[420px] overflow-hidden">
-        <transition-group name="hero-fade" tag="div" class="h-full w-full relative">
-            <div 
+    <section class="relative w-full h-[60vh] min-h-[460px] overflow-hidden">
+        <!-- Fond (image du jeu actif) -->
+        <transition-group name="hero-fade" tag="div" class="h-full w-full absolute inset-0">
+            <div
                 v-if="trendingGames[activeIndex]"
                 :key="trendingGames[activeIndex].id"
                 class="absolute inset-0 w-full h-full"
             >
-                <!-- BG Image -->
-                <div class="absolute inset-0 bg-black">
-                    <img
-                        :src="trendingGames[activeIndex].hero || trendingGames[activeIndex].header"
-                        class="w-full h-full object-cover animate-pan-zoom opacity-50"
-                        @error="onHeroError"
-                    />
-                    <div class="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/30 to-transparent"></div>
-                </div>
-
-                <!-- Content -->
-                <div class="absolute inset-0 z-20 px-8 md:px-12 flex items-end pb-28 max-w-[1920px] mx-auto">
-                    <div class="w-full max-w-3xl space-y-5">
-                        <!-- Badge -->
-                        <div class="flex items-center gap-3 animate-slide-up" style="animation-delay: 50ms">
-                             <div class="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full">
-                                <FireIcon class="w-3 h-3 text-indigo-400" />
-                                <span class="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-300">Tendance</span>
-                             </div>
-                             <span class="text-white/30 text-[9px] font-bold uppercase tracking-widest">{{ trendingGames[activeIndex].categories?.[0]?.name || trendingGames[activeIndex].categories?.[0] || '' }}</span>
-                        </div>
-
-                        <!-- Title -->
-                        <h1 class="text-4xl md:text-6xl xl:text-7xl font-black text-white leading-[0.9] tracking-tighter uppercase animate-reveal-text line-clamp-2">
-                            {{ trendingGames[activeIndex].title }}
-                        </h1>
-                        
-                        <!-- Desc -->
-                        <p class="max-w-lg text-zinc-500 text-sm font-medium leading-relaxed line-clamp-2 animate-slide-up" style="animation-delay: 200ms">
-                            {{ trendingGames[activeIndex].descriptionShort }}
-                        </p>
-
-                        <!-- Actions -->
-                        <div class="flex items-center gap-3 animate-slide-up" style="animation-delay: 300ms">
-                            <button 
-                                @click="goToPage(`/catalogue/${trendingGames[activeIndex].slug || trendingGames[activeIndex].id}`)"
-                                class="group px-7 py-3.5 bg-white text-black font-black uppercase tracking-widest text-[11px] flex items-center gap-2.5 rounded-xl hover:bg-indigo-500 hover:text-white transition-all duration-300 shadow-xl"
-                            >
-                                <PlayIcon class="w-4 h-4" />
-                                <span>Découvrir</span>
-                            </button>
-                            
-                            <button 
-                                @click="nextSlide"
-                                class="p-3.5 border border-white/10 hover:bg-white/10 text-white transition-all rounded-xl group backdrop-blur-sm"
-                            >
-                                <ArrowLongRightIcon class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <img
+                    :src="trendingGames[activeIndex].hero || trendingGames[activeIndex].header"
+                    class="w-full h-full object-cover animate-pan-zoom"
+                    @error="onHeroError"
+                />
+                <!-- Dégradés cinématiques -->
+                <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-[#050505]/10"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/40 to-transparent"></div>
+                <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_0%_100%,rgba(99,102,241,0.15),transparent_60%)]"></div>
             </div>
         </transition-group>
 
-        <!-- Slide Progress Dots (Vertical, Right) -->
-        <div class="absolute bottom-8 right-8 md:right-12 z-30 flex flex-col gap-2">
-             <button 
-                v-for="(g, idx) in trendingGames" 
-                :key="g.id"
-                @click="goToSlide(idx)"
-                class="group flex items-center gap-3 justify-end cursor-pointer"
-            >   
-                <span :class="activeIndex === idx ? 'text-white/60' : 'text-transparent'" class="text-[9px] font-bold tracking-widest transition-all group-hover:text-white/40 uppercase truncate max-w-[120px]">
-                    {{ g.title }}
-                </span>
-                <div 
-                    class="h-[3px] transition-all duration-500 rounded-full"
-                    :class="activeIndex === idx ? 'bg-indigo-500 w-10' : 'bg-white/15 w-5 group-hover:bg-white/30'"
-                ></div>
-             </button>
-        </div>
+        <!-- Contenu (pb généreux pour passer AU-DESSUS du bandeau de stats qui remonte de -mt-14) -->
+        <div class="absolute inset-0 z-20 max-w-[1920px] mx-auto px-8 md:px-12 flex items-end pb-24">
+            <div class="w-full flex items-end justify-between gap-8">
 
-        <!-- Slide Counter -->
-        <div class="absolute bottom-8 left-8 md:left-12 z-30 flex items-baseline gap-1 select-none">
-            <span class="text-2xl font-black text-white tabular-nums">0{{ activeIndex + 1 }}</span>
-            <span class="text-sm text-zinc-700 font-bold">/</span>
-            <span class="text-sm text-zinc-600 font-bold tabular-nums">0{{ trendingGames.length }}</span>
+                <!-- Infos (gauche) -->
+                <div v-if="trendingGames[activeIndex]" :key="'info-' + activeIndex" class="max-w-2xl space-y-4">
+                    <div class="flex items-center gap-2.5 animate-slide-up">
+                        <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-[9px] font-black uppercase tracking-[0.2em] text-indigo-300">
+                            <FireIcon class="w-3 h-3" />
+                            #{{ activeIndex + 1 }} Tendance
+                        </span>
+                        <span class="text-white/30 text-[9px] font-bold uppercase tracking-widest">
+                            {{ trendingGames[activeIndex].categories?.[0]?.name || trendingGames[activeIndex].categories?.[0] || '' }}
+                        </span>
+                    </div>
+
+                    <h1 class="text-4xl md:text-6xl xl:text-7xl font-black text-white leading-[0.9] tracking-tighter uppercase line-clamp-2 drop-shadow-2xl animate-slide-up" style="animation-delay:60ms">
+                        {{ trendingGames[activeIndex].title }}
+                    </h1>
+
+                    <p class="max-w-lg text-zinc-400 text-sm leading-relaxed line-clamp-2 animate-slide-up" style="animation-delay:140ms">
+                        {{ trendingGames[activeIndex].descriptionShort }}
+                    </p>
+
+                    <div class="flex items-center gap-3 pt-1 animate-slide-up" style="animation-delay:220ms">
+                        <button
+                            @click="goToPage(`/catalogue/${trendingGames[activeIndex].slug || trendingGames[activeIndex].id}`)"
+                            class="group px-7 py-3.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white font-black uppercase tracking-widest text-[11px] flex items-center gap-2.5 rounded-xl hover:shadow-[0_12px_34px_-8px_rgba(99,102,241,0.65)] hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                            <PlayIcon class="w-4 h-4" />
+                            <span>Découvrir</span>
+                        </button>
+                        <button
+                            @click="goToPage('/catalogue')"
+                            class="px-6 py-3.5 border border-white/10 hover:bg-white/10 text-white font-bold uppercase tracking-widest text-[11px] rounded-xl transition-all backdrop-blur-sm"
+                        >
+                            Catalogue
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Miniatures (droite) — la vignette active s'agrandit -->
+                <div class="hidden lg:flex items-center gap-2.5 pb-1">
+                    <button
+                        v-for="(g, idx) in trendingGames.slice(0, 6)"
+                        :key="g.id"
+                        @click="goToSlide(idx)"
+                        class="relative rounded-xl overflow-hidden transition-all duration-500 ease-out h-16 group/thumb"
+                        :class="activeIndex === idx ? 'w-32 ring-2 ring-indigo-400 shadow-[0_0_24px_rgba(99,102,241,0.55)]' : 'w-16 opacity-45 hover:opacity-90'"
+                    >
+                        <img :src="g.header" class="w-full h-full object-cover" />
+                        <div class="absolute inset-0 bg-black/20 group-hover/thumb:bg-black/0 transition-colors"></div>
+                    </button>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -170,7 +160,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-1 h-6 bg-indigo-500 rounded-full"></div>
-                    <h2 class="text-2xl font-black text-white uppercase tracking-tight">Actualités</h2>
+                    <h2 class="text-2xl font-black uppercase tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">Actualités</h2>
                 </div>
                 <router-link to="/news" class="text-[10px] font-black uppercase tracking-widest text-zinc-600 hover:text-white transition-colors flex items-center gap-1.5">
                     Tout voir
@@ -233,7 +223,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-1 h-6 bg-emerald-500 rounded-full"></div>
-                    <h2 class="text-2xl font-black text-white uppercase tracking-tight">Dernières Sorties</h2>
+                    <h2 class="text-2xl font-black uppercase tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">Dernières Sorties</h2>
                 </div>
                 <router-link to="/catalogue?sort=newest" class="text-[10px] font-black uppercase tracking-widest text-zinc-600 hover:text-white transition-colors flex items-center gap-1.5">
                     Tout le catalogue
@@ -248,24 +238,24 @@
                 <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#050505] to-transparent z-10 pointer-events-none"></div>
                 
                 <div ref="scrollContainer" class="flex gap-4 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory custom-scrollbar-h">
-                    <div 
+                    <div
                         v-for="game in newGames" :key="game.id"
                         @click="goToPage(`/catalogue/${game.slug || game.id}`)"
-                        class="group flex-shrink-0 w-[260px] snap-start cursor-pointer"
+                        class="group flex-shrink-0 w-[280px] snap-start cursor-pointer rounded-2xl overflow-hidden border border-white/5 bg-[#0c0c11] hover:border-indigo-400/40 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[0_24px_60px_-14px_rgba(99,102,241,0.45)]"
                     >
-                        <!-- Card -->
-                        <div class="relative aspect-video rounded-xl overflow-hidden bg-zinc-900 border border-white/[0.04] group-hover:border-white/15 transition-all duration-300 mb-3 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-black/50">
+                        <!-- Image -->
+                        <div class="relative aspect-video overflow-hidden bg-black">
                             <img :src="game.header" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            
-                            <!-- Play Icon Overlay -->
-                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                <div class="w-10 h-10 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                            <!-- Icône au survol -->
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
+                                <div class="w-11 h-11 rounded-full bg-indigo-500/20 border border-indigo-300/40 backdrop-blur-md flex items-center justify-center shadow-lg">
                                     <PlayIcon class="w-4 h-4 text-white ml-0.5" />
                                 </div>
                             </div>
 
-                            <!-- Views Badge -->
+                            <!-- Vues -->
                             <div class="absolute top-2.5 right-2.5 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <EyeIcon class="w-3 h-3 text-zinc-400" />
                                 <span class="text-[9px] font-bold text-white">{{ formatNumber(game.views) }}</span>
@@ -273,9 +263,9 @@
                         </div>
 
                         <!-- Info -->
-                        <div class="px-1">
-                            <h3 class="text-sm font-bold text-zinc-300 truncate group-hover:text-white transition-colors">{{ game.title }}</h3>
-                            <span class="text-[10px] text-zinc-600 font-medium">{{ game.categories?.[0] || '' }}</span>
+                        <div class="p-3.5">
+                            <h3 class="text-sm font-bold text-white truncate group-hover:text-indigo-300 transition-colors">{{ game.title }}</h3>
+                            <span class="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">{{ game.categories?.[0] || 'Jeu' }}</span>
                         </div>
                     </div>
                 </div>

@@ -788,6 +788,7 @@ async function startDownload(version: any) {
   
   const gameData = {
     id: game.value?.id,
+    slug: game.value?.slug, // nécessaire pour vérifier les mises à jour du jeu ensuite
     title: game.value?.title,
     source: source,
     version: version.version_raw || version.version, // Add Version

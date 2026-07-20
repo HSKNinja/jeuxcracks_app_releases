@@ -221,6 +221,7 @@ class InstallService {
 
     libraryService.registerInstalledGame({
         id: gameData.id,
+        slug: (gameData as any).slug, // pour la vérification des mises à jour du jeu
         title: gameData.title,
         installPath: filePath,
         libraryId: matchedLib.id,

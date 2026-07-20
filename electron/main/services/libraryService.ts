@@ -15,6 +15,7 @@ export interface LibraryPath {
 
 export interface InstalledGameRegistry {
     id: string; // Game ID (from API)
+    slug?: string; // slug API — sert à vérifier les mises à jour du jeu
     title: string;
     installPath: string; // directory where it's installed
     exePath?: string; // specific executable selected by user

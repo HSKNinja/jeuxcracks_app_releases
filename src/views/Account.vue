@@ -4,12 +4,12 @@
     
     <!-- Header -->
     <div>
-      <h1 class="text-2xl font-medium text-white tracking-tight">Profil</h1>
+      <h1 class="text-3xl font-black tracking-tighter uppercase bg-gradient-to-r from-white to-indigo-300/70 bg-clip-text text-transparent">Profil</h1>
       <p class="text-zinc-500 text-sm mt-1">Gérez vos informations et préférences.</p>
     </div>
 
     <!-- Main Profile Card -->
-    <div class="relative overflow-hidden rounded-2xl bg-[#0a0a0a] border border-white/5 shadow-2xl transition-all duration-300">
+    <div class="relative overflow-hidden rounded-2xl bg-[#0c0c11] border border-white/5 shadow-2xl transition-all duration-300">
       
       <!-- Banner -->
       <div v-if="themeStore.getEquippedBanner" class="absolute top-0 left-0 w-full h-32 md:h-40 z-0 overflow-hidden">
@@ -124,15 +124,15 @@
             
             <!-- Quick Stats -->
             <div class="space-y-4">
-                <h3 class="text-sm font-medium text-zinc-500 uppercase tracking-widest px-1">Aperçu</h3>
+                <h3 class="text-sm font-bold text-zinc-300 uppercase tracking-widest pl-3 border-l-2 border-indigo-500/70 px-1">Aperçu</h3>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 flex flex-col group hover:border-white/10 transition-colors">
+                    <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-5 flex flex-col group hover:border-white/10 transition-colors">
                         <ComputerDesktopIcon class="w-5 h-5 text-zinc-500 mb-3 group-hover:text-zinc-300 transition-colors" />
                         <div class="text-2xl font-medium text-white tracking-tight mb-0.5">{{ libraryCount }}</div>
                         <div class="text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Jeux</div>
                     </div>
 
-                    <div class="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 flex flex-col group hover:border-white/10 transition-colors">
+                    <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-5 flex flex-col group hover:border-white/10 transition-colors">
                         <ClockIcon class="w-5 h-5 text-zinc-500 mb-3 group-hover:text-zinc-300 transition-colors" />
                         <div class="text-xl font-medium text-white tracking-tight mb-0.5 truncate" :title="prettyMilliseconds(totalStats.totalTimePlayedMs)">
                           {{ prettyMilliseconds(totalStats.totalTimePlayedMs) }}
@@ -144,8 +144,8 @@
 
             <!-- Settings List -->
             <div class="space-y-4">
-                <h3 class="text-sm font-medium text-zinc-500 uppercase tracking-widest px-1">Paramètres</h3>
-                <div class="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden divide-y divide-white/5">
+                <h3 class="text-sm font-bold text-zinc-300 uppercase tracking-widest pl-3 border-l-2 border-indigo-500/70 px-1">Paramètres</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl overflow-hidden divide-y divide-white/5">
                     
                     <button @click="isDmcaOpen = true" class="w-full text-left p-4 md:p-5 flex items-center justify-between hover:bg-white/[0.02] transition-colors focus:outline-none">
                         <div class="flex items-center gap-4">
@@ -181,8 +181,8 @@
             
             <!-- Security & Links -->
             <div class="space-y-4">
-                <h3 class="text-sm font-medium text-zinc-500 uppercase tracking-widest px-1">Sécurité & Connexions</h3>
-                <div class="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6">
+                <h3 class="text-sm font-bold text-zinc-300 uppercase tracking-widest pl-3 border-l-2 border-indigo-500/70 px-1">Sécurité & Connexions</h3>
+                <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6">
                     <div class="flex flex-col md:flex-row gap-6 md:items-center justify-between">
                         <div class="flex items-start gap-4">
                             <div class="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 text-indigo-400 shrink-0 mt-0.5">
@@ -227,12 +227,12 @@
             <!-- Activity / Interaction Board -->
             <div class="space-y-4">
                <div class="flex items-center justify-between px-1">
-                   <h3 class="text-sm font-medium text-zinc-500 uppercase tracking-widest">Activité & Support</h3>
+                   <h3 class="text-sm font-bold text-zinc-300 uppercase tracking-widest pl-3 border-l-2 border-indigo-500/70">Activité & Support</h3>
                </div>
                
                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <!-- Suggestions -->
-                   <button @click="isSuggestionOpen = true" class="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 flex flex-col group hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all duration-300 text-left items-start relative overflow-hidden">
+                   <button @click="isSuggestionOpen = true" class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 flex flex-col group hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all duration-300 text-left items-start relative overflow-hidden">
                        <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none -mr-16 -mt-16 group-hover:bg-indigo-500/20 transition-colors"></div>
                        <ChatBubbleLeftRightIcon class="w-6 h-6 text-indigo-400 mb-4" />
                        <div class="text-lg font-medium text-white tracking-tight mb-1 relative z-10">Boîte à idées</div>
@@ -240,7 +240,7 @@
                    </button>
 
                    <!-- Downloads Log -->
-                   <div class="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 flex flex-col group text-left relative overflow-hidden opacity-50 select-none">
+                   <div class="bg-[#0c0c11] border border-white/5 rounded-2xl p-6 flex flex-col group text-left relative overflow-hidden opacity-50 select-none">
                        <ArrowDownTrayIcon class="w-6 h-6 text-zinc-500 mb-4" />
                        <div class="text-lg font-medium text-white tracking-tight mb-1 flex items-center gap-2">Historique <span class="bg-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">WIP</span></div>
                        <div class="text-sm text-zinc-500">Retrouvez la liste de vos derniers téléchargements et installations.</div>
@@ -255,7 +255,7 @@
     
     <!-- Edit Profile Modal -->
     <div v-if="isEditing" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="isEditing = false">
-      <div class="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-sm shadow-2xl relative overflow-hidden animate-fade-in-up">
+      <div class="bg-[#0c0c11] border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-sm shadow-2xl relative overflow-hidden animate-fade-in-up">
         <h3 class="text-lg font-medium text-white mb-6">Éditer le profil</h3>
         
         <div class="space-y-5">
@@ -283,7 +283,7 @@
 
     <!-- Suggestion Modal -->
     <div v-if="isSuggestionOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="isSuggestionOpen = false">
-      <div class="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-md shadow-2xl relative overflow-hidden animate-fade-in-up">
+      <div class="bg-[#0c0c11] border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-md shadow-2xl relative overflow-hidden animate-fade-in-up">
         
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-medium text-white">Boîte à idées</h3>
@@ -324,7 +324,7 @@
 
     <!-- DMCA Modal -->
     <div v-if="isDmcaOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="isDmcaOpen = false">
-      <div class="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-2xl shadow-2xl relative overflow-hidden animate-fade-in-up max-h-[80vh] flex flex-col">
+      <div class="bg-[#0c0c11] border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-2xl shadow-2xl relative overflow-hidden animate-fade-in-up max-h-[80vh] flex flex-col">
         
         <div class="flex items-center justify-between mb-6 flex-shrink-0">
             <h3 class="text-lg font-medium text-white">Politique DMCA</h3>
@@ -369,7 +369,7 @@
 
     <!-- Delete Account Modal -->
     <div v-if="isDeleteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" @click.self="isDeleteModalOpen = false">
-      <div class="bg-[#0a0a0a] border border-red-500/20 rounded-2xl p-6 md:p-8 w-full max-w-sm shadow-2xl relative overflow-hidden animate-fade-in-up">
+      <div class="bg-[#0c0c11] border border-red-500/20 rounded-2xl p-6 md:p-8 w-full max-w-sm shadow-2xl relative overflow-hidden animate-fade-in-up">
         
         <div class="flex flex-col items-center text-center mb-6">
             <div class="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-4 border border-red-500/20">
@@ -409,7 +409,7 @@
 
     <!-- Password Modal -->
     <div v-if="isPasswordModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="isPasswordModalOpen = false">
-      <div class="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-sm shadow-2xl relative overflow-hidden animate-fade-in-up">
+      <div class="bg-[#0c0c11] border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-sm shadow-2xl relative overflow-hidden animate-fade-in-up">
         
         <div class="flex flex-col mb-6">
             <h3 class="text-lg font-medium text-white mb-1">Modifier le mot de passe</h3>

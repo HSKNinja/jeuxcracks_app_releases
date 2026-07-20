@@ -366,6 +366,46 @@ export class JeuxCracksAPI {
     return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.TICKETS}${id}/reopen/`, 'POST');
   }
 
+  /** Supprimer un ticket (définitif) */
+  static async deleteTicket(id: number): Promise<any> {
+    return useFetch(`${API_CONFIG.ENDPOINTS.SUPPORT.TICKETS}${id}/`, 'DELETE');
+  }
+
+  // ==================== MISES À JOUR DES JEUX ====================
+
+  /**
+   * Compare la version INSTALLÉE de chaque jeu avec la dernière version dispo côté API
+   * (alimentée par OnlineFix). Renvoie la liste des jeux ayant une mise à jour.
+   * N'incrémente aucun compteur (on lit le détail, pas l'endpoint /download/).
+   */
+  static async checkGamesUpdates(): Promise<Array<{
+    id: string; slug: string; title: string; installedVersion: string; latestVersion: string;
+  }>> {
+    const installed: any[] = (await (window as any).electronAPI?.invoke('get-installed-games')) || [];
+    const updates: any[] = [];
+
+    for (const g of installed) {
+      // Sans slug (jeu installé avant cette fonctionnalité) ou sans version, on ne peut pas comparer.
+      if (!g.slug || !g.version) continue;
+      try {
+        const detail: any = await useFetch(`/api/engine/games/${g.slug}/`);
+        const versions: any[] = detail?.versions || [];
+        const latest = versions.find((v: any) => v.is_latest) || versions[0];
+        const latestVersion = latest?.version_raw || latest?.version;
+        if (latestVersion && String(latestVersion).trim() !== String(g.version).trim()) {
+          updates.push({
+            id: g.id,
+            slug: g.slug,
+            title: g.title,
+            installedVersion: g.version,
+            latestVersion: String(latestVersion),
+          });
+        }
+      } catch (e) { /* jeu absent de l'API : on ignore */ }
+    }
+    return updates;
+  }
+
   // ==================== SUPPORT STAFF ====================
 
   /** [Staff] Lister tous les tickets */

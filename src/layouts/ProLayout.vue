@@ -20,7 +20,12 @@
       <main class="flex-1 overflow-y-auto custom-scrollbar">
          <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
-              <component :is="Component" />
+              <!-- keep-alive : garde en cache les pages visitées → navigation instantanée,
+                   plus de re-fetch à chaque aller-retour (la page détail se rafraîchit via son
+                   watch sur route.params.id). max=8 pour borner la mémoire. -->
+              <keep-alive :max="8">
+                <component :is="Component" />
+              </keep-alive>
             </transition>
          </router-view>
       </main>

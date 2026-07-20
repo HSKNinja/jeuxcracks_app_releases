@@ -1,7 +1,11 @@
 <template>
-  <div class="h-full bg-[#050505] text-white overflow-y-auto custom-scrollbar scroll-smooth">
-    
-    <div class="max-w-[1920px] mx-auto p-4 md:p-8 xl:p-12 flex flex-col xl:flex-row gap-8 xl:gap-12 items-start relative">
+  <div class="h-full bg-[#050505] text-white overflow-y-auto custom-scrollbar scroll-smooth relative">
+
+    <!-- Halo décoratif en haut de page -->
+    <div class="pointer-events-none absolute top-0 inset-x-0 h-[460px] z-0
+                bg-[radial-gradient(ellipse_55%_100%_at_50%_-10%,rgba(99,102,241,0.14),transparent_70%)]"></div>
+
+    <div class="max-w-[1920px] mx-auto p-4 md:p-8 xl:p-12 flex flex-col xl:flex-row gap-8 xl:gap-12 items-start relative z-10">
         
         <!-- MOBILE HEADER Actions (Visible < XL) -->
         <div class="w-full xl:hidden flex items-center justify-between mb-6 animate-fade-in">
@@ -55,10 +59,10 @@
 
             <!-- Header (Desktop Only) -->
             <div class="hidden xl:block">
-                <h1 class="text-3xl font-black text-white tracking-tighter uppercase mb-1">Catalogue</h1>
-                 <div class="flex items-center gap-2">
-                     <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
-                     <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{{ totalEnrichedGames }} Titres</p>
+                <h1 class="text-4xl font-black tracking-tighter uppercase mb-3 bg-gradient-to-br from-white via-white to-indigo-300/70 bg-clip-text text-transparent drop-shadow-[0_2px_20px_rgba(99,102,241,0.25)]">Catalogue</h1>
+                 <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-sm">
+                     <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.6)]"></span>
+                     <p class="text-zinc-300 text-[10px] font-bold uppercase tracking-widest">{{ totalEnrichedGames }} Titres</p>
                 </div>
             </div>
 
@@ -92,8 +96,8 @@
                             v-for="opt in sortOptions"
                             :key="opt.value"
                             @click="setSort(opt.value)" 
-                            class="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-bold uppercase transition-all"
-                            :class="filters.sort === opt.value ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-300'"
+                            class="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase transition-all duration-200"
+                            :class="filters.sort === opt.value ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25' : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-200'"
                         >
                             {{ opt.label }}
                         </button>
@@ -125,60 +129,63 @@
                 <p class="text-zinc-500">Essayez d'autres termes de recherche ou de modifier vos filtres.</p>
             </div>
 
-            <!-- Grid (Landscape Cards 16:9 aspect-video) -->
+            <!-- Grid (image + pied d'info solide) -->
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 xl:gap-6 animate-fade-in-up">
-                
-                <div 
-                    v-for="(game, index) in games" 
-                    :key="game.id" 
-                    class="group relative aspect-video rounded-xl overflow-hidden cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-white/5 hover:border-white/20 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/50 hover:z-50 bg-[#050505]"
+
+                <div
+                    v-for="(game, index) in games"
+                    :key="game.id"
+                    class="group relative rounded-2xl overflow-hidden cursor-pointer border border-white/5 bg-[#0c0c11] hover:border-indigo-400/40 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[0_24px_60px_-14px_rgba(99,102,241,0.45)] hover:z-50"
                     @click="goToGame(game.slug)"
                     :style="{ animationDelay: `${index * 30}ms` }"
                 >
-                    <!-- Image Area -->
-                    <img 
-                        :src="game.header" 
-                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        loading="lazy"
-                    />
-                    
-                     <!-- Video Preview -->
-                     <video
-                        v-if="game.video"
-                        :src="game.video"
-                        class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                        muted loop playsinline
-                        @mouseenter="playVideo"
-                        @mouseleave="pauseVideo"
-                    ></video>
+                    <!-- Image 16:9 -->
+                    <div class="relative aspect-video overflow-hidden bg-black">
+                        <img
+                            :src="game.header"
+                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            loading="lazy"
+                        />
 
-                    <!-- Hover Darkener Overlay -->
-                    <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px]"></div>
+                        <!-- Aperçu vidéo -->
+                        <video
+                            v-if="game.video"
+                            :src="game.video"
+                            class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                            muted loop playsinline
+                            @mouseenter="playVideo"
+                            @mouseleave="pauseVideo"
+                        ></video>
 
-                    <!-- Badges Top Left -->
-                    <div class="absolute top-3 left-3 flex flex-col gap-1.5 items-start z-10">
-                         <span v-if="game.isOnline" class="px-2 py-0.5 bg-black/60 backdrop-blur-md text-emerald-400 border border-emerald-500/30 text-[9px] font-bold uppercase tracking-wider rounded shadow-lg">Multi</span>
-                         <span v-if="game.isNew" class="px-2 py-0.5 bg-black/60 backdrop-blur-md text-indigo-400 border border-indigo-500/30 text-[9px] font-bold uppercase tracking-wider rounded shadow-lg">New</span>
+                        <!-- Assombrissement + icône au survol -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
+                            <div class="w-12 h-12 rounded-full bg-indigo-500/20 backdrop-blur-md border border-indigo-300/40 flex items-center justify-center shadow-lg">
+                                <ArrowDownTrayIcon class="w-5 h-5 text-white" />
+                            </div>
+                        </div>
+
+                        <!-- Badges -->
+                        <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                            <span v-if="game.isNew" class="px-2 py-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-[9px] font-black uppercase tracking-wider rounded shadow-[0_2px_12px_rgba(99,102,241,0.5)]">New</span>
+                            <span v-if="game.isOnline" class="px-2 py-0.5 bg-black/60 backdrop-blur-md text-emerald-400 border border-emerald-500/30 text-[9px] font-bold uppercase tracking-wider rounded">Multi</span>
+                        </div>
                     </div>
 
-                    <!-- Tags Top Right -->
-                    <div class="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-                        <span class="px-2 py-0.5 bg-black/60 backdrop-blur-md text-zinc-300 border border-white/10 text-[9px] font-bold uppercase tracking-wider rounded shadow-lg">
-                            {{ game.categories?.[0] || 'Jeu' }}
-                        </span>
-                    </div>
+                    <!-- Pied d'info (toujours visible) -->
+                    <div class="p-3.5">
+                        <div class="flex items-start justify-between gap-2 mb-2.5">
+                            <h3 class="text-sm font-bold text-white leading-snug truncate group-hover:text-indigo-300 transition-colors">
+                                {{ game.display_name }}
+                            </h3>
+                            <span class="shrink-0 mt-0.5 text-[9px] font-bold text-zinc-400 uppercase tracking-wide px-1.5 py-0.5 bg-white/5 border border-white/10 rounded">
+                                {{ game.categories?.[0] || 'Jeu' }}
+                            </span>
+                        </div>
 
-                    <!-- Bottom Info Gradient Overlay -->
-                    <div class="absolute bottom-0 inset-x-0 pt-24 pb-4 px-4 bg-gradient-to-t from-black via-black/80 to-transparent translate-y-2 group-hover:translate-y-0 transition-transform duration-500 pointer-events-none z-10 flex flex-col justify-end">
-                        <h3 class="text-sm md:text-base font-bold text-white uppercase tracking-tight leading-tight mb-1.5 truncate drop-shadow-md">
-                            {{ game.display_name }}
-                        </h3>
-                        
-                        <div class="flex items-center justify-between mt-0.5">
-                            <span class="text-[10px] font-bold text-indigo-400">{{ game.total_size || 'N/A' }}</span>
-                            
-                            <!-- Stats -->
-                            <div class="flex items-center gap-3 text-[10px] font-bold text-zinc-400">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-black text-indigo-400 tracking-wide">{{ game.total_size || 'N/A' }}</span>
+                            <div class="flex items-center gap-3 text-[10px] font-bold text-zinc-500">
                                 <div class="flex items-center gap-1" title="Vues">
                                     <EyeIcon class="w-3 h-3" />
                                     {{ formatNumber(game.views) }}

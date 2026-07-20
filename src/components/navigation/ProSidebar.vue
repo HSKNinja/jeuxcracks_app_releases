@@ -3,9 +3,7 @@
     
     <!-- Brand -->
     <div class="h-16 flex items-center px-4 xl:px-6 gap-3 select-none overflow-hidden">
-       <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-bold text-lg shadow-sm">
-          J
-       </div>
+       <img src="/logo.webp" alt="JeuxCracks" class="w-9 h-9 object-contain flex-shrink-0" />
        <h1 class="text-base font-bold text-white tracking-wide">JeuxCracks</h1>
        <span class="px-1.5 py-0.5 bg-indigo-600/80 text-[8px] font-black text-white uppercase rounded tracking-widest leading-none">Bêta</span>
     </div>
