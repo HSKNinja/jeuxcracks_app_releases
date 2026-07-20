@@ -1,5 +1,16 @@
 [
     {
+        "id": 7,
+        "title": "Patch Note v2.0.5 : Nouveau design & performances",
+        "description": "L'interface a été entièrement rafraîchie (accueil, catalogue, paramètres, profil, connexion), la navigation est bien plus rapide, l'application ne gèle plus, et elle vérifie désormais les mises à jour toute seule sans redémarrage.",
+        "full_content": "## 🎨 Nouveau design\n\n* **Interface entièrement rafraîchie** : accueil, catalogue, paramètres, profil, connexion et inscription.\n* **Nouveau logo JeuxCracks** partout dans l'application (fenêtre, barre des tâches, menus).\n* **Écran de démarrage animé** au lancement.\n* **Nouvelles cartes de jeux** plus lisibles : image + infos (taille, vues, téléchargements) toujours visibles.\n* Nouveau bandeau d'accueil avec miniatures cliquables.\n\n## ⚡ Performances\n\n* **Navigation entre les pages beaucoup plus rapide** : les pages visitées sont gardées en mémoire, plus de rechargement à chaque aller-retour.\n* **Fini les blocages de l'interface** (« Ne répond pas ») lors du calcul de l'espace disque ou de la taille du cache.\n* Moins de requêtes inutiles vers le serveur.\n\n## 🔄 Mises à jour automatiques\n\n* L'application **vérifie les mises à jour toutes les 30 minutes**, même si vous la laissez ouverte — **plus besoin de la redémarrer** pour savoir qu'une nouvelle version est disponible.\n\n## 🛠️ Support & corrections\n\n* **Bouton « Supprimer »** pour les tickets de support fermés.\n* Message clair lorsqu'un jeu n'a pas encore de lien de téléchargement valide.\n* Diverses corrections de stabilité.",
+        "category": "Patch Note",
+        "date": "2026-07-20",
+        "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop",
+        "link": "/news/7",
+        "accent_color": "indigo"
+    },
+    {
         "id": 6,
         "title": "Patch Note v2.0.4 : Téléchargements, connexion & catalogue",
         "description": "Grosse mise à jour de fiabilité : fini les téléchargements bloqués et les « aucune version », plus de déconnexions à répétition, catalogue à jour automatiquement avec les nouveautés en avant, jaquettes HD et de nombreuses corrections.",

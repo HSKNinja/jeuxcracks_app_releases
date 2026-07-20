@@ -1,6 +1,6 @@
 {
   "name": "jeuxcracks-launcher",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Le launcher officiel JeuxCracks.fr",
   "author": "JeuxCracks",
   "main": "dist-electron/main/index.js",
